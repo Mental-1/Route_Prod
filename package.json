@@ -63,6 +63,7 @@
     "input-otp": "1.4.1",
     "isomorphic-dompurify": "latest",
     "leaflet": "latest",
+    "lodash.debounce": "^4.0.8",
     "lucide-react": "^0.454.0",
     "next-themes": "latest",
     "pnpm": "^10.12.1",

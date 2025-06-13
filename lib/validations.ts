@@ -6,6 +6,7 @@ import {
   createSanitizedPhone,
   createSecurePassword,
 } from "./input-sanitization";
+import { Images } from "lucide-react";
 
 // Enhanced Auth schemas with sanitization
 export const signUpSchema = z
@@ -81,6 +82,8 @@ export const listingSchema = z.object({
   latitude: z.number().min(-90).max(90).optional(),
   longitude: z.number().min(-180).max(180).optional(),
   shippingAvailable: z.boolean().default(false),
+  images: z.array(z.string().url()).optional(),
+  videos: z.array(z.string().url()).optional(),
   shippingCost: z.number().min(0).optional(),
 });
 
@@ -96,7 +99,7 @@ export const mpesaPaymentSchema = z.object({
   amount: z
     .number()
     .min(1, "Amount must be at least 1 KES")
-    .max(300000, "Amount exceeds M-Pesa limit"),
+    .max(450000, "Amount exceeds M-Pesa limit"),
 });
 
 export const paystackPaymentSchema = z.object({
@@ -154,6 +157,8 @@ export const searchSchema = z.object({
     .optional(),
   location: createSanitizedString({ required: false, max: 100 }),
   radius: z.number().min(1).max(100).optional(),
+  userLat: z.number().optional(), // Add this
+  userLng: z.number().optional(), // Add this
   sortBy: z
     .enum(["relevance", "newest", "price_low", "price_high", "distance"])
     .default("relevance"),

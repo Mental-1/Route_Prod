@@ -1,46 +1,52 @@
-import { createServerClient } from "@/lib/supabase/server"
-import { searchSchema } from "@/lib/validations"
+import { createServerSupabaseClient } from "@/utils/supabase/server";
+import { searchSchema } from "@/lib/validations";
 
 export const resolvers = {
   Query: {
     me: async (_: any, __: any, context: any) => {
-      const supabase = createServerClient(context)
+      const supabase = await createServerSupabaseClient();
       const {
         data: { user },
-      } = await supabase.auth.getUser()
+      } = await supabase.auth.getUser();
 
-      if (!user) return null
+      if (!user) return null;
 
-      const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single()
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single();
 
       return {
         id: user.id,
         email: user.email,
         ...profile,
-      }
+      };
     },
 
     listing: async (_: any, { id }: { id: string }) => {
-      const supabase = createClient()
+      const supabase = await createServerSupabaseClient();
 
       const { data: listing } = await supabase
         .from("listings")
-        .select(`
+        .select(
+          `
           *,
           category:categories(*),
           subcategory:subcategories(*),
           seller:profiles(*)
-        `)
+        `,
+        )
         .eq("id", id)
         .eq("status", "active")
-        .single()
+        .single();
 
-      return listing
+      return listing;
     },
 
     listings: async (_: any, { input }: { input: any }) => {
-      const supabase = createClient()
-      const validatedInput = searchSchema.parse(input || {})
+      const supabase = await createServerSupabaseClient();
+      const validatedInput = searchSchema.parse(input || {});
 
       const { data: listings } = await supabase.rpc("search_listings", {
         search_query: validatedInput.query,
@@ -52,61 +58,66 @@ export const resolvers = {
         condition_filter: validatedInput.condition,
         user_lat: validatedInput.userLat,
         user_lng: validatedInput.userLng,
-        radius_km: validatedInput.radiusKm || 50,
+        radius_km: validatedInput.radius || 50,
         sort_by: validatedInput.sortBy,
         page_limit: validatedInput.limit,
         page_offset: (validatedInput.page - 1) * validatedInput.limit,
-      })
+      });
 
-      const totalCount = listings?.length || 0
-      const hasNextPage = totalCount === validatedInput.limit
+      const totalCount = listings?.length || 0;
+      const hasNextPage = totalCount === validatedInput.limit;
 
       return {
         listings: listings || [],
         totalCount,
         hasNextPage,
-      }
+      };
     },
 
     categories: async () => {
-      const supabase = createClient()
-      const { data: categories } = await supabase.from("categories").select("*").order("id")
+      const supabase = await createServerSupabaseClient();
+      const { data: categories } = await supabase
+        .from("categories")
+        .select("*")
+        .order("id");
 
-      return categories || []
+      return categories || [];
     },
 
     savedListings: async () => {
-      const supabase = createClient()
+      const supabase = await createServerSupabaseClient();
       const {
         data: { user },
-      } = await supabase.auth.getUser()
+      } = await supabase.auth.getUser();
 
-      if (!user) return []
+      if (!user) return [];
 
       const { data: savedListings } = await supabase
         .from("saved_listings")
-        .select(`
+        .select(
+          `
           listing:listings(
             *,
             category:categories(*),
             subcategory:subcategories(*),
             seller:profiles(*)
           )
-        `)
-        .eq("user_id", user.id)
+        `,
+        )
+        .eq("user_id", user.id);
 
-      return savedListings?.map((item) => item.listing) || []
+      return savedListings?.map((item) => item.listing) || [];
     },
   },
 
   Mutation: {
     createListing: async (_: any, { input }: { input: any }, context: any) => {
-      const supabase = createClient()
+      const supabase = await createServerSupabaseClient();
       const {
         data: { user },
-      } = await supabase.auth.getUser()
+      } = await supabase.auth.getUser();
 
-      if (!user) throw new Error("Authentication required")
+      if (!user) throw new Error("Authentication required");
 
       const { data: listing } = await supabase
         .from("listings")
@@ -116,36 +127,41 @@ export const resolvers = {
           status: "active",
         })
         .select()
-        .single()
+        .single();
 
-      return listing
+      return listing;
     },
 
     updateProfile: async (_: any, { input }: { input: any }) => {
-      const supabase = createClient()
+      const supabase = await createServerSupabaseClient();
       const {
         data: { user },
-      } = await supabase.auth.getUser()
+      } = await supabase.auth.getUser();
 
-      if (!user) throw new Error("Authentication required")
+      if (!user) throw new Error("Authentication required");
 
-      const { data: profile } = await supabase.from("profiles").update(input).eq("id", user.id).select().single()
+      const { data: profile } = await supabase
+        .from("profiles")
+        .update(input)
+        .eq("id", user.id)
+        .select()
+        .single();
 
       return {
         id: user.id,
         email: user.email,
         ...profile,
-      }
+      };
     },
 
     incrementViews: async (_: any, { listingId }: { listingId: string }) => {
-      const supabase = createClient()
+      const supabase = await createServerSupabaseClient();
 
       await supabase.rpc("increment_listing_views", {
         listing_id: listingId,
-      })
+      });
 
-      return true
+      return true;
     },
   },
-}
+};

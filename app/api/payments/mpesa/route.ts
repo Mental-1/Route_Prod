@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase/supabase";
+import { createServerSupabaseClient } from "@/utils/supabase/server";
 import { mpesaPaymentSchema } from "@/lib/validations";
 
 export async function POST(request: NextRequest) {

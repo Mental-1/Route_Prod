@@ -1,26 +1,32 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { createServerSupabaseClient } from "@/lib/supabase"
+import { type NextRequest, NextResponse } from "next/server";
+import { createServerSupabaseClient } from "@/utils/supabase/server";
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    const { Body } = body
+    const body = await request.json();
+    const { Body } = body;
 
     if (!Body?.stkCallback) {
-      return NextResponse.json({ error: "Invalid callback data" }, { status: 400 })
+      return NextResponse.json(
+        { error: "Invalid callback data" },
+        { status: 400 },
+      );
     }
 
-    const { CheckoutRequestID, ResultCode, ResultDesc, CallbackMetadata } = Body.stkCallback
+    const { CheckoutRequestID, ResultCode, CallbackMetadata } =
+      Body.stkCallback;
 
-    const supabase = await createServerSupabaseClient()
+    const supabase = await createServerSupabaseClient();
 
     // Update transaction status
-    const status = ResultCode === 0 ? "completed" : "failed"
+    const status = ResultCode === 0 ? "completed" : "failed";
 
-    let reference = null
+    let reference = null;
     if (CallbackMetadata?.Item) {
-      const mpesaReceiptNumber = CallbackMetadata.Item.find((item: any) => item.Name === "MpesaReceiptNumber")
-      reference = mpesaReceiptNumber?.Value
+      const mpesaReceiptNumber = CallbackMetadata.Item.find(
+        (item: any) => item.Name === "MpesaReceiptNumber",
+      );
+      reference = mpesaReceiptNumber?.Value;
     }
 
     const { error } = await supabase
@@ -30,10 +36,10 @@ export async function POST(request: NextRequest) {
         reference,
         updated_at: new Date().toISOString(),
       })
-      .eq("checkout_request_id", CheckoutRequestID)
+      .eq("checkout_request_id", CheckoutRequestID);
 
     if (error) {
-      console.error("Failed to update transaction:", error)
+      console.error("Failed to update transaction:", error);
     }
 
     // Send notification to user
@@ -42,7 +48,7 @@ export async function POST(request: NextRequest) {
         .from("transactions")
         .select("user_id, amount")
         .eq("checkout_request_id", CheckoutRequestID)
-        .single()
+        .single();
 
       if (transaction) {
         await supabase.from("notifications").insert({
@@ -50,13 +56,16 @@ export async function POST(request: NextRequest) {
           title: "Payment Successful",
           message: `Your payment of KES ${transaction.amount} has been processed successfully.`,
           type: "payment",
-        })
+        });
       }
     }
 
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("M-Pesa callback error:", error)
-    return NextResponse.json({ error: "Callback processing failed" }, { status: 500 })
+    console.error("M-Pesa callback error:", error);
+    return NextResponse.json(
+      { error: "Callback processing failed" },
+      { status: 500 },
+    );
   }
 }
