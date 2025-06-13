@@ -8,14 +8,10 @@ export async function POST(
   try {
     const supabase = await createServerSupabaseClient();
 
-    // Increment view count
-    const { error } = await supabase
-      .from("listings")
-      .update({
-        views: supabase.raw("views + 1"),
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", params.id);
+    // Increment view count using RPC function
+    const { error } = await supabase.rpc("increment_listing_views", {
+      listing_id: params.id,
+    });
 
     if (error) {
       console.error("Error incrementing views:", error);

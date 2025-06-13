@@ -6,9 +6,9 @@ import {
   createSanitizedPhone,
   createSecurePassword,
 } from "./input-sanitization";
-import { Images } from "lucide-react";
 
 // Enhanced Auth schemas with sanitization
+export const passwordSchema = createSecurePassword();
 export const signUpSchema = z
   .object({
     email: createSanitizedEmail(),
@@ -42,15 +42,15 @@ export const forgotPasswordSchema = z.object({
   email: createSanitizedEmail(),
 });
 
-export const resetPasswordSchema = z
-  .object({
-    password: createSecurePassword(),
-    confirmPassword: z.string(),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords don't match",
-    path: ["confirmPassword"],
-  });
+// export const resetPasswordSchema = z
+//   .object({
+//     password: createSecurePassword(),
+//     confirmPassword: z.string(),
+//   })
+//   .refine((data) => data.password === data.confirmPassword, {
+//     message: "Passwords don't match",
+//     path: ["confirmPassword"],
+//   });
 
 // Enhanced Profile schemas
 export const profileSchema = z.object({
@@ -210,7 +210,6 @@ export type MessageInput = z.infer<typeof messageSchema>;
 export type ReviewInput = z.infer<typeof reviewSchema>;
 export type SearchInput = z.infer<typeof searchSchema>;
 export type NotificationInput = z.infer<typeof notificationSchema>;
-export type createSanitizedString = z.infer<typeof createSanitizedStringSchema>;
 
 // Validation helper functions
 export function validateForm<T>(

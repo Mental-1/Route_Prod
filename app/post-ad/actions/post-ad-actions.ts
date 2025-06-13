@@ -9,11 +9,7 @@ import {
   ActionResponse,
   ListingCreateData,
 } from "@/lib/types/form-types";
-import {
-  listingSchema,
-  validateForm,
-  createSanitizedString,
-} from "@/lib/validations";
+import { createSanitizedString } from "@/lib/input-sanitization";
 import {
   createListingLimiter,
   updateListingLimiter,

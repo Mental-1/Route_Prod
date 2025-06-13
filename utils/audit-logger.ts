@@ -12,6 +12,12 @@ export interface AuditLogEntry {
   metadata?: Record<string, any>;
 }
 
+// Helper type for entries that might be missing required fields
+type PartialAuditLogEntry = Partial<AuditLogEntry>;
+
+// Helper type for ensuring required fields are present
+type RequiredAuditFields = "action" | "resource_type";
+
 export async function logAuditEvent(entry: AuditLogEntry) {
   try {
     const supabase = await createServerSupabaseClient();
@@ -29,10 +35,18 @@ export async function logAuditEvent(entry: AuditLogEntry) {
   }
 }
 
-export function createAuditLogger(baseContext: Partial<AuditLogEntry>) {
+export function createAuditLogger(baseContext: PartialAuditLogEntry) {
   return {
-    log: (entry: Omit<AuditLogEntry, keyof typeof baseContext>) => {
-      return logAuditEvent({ ...baseContext, ...entry });
+    log: (
+      entry: PartialAuditLogEntry &
+        Required<Pick<AuditLogEntry, RequiredAuditFields>>,
+    ) => {
+      // Ensure required fields are present
+      const completeEntry: AuditLogEntry = {
+        ...baseContext,
+        ...entry,
+      };
+      return logAuditEvent(completeEntry);
     },
   };
 }

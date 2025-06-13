@@ -21,7 +21,7 @@ export function createRateLimiter(config: RateLimitConfig) {
       identifier: string,
     ): { allowed: boolean; remaining: number; resetTime: number } => {
       const now = Date.now();
-      const windowStart = now - config.windowMs;
+      // const windowStart = now - config.windowMs;
 
       // Clean up old entries
       Object.keys(store).forEach((key) => {
@@ -68,8 +68,22 @@ export function createRateLimiter(config: RateLimitConfig) {
 export function getClientIdentifier(request: NextRequest): string {
   // Use IP address or user ID as identifier
   const forwarded = request.headers.get("x-forwarded-for");
-  const ip = forwarded ? forwarded.split(",")[0] : request.ip || "unknown";
-  return ip;
+  const realIp = request.headers.get("x-real-ip");
+  const ip = forwarded ? forwarded.split(",")[0] : realIp || "unknown";
+
+  if (forwarded) {
+    return forwarded.split(",")[0].trim();
+  }
+
+  if (realIp) {
+    return realIp.trim();
+  }
+
+  if (ip) {
+    return ip.trim();
+  }
+
+  return "unknown";
 }
 
 // Rate limiters for different actions
