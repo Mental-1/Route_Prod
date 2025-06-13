@@ -24,12 +24,12 @@ import { Category, SubCategory } from "@/utils/supabase/db-types";
 
 interface AdDetailsFormProps {
   initialData?: Partial<AdDetailsFormData>;
-  onNext: (data: AdDetailsFormData) => void;
+  onNextAction: (data: AdDetailsFormData) => void;
 }
 
 export function AdDetailsForm({
   initialData = {},
-  onNext,
+  onNextAction,
 }: AdDetailsFormProps) {
   // State management moved to component level
   const [formData, setFormData] = useState<AdDetailsFormData>({
@@ -134,7 +134,7 @@ export function AdDetailsForm({
     e.preventDefault();
 
     if (validateForm()) {
-      onNext(formData);
+      onNextAction(formData);
     }
   };
 

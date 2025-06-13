@@ -38,12 +38,12 @@ interface Notification {
 
 interface NotificationDropdownProps {
   unreadCount: number;
-  setUnreadCount: (count: number) => void;
+  setUnreadCountAction: (count: number) => void;
 }
 
 export function NotificationDropdown({
   unreadCount,
-  setUnreadCount,
+  setUnreadCountAction,
 }: NotificationDropdownProps) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(false);
@@ -95,7 +95,7 @@ export function NotificationDropdown({
         ),
       );
 
-      setUnreadCount(Math.max(0, unreadCount - 1));
+      setUnreadCountAction(Math.max(0, unreadCount - 1));
     } catch (error) {
       console.error("Error marking notification as read:", error);
     }
@@ -110,7 +110,7 @@ export function NotificationDropdown({
       setNotifications((prev) =>
         prev.map((notif) => ({ ...notif, read: true })),
       );
-      setUnreadCount(0);
+      setUnreadCountAction(0);
 
       toast({
         title: "Success",
@@ -141,7 +141,7 @@ export function NotificationDropdown({
       );
 
       if (notification && !notification.read) {
-        setUnreadCount(Math.max(0, unreadCount - 1));
+        setUnreadCountAction(Math.max(0, unreadCount - 1));
       }
     } catch (error) {
       console.error("Error deleting notification:", error);

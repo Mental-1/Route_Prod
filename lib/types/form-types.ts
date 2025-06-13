@@ -49,7 +49,28 @@ export interface ListingCreateData {
   longitude?: number;
   negotiable: boolean;
   images: string[];
+  user_id: string;
+  status: string;
+  payment_status: string;
+  plan: string;
+  views: number;
+  created_at: string;
+  updated_at: string;
+  expiry_date: string;
+}
+
+// Type for the validated form data
+export interface ValidatedListingData {
+  title: string;
+  description: string;
+  price: number;
+  category: string;
+  subcategory?: string;
+  condition: "new" | "used" | "like_new" | "refurbished";
+  location: string;
+  latitude?: number;
+  longitude?: number;
+  negotiable: boolean;
   phone?: string;
   email?: string;
-  plan_id?: string;
 }

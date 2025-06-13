@@ -20,14 +20,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { createClient } from "@/utils/supabase/supabase";
+import { createBrowserClient } from "@/utils/supabase/supabase-browser";
 import { toast } from "@/components/ui/use-toast";
 import { Toaster } from "@/components/ui/toaster";
 import { Bell, Shield, Globe, Download, Trash2 } from "lucide-react";
 
 export default function SettingsPage() {
   const router = useRouter();
-  const supabase = createClient();
+  const supabase = createBrowserClient();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [settings, setSettings] = useState({

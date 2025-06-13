@@ -156,7 +156,7 @@ export function Header() {
           {user ? (
             <NotificationDropdown
               unreadCount={unreadCount}
-              setUnreadCount={setUnreadCount}
+              setUnreadCountAction={setUnreadCount}
             />
           ) : (
             <Button

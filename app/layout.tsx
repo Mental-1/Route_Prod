@@ -10,7 +10,7 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "RouteMe - Modern Classified Ads Marketplace",
-  description: "Buy, sell, and discover amazing deals in your neighborhood",
+  description: "Buy, sell, and discover amazing deals in your neighborhood with precise location-based classified ads.",
   keywords: [
     "classified ads",
     "marketplace",
