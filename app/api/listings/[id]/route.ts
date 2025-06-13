@@ -1,29 +1,37 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { type NextRequest, NextResponse } from "next/server";
+import { createServerSupabaseClient } from "@/utils/supabase/server";
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } },
+) {
   try {
-    const supabase = createClient()
+    const supabase = await createServerSupabaseClient();
 
     const { data: listing, error } = await supabase
       .from("listings")
-      .select(`
+      .select(
+        `
         *,
         category:categories(name),
         subcategory:subcategories(name),
         seller:profiles(id, full_name, user_name, avatar_url)
-      `)
+      `,
+      )
       .eq("id", params.id)
       .eq("status", "active")
-      .single()
+      .single();
 
     if (error || !listing) {
-      return NextResponse.json({ error: "Listing not found" }, { status: 404 })
+      return NextResponse.json({ error: "Listing not found" }, { status: 404 });
     }
 
-    return NextResponse.json(listing)
+    return NextResponse.json(listing);
   } catch (error) {
-    console.error("Error fetching listing:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    console.error("Error fetching listing:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
+    );
   }
 }

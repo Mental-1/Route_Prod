@@ -1,9 +1,9 @@
-import { getSupabaseRouteHandler } from "@/lib/supabase/server";
+import { createServerSupabaseClient } from "@/utils/supabase/server";
 import { type NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await getSupabaseRouteHandler();
+    const supabase = await createServerSupabaseClient();
 
     // Input validation
     const url = new URL(request.url);

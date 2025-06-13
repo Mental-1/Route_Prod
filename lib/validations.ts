@@ -210,6 +210,7 @@ export type MessageInput = z.infer<typeof messageSchema>;
 export type ReviewInput = z.infer<typeof reviewSchema>;
 export type SearchInput = z.infer<typeof searchSchema>;
 export type NotificationInput = z.infer<typeof notificationSchema>;
+export type createSanitizedString = z.infer<typeof createSanitizedStringSchema>;
 
 // Validation helper functions
 export function validateForm<T>(

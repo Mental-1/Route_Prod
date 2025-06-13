@@ -1,38 +1,42 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
-import { MessageEncryption } from "@/lib/encryption"
-import { z } from "zod"
+import { type NextRequest, NextResponse } from "next/server";
+import { createServerSupabaseClient } from "@/utils/supabase/server";
+import { MessageEncryption } from "@/lib/encryption";
+import { z } from "zod";
 
 const sendMessageSchema = z.object({
   listingId: z.string().uuid(),
   recipientId: z.string().uuid(),
   content: z.string().min(1).max(1000),
-})
+});
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createClient()
+    const supabase = await createServerSupabaseClient();
     const {
       data: { user },
-    } = await supabase.auth.getUser()
+    } = await supabase.auth.getUser();
 
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await request.json()
-    const { listingId, recipientId, content } = sendMessageSchema.parse(body)
+    const body = await request.json();
+    const { listingId, recipientId, content } = sendMessageSchema.parse(body);
 
     // Get listing to determine buyer/seller roles
-    const { data: listing } = await supabase.from("listings").select("user_id").eq("id", listingId).single()
+    const { data: listing } = await supabase
+      .from("listings")
+      .select("user_id")
+      .eq("id", listingId)
+      .single();
 
     if (!listing) {
-      return NextResponse.json({ error: "Listing not found" }, { status: 404 })
+      return NextResponse.json({ error: "Listing not found" }, { status: 404 });
     }
 
-    const isSeller = listing.user_id === user.id
-    const buyerId = isSeller ? recipientId : user.id
-    const sellerId = isSeller ? user.id : recipientId
+    const isSeller = listing.user_id === user.id;
+    const buyerId = isSeller ? recipientId : user.id;
+    const sellerId = isSeller ? user.id : recipientId;
 
     // Generate or get conversation
     let { data: conversation } = await supabase
@@ -41,12 +45,12 @@ export async function POST(request: NextRequest) {
       .eq("listing_id", listingId)
       .eq("buyer_id", buyerId)
       .eq("seller_id", sellerId)
-      .single()
+      .single();
 
     if (!conversation) {
       // Create new conversation with encryption key
-      const encryptionKey = await MessageEncryption.generateKey()
-      const exportedKey = await MessageEncryption.exportKey(encryptionKey)
+      const encryptionKey = await MessageEncryption.generateKey();
+      const exportedKey = await MessageEncryption.exportKey(encryptionKey);
 
       const { data: newConversation } = await supabase
         .from("conversations")
@@ -57,14 +61,14 @@ export async function POST(request: NextRequest) {
           encryption_key: exportedKey,
         })
         .select()
-        .single()
+        .single();
 
-      conversation = newConversation
+      conversation = newConversation;
     }
 
     // Encrypt message
-    const key = await MessageEncryption.importKey(conversation.encryption_key)
-    const { encrypted, iv } = await MessageEncryption.encrypt(content, key)
+    const key = await MessageEncryption.importKey(conversation.encryption_key);
+    const { encrypted, iv } = await MessageEncryption.encrypt(content, key);
 
     // Save encrypted message
     const { data: message, error } = await supabase
@@ -76,43 +80,62 @@ export async function POST(request: NextRequest) {
         iv: iv,
       })
       .select()
-      .single()
+      .single();
 
     if (error) {
-      console.error("Error saving message:", error)
-      return NextResponse.json({ error: "Failed to send message" }, { status: 500 })
+      console.error("Error saving message:", error);
+      return NextResponse.json(
+        { error: "Failed to send message" },
+        { status: 500 },
+      );
     }
 
-    return NextResponse.json({ success: true, messageId: message.id })
+    return NextResponse.json({ success: true, messageId: message.id });
   } catch (error) {
-    console.error("Message API error:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    console.error("Message API error:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
+    );
   }
 }
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createClient()
+    const supabase = await createServerSupabaseClient();
     const {
       data: { user },
-    } = await supabase.auth.getUser()
+    } = await supabase.auth.getUser();
 
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { searchParams } = new URL(request.url)
-    const conversationId = searchParams.get("conversationId")
+    const { searchParams } = new URL(request.url);
+    const conversationId = searchParams.get("conversationId");
 
     if (!conversationId) {
-      return NextResponse.json({ error: "Conversation ID required" }, { status: 400 })
+      return NextResponse.json(
+        { error: "Conversation ID required" },
+        { status: 400 },
+      );
     }
 
     // Get conversation and verify access
-    const { data: conversation } = await supabase.from("conversations").select("*").eq("id", conversationId).single()
+    const { data: conversation } = await supabase
+      .from("conversations")
+      .select("*")
+      .eq("id", conversationId)
+      .single();
 
-    if (!conversation || (conversation.buyer_id !== user.id && conversation.seller_id !== user.id)) {
-      return NextResponse.json({ error: "Conversation not found" }, { status: 404 })
+    if (
+      !conversation ||
+      (conversation.buyer_id !== user.id && conversation.seller_id !== user.id)
+    ) {
+      return NextResponse.json(
+        { error: "Conversation not found" },
+        { status: 404 },
+      );
     }
 
     // Get encrypted messages
@@ -120,30 +143,37 @@ export async function GET(request: NextRequest) {
       .from("encrypted_messages")
       .select("*")
       .eq("conversation_id", conversationId)
-      .order("created_at", { ascending: true })
+      .order("created_at", { ascending: true });
 
     if (!encryptedMessages) {
-      return NextResponse.json({ messages: [] })
+      return NextResponse.json({ messages: [] });
     }
 
     // Decrypt messages
-    const key = await MessageEncryption.importKey(conversation.encryption_key)
+    const key = await MessageEncryption.importKey(conversation.encryption_key);
     const messages = await Promise.all(
       encryptedMessages.map(async (msg) => {
-        const decryptedContent = await MessageEncryption.decrypt(msg.encrypted_content, msg.iv, key)
+        const decryptedContent = await MessageEncryption.decrypt(
+          msg.encrypted_content,
+          msg.iv,
+          key,
+        );
         return {
           id: msg.id,
           senderId: msg.sender_id,
           content: decryptedContent,
           createdAt: msg.created_at,
           readAt: msg.read_at,
-        }
+        };
       }),
-    )
+    );
 
-    return NextResponse.json({ messages })
+    return NextResponse.json({ messages });
   } catch (error) {
-    console.error("Get messages error:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    console.error("Get messages error:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
+    );
   }
 }
