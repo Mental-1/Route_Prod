@@ -41,6 +41,14 @@ interface NotificationDropdownProps {
   setUnreadCountAction: (count: number) => void;
 }
 
+/**
+ * Displays a dropdown menu with the user's recent notifications, allowing viewing, marking as read, and deleting notifications.
+ *
+ * The dropdown shows a badge with the unread notification count, lists up to 20 recent notifications, and provides actions to mark individual or all notifications as read and to delete notifications. The unread count is updated via the provided setter function.
+ *
+ * @param unreadCount - The current number of unread notifications.
+ * @param setUnreadCountAction - Function to update the unread notification count when notifications are marked as read or deleted.
+ */
 export function NotificationDropdown({
   unreadCount,
   setUnreadCountAction,

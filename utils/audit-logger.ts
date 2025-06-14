@@ -18,6 +18,14 @@ type PartialAuditLogEntry = Partial<AuditLogEntry>;
 // Helper type for ensuring required fields are present
 type RequiredAuditFields = "action" | "resource_type";
 
+/**
+ * Records an audit log entry in the Supabase "audit_logs" table.
+ *
+ * @param entry - The complete audit log entry to be recorded.
+ *
+ * @remark
+ * If the log entry cannot be inserted, the error is logged to the console but not thrown.
+ */
 export async function logAuditEvent(entry: AuditLogEntry) {
   try {
     const supabase = await createServerSupabaseClient();
@@ -35,6 +43,14 @@ export async function logAuditEvent(entry: AuditLogEntry) {
   }
 }
 
+/**
+ * Creates an audit logger with a predefined base context.
+ *
+ * Returns an object with a `log` method that records audit events by merging the provided entry with the base context. The `log` method requires the entry to include the `action` and `resource_type` fields.
+ *
+ * @param baseContext - Partial audit log fields to be included in every log entry.
+ * @returns An object with a `log` method for recording audit events.
+ */
 export function createAuditLogger(baseContext: PartialAuditLogEntry) {
   return {
     log: (

@@ -41,7 +41,13 @@ const createListingSchema = z.object({
 // Type for the validated data
 type CreateListingInput = z.infer<typeof createListingSchema>;
 
-// Get user context with enhanced error handling
+/**
+ * Retrieves the authenticated user and their profile from the database.
+ *
+ * @returns An object containing the authenticated user and their profile.
+ *
+ * @throws {AppError} If authentication fails or no user is found.
+ */
 async function getUserContext() {
   const supabase = await createServerSupabaseClient();
   const {
@@ -63,7 +69,14 @@ async function getUserContext() {
   return { user, profile };
 }
 
-// Check user permissions and limits
+/**
+ * Checks whether a user has reached their maximum allowed number of active listings based on their subscription plan.
+ *
+ * @param userId - The unique identifier of the user to check limits for.
+ * @returns An object containing the user's current subscription, the number of active listings, and the maximum allowed listings.
+ *
+ * @throws {AppError} If the user has reached or exceeded their allowed number of active listings.
+ */
 async function checkUserLimits(userId: string) {
   const supabase = await createServerSupabaseClient();
 
@@ -100,7 +113,16 @@ async function checkUserLimits(userId: string) {
   return { subscription, activeListings: activeListings || 0, maxListings };
 }
 
-// Validate category and subcategory
+/**
+ * Validates that the specified category and optional subcategory exist and are correctly related.
+ *
+ * @param categoryId - The ID of the category to validate.
+ * @param subcategoryId - The ID of the subcategory to validate, if provided.
+ * @returns An object containing the validated category and, if applicable, subcategory.
+ *
+ * @throws {AppError} If the category does not exist or is invalid.
+ * @throws {AppError} If the subcategory does not exist, is invalid, or does not belong to the specified category.
+ */
 async function validateCategories(categoryId: string, subcategoryId?: string) {
   const supabase = await createServerSupabaseClient();
 
@@ -137,7 +159,15 @@ async function validateCategories(categoryId: string, subcategoryId?: string) {
   return { category, subcategory };
 }
 
-// Process and validate images
+/**
+ * Validates an array of image URLs for a listing, ensuring presence, maximum count, and user ownership.
+ *
+ * @param imageUrls - Array of image URLs to validate.
+ * @param userId - The ID of the user who must own the images.
+ * @returns The validated array of image URLs.
+ *
+ * @throws {AppError} If no images are provided, more than 10 images are supplied, or any image does not belong to the user.
+ */
 async function processImages(imageUrls: string[], userId: string) {
   if (!imageUrls || imageUrls.length === 0) {
     throw new AppError("At least one image is required", 400, "NO_IMAGES");
@@ -158,7 +188,14 @@ async function processImages(imageUrls: string[], userId: string) {
 }
 
 /**
- * Create a new listing - Production ready with all validations
+ * Creates a new marketplace listing with full validation, authorization, and audit logging.
+ *
+ * Validates input data, checks user subscription limits, verifies category and image ownership, inserts the listing into the database, updates the user's profile listing count, logs the creation event, generates an SEO-friendly slug, and triggers cache revalidation for affected pages.
+ *
+ * @param formData - Listing details and associated media URLs.
+ * @returns An object indicating success or failure. On success, includes the new listing's ID and slug.
+ *
+ * @throws {AppError} If rate limits are exceeded, user is unauthorized, validation fails, or database operations encounter errors.
  */
 export async function createListingAction(
   formData: AdDetailsFormData & { mediaUrls: string[] },
@@ -320,7 +357,15 @@ export async function createListingAction(
 }
 
 /**
- * Update an existing listing
+ * Updates an existing listing with the provided fields.
+ *
+ * Validates input, verifies ownership, applies rate limiting, updates the listing, logs the update, and revalidates affected pages.
+ *
+ * @param listingId - The ID of the listing to update.
+ * @param formData - Partial listing data to update.
+ * @returns An action response containing the updated listing ID on success, or validation errors on failure.
+ *
+ * @throws {AppError} If the listing is not found, access is denied, or rate limits are exceeded.
  */
 export async function updateListingAction(
   listingId: string,
@@ -427,7 +472,14 @@ export async function updateListingAction(
 }
 
 /**
- * Delete a listing (soft delete)
+ * Performs a soft delete of a listing owned by the authenticated user.
+ *
+ * Marks the specified listing as removed, decrements the user's listing count, logs the deletion event, and triggers cache revalidation for affected pages.
+ *
+ * @param listingId - The unique identifier of the listing to delete.
+ * @returns An action response indicating success or containing error details.
+ *
+ * @throws {AppError} If the listing does not exist or the user does not have access.
  */
 export async function deleteListingAction(
   listingId: string,
@@ -498,7 +550,12 @@ export async function deleteListingAction(
 }
 
 /**
- * Mark listing as sold
+ * Marks a listing as sold for the authenticated user.
+ *
+ * Updates the status of the specified listing to "sold" and refreshes relevant pages.
+ *
+ * @param listingId - The unique identifier of the listing to mark as sold.
+ * @returns An action response indicating success or containing error details.
  */
 export async function markAsSoldAction(
   listingId: string,
@@ -545,7 +602,9 @@ export async function markAsSoldAction(
 }
 
 /**
- * Redirect to listing page after successful creation
+ * Redirects the client to the detail page of a listing identified by its slug.
+ *
+ * @param slug - The unique slug of the listing to redirect to.
  */
 export async function redirectToListingAction(slug: string) {
   redirect(`/listings/${slug}`);

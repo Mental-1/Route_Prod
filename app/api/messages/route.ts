@@ -9,6 +9,13 @@ const sendMessageSchema = z.object({
   content: z.string().min(1).max(1000),
 });
 
+/**
+ * Handles sending an encrypted message related to a listing between users.
+ *
+ * Authenticates the user, validates the request body, determines buyer and seller roles, retrieves or creates a conversation with an encryption key, encrypts the message content, and stores the encrypted message in the database.
+ *
+ * @returns A JSON response indicating success and the new message ID, or an error with the appropriate HTTP status code.
+ */
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createServerSupabaseClient();
@@ -100,6 +107,13 @@ export async function POST(request: NextRequest) {
   }
 }
 
+/**
+ * Retrieves and decrypts all messages for a specified conversation accessible to the authenticated user.
+ *
+ * Returns a JSON response containing an array of decrypted messages, each with its ID, sender ID, content, creation time, and read time. Only users who are participants in the conversation (buyer or seller) can access the messages.
+ *
+ * @returns A JSON response with the array of decrypted messages, or an error message with the appropriate HTTP status code if access is unauthorized, the conversation is not found, or an internal error occurs.
+ */
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createServerSupabaseClient();

@@ -1,6 +1,14 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/utils/supabase/server";
 
+/**
+ * Handles a POST request to increment the view count for a specific listing.
+ *
+ * Increments the view count by invoking the "increment_listing_views" Supabase RPC for the listing identified by the provided ID.
+ *
+ * @param params - Route parameters containing the listing ID.
+ * @returns A JSON response indicating success, or an error message with HTTP status 500 if the operation fails.
+ */
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } },

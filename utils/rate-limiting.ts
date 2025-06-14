@@ -15,6 +15,17 @@ interface RateLimitStore {
 // In-memory store (in production, use Redis or similar)
 const store: RateLimitStore = {};
 
+/**
+ * Creates a rate limiter with the specified configuration.
+ *
+ * Returns an object with a `check` method that tracks request counts for unique identifiers within a time window, enforcing the configured rate limit.
+ *
+ * @param config - The rate limiting configuration specifying the time window and maximum allowed requests.
+ * @returns An object with a `check` method. Calling `check(identifier)` returns an object indicating whether the request is allowed, how many requests remain in the current window, and when the window resets.
+ *
+ * @remark
+ * The rate limiter uses an in-memory store and is suitable only for single-process environments. Expired entries are cleaned up on each `check` call.
+ */
 export function createRateLimiter(config: RateLimitConfig) {
   return {
     check: (
@@ -65,6 +76,14 @@ export function createRateLimiter(config: RateLimitConfig) {
   };
 }
 
+/**
+ * Extracts a client identifier from a Next.js request, prioritizing IP address headers.
+ *
+ * Checks the "x-forwarded-for" header first and returns the first IP address if present. If not, uses the "x-real-ip" header. If neither header is available, falls back to "unknown".
+ *
+ * @param request - The incoming Next.js request object.
+ * @returns The client identifier, typically an IP address, or "unknown" if not found.
+ */
 export function getClientIdentifier(request: NextRequest): string {
   // Use IP address or user ID as identifier
   const forwarded = request.headers.get("x-forwarded-for");

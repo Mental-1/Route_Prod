@@ -25,6 +25,13 @@ import { toast } from "@/components/ui/use-toast";
 import { Toaster } from "@/components/ui/toaster";
 import { Bell, Shield, Globe, Download, Trash2 } from "lucide-react";
 
+/**
+ * Renders the user settings page, allowing authenticated users to manage notification preferences, privacy and security options, app preferences, and data management actions.
+ *
+ * Redirects unauthenticated users to the sign-in page. Displays a loading indicator while user authentication is being verified. Provides UI controls for updating settings, exporting user data, and initiating account deletion.
+ *
+ * @remark No backend logic for saving settings, exporting data, or deleting accounts is implemented; these actions currently display placeholder notifications.
+ */
 export default function SettingsPage() {
   const router = useRouter();
   const supabase = createBrowserClient();

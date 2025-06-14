@@ -27,6 +27,14 @@ interface AdDetailsFormProps {
   onNextAction: (data: AdDetailsFormData) => void;
 }
 
+/**
+ * Renders a form for submitting advertisement details with validation and dynamic category selection.
+ *
+ * The form includes fields for title, description, category, subcategory, price, condition, location (with geolocation detection), and a negotiable option. It fetches categories and subcategories dynamically, validates user input, and displays relevant error messages. On successful validation, it invokes the provided callback with the form data.
+ *
+ * @param initialData - Optional initial values to prefill the form fields.
+ * @param onNextAction - Callback invoked with validated form data upon successful submission.
+ */
 export function AdDetailsForm({
   initialData = {},
   onNextAction,
