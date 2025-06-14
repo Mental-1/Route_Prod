@@ -27,8 +27,8 @@ const createListingSchema = z.object({
     if (isNaN(num) || num < 0) throw new Error("Invalid price");
     return num;
   }),
-  category: z.string().min(1, "Category is required"),
-  subcategory: z.string().optional(),
+  category: z.number().min(1, {message:"Category is required"}),
+  subcategory: z.number().optional(),
   condition: z.enum(["new", "used", "like_new", "refurbished"]),
   location: createSanitizedString({ min: 2, max: 100 }),
   latitude: z.number().min(-90).max(90).optional(),
@@ -101,7 +101,7 @@ async function checkUserLimits(userId: string) {
 }
 
 // Validate category and subcategory
-async function validateCategories(categoryId: string, subcategoryId?: string) {
+async function validateCategories(categoryId: number, subcategoryId?: number) {
   const supabase = await createServerSupabaseClient();
 
   // Validate category
@@ -313,7 +313,7 @@ export async function createListingAction(
   } catch (error) {
     return handleActionError(error, {
       action: "create_listing",
-      userId: "unknown",
+      userId: "user.id",
       ip: "unknown",
     });
   }

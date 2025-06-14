@@ -3,6 +3,7 @@ import { createServerSupabaseClient } from "@/utils/supabase/server";
 import { searchSchema } from "@/lib/validations";
 import { generalApiLimiter, getClientIdentifier } from "@/utils/rate-limiting";
 import { createAuditLogger } from "@/utils/audit-logger";
+import { toast } from "sonner";
 
 export async function GET(request: NextRequest) {
   try {
@@ -120,14 +121,34 @@ export async function GET(request: NextRequest) {
           { status: 500 },
         );
       }
+      // Fetch one extra record to determine if there is a next page
+      const limitPlusOne = validatedInput.limit + 1;
+      const offset = (validatedInput.page - 1) * validatedInput.limit;
+      const { data: listingsPage, error: errorPage } = await supabase
+        .from("listings")
+        .select("*")
+        .range(offset, offset + limitPlusOne - 1)
 
-      const totalCount = listings?.length || 0;
-      const hasNextPage = totalCount === validatedInput.limit;
+      if (errorPage) {
+        // ...handle error...
+        toast.error("Failed to fetch listings. Please try again later.");
+      }
+
+      // Determine if there is a next page
+      let hasNextPage = false;
+      let paginatedListings = listingsPage ?? [];
+
+      if (paginatedListings.length > validatedInput.limit) {
+        hasNextPage = true;
+        paginatedListings = paginatedListings.slice(0, validatedInput.limit);
+      }
+
+      const totalCount = paginatedListings.length;
 
       // Enhanced response with your existing structure plus additional metadata
       const response = NextResponse.json({
         success: true,
-        listings: listings || [],
+        listings: paginatedListings,
         totalCount,
         hasNextPage,
         page: validatedInput.page,
@@ -163,22 +184,35 @@ export async function GET(request: NextRequest) {
 
       return response;
     } catch (validationError) {
-      console.error("Search validation error:", validationError);
+      // Handle Zod validation errors
+      if (
+        typeof validationError === "object" &&
+        validationError !== null &&
+        "errors" in validationError
+      ) {
+        const errorDetails = (validationError as any).errors.map((err: any) => ({
+          path: err.path.join("."),
+          message: err.message,
+        }));
+        return NextResponse.json(
+          { error: 'Invalid search parameters', details: errorDetails },
+          { status: 400, headers: { "Content-Type": "application/json" } },
+        );
+      }
+      // If it's not a validation error, handle as internal server error
+      console.error("Search API error:", validationError);
       return NextResponse.json(
         {
           success: false,
-          error: "Invalid search parameters",
-          message: "Please check your search criteria and try again.",
-          details:
-            process.env.NODE_ENV === "development"
-              ? validationError
-              : undefined,
+          error: "Internal server error",
+          message: "An unexpected error occurred. Please try again later.",
+          timestamp: new Date().toISOString(),
         },
-        { status: 400 },
+        { status: 500 },
       );
     }
   } catch (error) {
-    console.error("Search API error:", error);
+    console.error("Unexpected error in search route:", error);
     return NextResponse.json(
       {
         success: false,

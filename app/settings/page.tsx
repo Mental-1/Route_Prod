@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
   Card,
@@ -27,7 +27,7 @@ import { Bell, Shield, Globe, Download, Trash2 } from "lucide-react";
 
 export default function SettingsPage() {
   const router = useRouter();
-  const supabase = createBrowserClient();
+  const supabase = useMemo(() => createBrowserClient(),[]);
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [settings, setSettings] = useState({

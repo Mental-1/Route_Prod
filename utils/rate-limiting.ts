@@ -68,24 +68,13 @@ export function createRateLimiter(config: RateLimitConfig) {
 export function getClientIdentifier(request: NextRequest): string {
   // Use IP address or user ID as identifier
   const forwarded = request.headers.get("x-forwarded-for");
+  if (forwarded) return forwarded.split(",")[0].trim();
+
   const realIp = request.headers.get("x-real-ip");
-  const ip = forwarded ? forwarded.split(",")[0] : realIp || "unknown";
+  if (realIp) return realIp.trim();
 
-  if (forwarded) {
-    return forwarded.split(",")[0].trim();
-  }
-
-  if (realIp) {
-    return realIp.trim();
-  }
-
-  if (ip) {
-    return ip.trim();
-  }
-
-  return "unknown";
+  return realIp ?? "unknown";
 }
-
 // Rate limiters for different actions
 export const createListingLimiter = createRateLimiter({
   windowMs: 60 * 60 * 1000, // 1 hour

@@ -190,11 +190,11 @@ export const fileUploadSchema = z.object({
 export const resetPasswordSchema = z
   .object({
     password: passwordSchema,
-    confirm_password: z.string(),
+    confirmPassword: z.string(),
   })
-  .refine((data) => data.password === data.confirm_password, {
+  .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords don't match",
-    path: ["confirm_password"],
+    path: ["confirmPassword"],
   });
 
 export type SignUpInput = z.infer<typeof signUpSchema>;

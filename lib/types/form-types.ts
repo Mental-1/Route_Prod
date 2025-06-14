@@ -71,6 +71,6 @@ export interface ValidatedListingData {
   latitude?: number;
   longitude?: number;
   negotiable: boolean;
-  phone?: string;
+  phoneNumber?: string;
   email?: string;
 }
