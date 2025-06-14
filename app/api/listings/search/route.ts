@@ -4,6 +4,15 @@ import { searchSchema } from "@/lib/validations";
 import { generalApiLimiter, getClientIdentifier } from "@/utils/rate-limiting";
 import { createAuditLogger } from "@/utils/audit-logger";
 
+/**
+ * Handles search requests for listings with rate limiting, input validation, audit logging, and paginated results.
+ *
+ * Processes search parameters from the request query string, validates input, enforces rate limits, logs the search action, and queries the database for matching listings. Returns a structured JSON response with listings, pagination info, applied filters, and metadata. Responds with appropriate error messages and status codes for rate limit violations, validation errors, or unexpected failures.
+ *
+ * @returns A JSON response containing search results, pagination details, applied filters, and metadata, or an error message with the relevant HTTP status code.
+ *
+ * @remark Returns HTTP 429 if the client exceeds the rate limit, 400 for invalid input, and 500 for server errors. Response includes rate limit and caching headers.
+ */
 export async function GET(request: NextRequest) {
   try {
     // Rate limiting

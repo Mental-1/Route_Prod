@@ -1,6 +1,17 @@
 import { createServerSupabaseClient } from "@/utils/supabase/server";
 import { type NextRequest, NextResponse } from "next/server";
 
+/**
+ * Handles HTTP GET requests to retrieve active listings within a specified geographic radius.
+ *
+ * Extracts latitude, longitude, and radius from the request's query parameters, validates them, and attempts to fetch nearby listings using a Supabase RPC function. If the RPC is unavailable or fails, falls back to a manual geospatial query, and as a last resort, returns the most recent active listings.
+ *
+ * @param request - The incoming HTTP request containing query parameters `lat`, `lng`, and `radius`.
+ * @returns A JSON response containing an array of listings or an error message with the appropriate HTTP status code.
+ *
+ * @remark
+ * If the RPC function or geospatial query fails, the response will contain up to 10 of the most recent active listings instead of proximity-based results.
+ */
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createServerSupabaseClient();

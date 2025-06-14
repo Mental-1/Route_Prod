@@ -19,6 +19,15 @@ import { NotificationDropdown } from "@/components/notifications/notification-dr
 import { toast } from "@/hooks/use-toast";
 import { validators } from "tailwind-merge";
 
+/**
+ * Renders a responsive navigation header with authentication, theme toggling, and notification features.
+ *
+ * Displays navigation links, theme selection, notification count, and user account options based on authentication state. Adapts layout for desktop and mobile screens. Integrates with Supabase for user session management and notification retrieval.
+ *
+ * @returns The header component with navigation, theme, notification, and user controls.
+ *
+ * @remark Returns `null` on initial render to prevent hydration mismatch until the component is mounted.
+ */
 export function Header() {
   const { theme, setTheme } = useTheme();
   const pathname = usePathname();

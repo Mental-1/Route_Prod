@@ -3,6 +3,13 @@ import { redirect } from "next/navigation"
 import type { NextRequest } from "next/server"
 import { createServerSupabaseClient } from "@/utils/supabase/server"
 
+/**
+ * Handles email verification via OTP token and redirects the user based on the verification outcome.
+ *
+ * Extracts the OTP token and type from the request URL, verifies the token using Supabase, updates the user's email verification status, and creates a welcome notification upon success. Redirects to the sign-in page with appropriate messages for success or failure.
+ *
+ * @param request - The incoming HTTP request containing verification parameters.
+ */
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const token_hash = searchParams.get("token_hash")
