@@ -1,6 +1,6 @@
 import { del } from "@vercel/blob"
 import { type NextRequest, NextResponse } from "next/server"
-import { createServerSupabaseClient } from "@/lib/supabase"
+import { createServerSupabaseClient } from "@/utils/supabase/server"
 
 export async function DELETE(request: NextRequest) {
   try {

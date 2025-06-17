@@ -18,6 +18,7 @@ import { createBrowserClient } from "@/utils/supabase/supabase-browser";
 import { NotificationDropdown } from "@/components/notifications/notification-dropdown";
 import { toast } from "@/hooks/use-toast";
 import { validators } from "tailwind-merge";
+import {ThemeToggle} from "@/components/theme-toggle";
 
 export function Header() {
   const { theme, setTheme } = useTheme();
@@ -121,37 +122,11 @@ export function Header() {
           </Button>
 
           {/* Theme Toggle */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className={isMapPage ? "z-[1001]" : ""}
-              >
-                <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-                <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-                <span className="sr-only">Toggle theme</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align="end"
-              className={isMapPage ? "z-[1001]" : ""}
-            >
-              <DropdownMenuItem onClick={() => setTheme("light")}>
-                <Sun className="mr-2 h-4 w-4" />
-                Light
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setTheme("dark")}>
-                <Moon className="mr-2 h-4 w-4" />
-                Dark
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setTheme("system")}>
-                <Monitor className="mr-2 h-4 w-4" />
-                System
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
+          <ThemeToggle
+            className={`${
+              isMapPage ? "z-[1001]" : ""
+            } h-8 w-8 rounded-full bg-transparent hover:bg-muted/50 transition-colors`}
+          />
           {/* Notifications */}
           {user ? (
             <NotificationDropdown
@@ -213,10 +188,7 @@ export function Header() {
               ) : (
                 <>
                   <DropdownMenuItem asChild>
-                    <Link href="/auth/signin">Sign In</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/auth/signup">Sign Up</Link>
+                    <Link href="/auth">Login</Link>
                   </DropdownMenuItem>
                 </>
               )}
@@ -260,11 +232,8 @@ export function Header() {
                   </>
                 ) : (
                   <>
-                    <Link href="/auth/signin" className="text-lg font-medium">
-                      Sign In
-                    </Link>
-                    <Link href="/auth/signup" className="text-lg font-medium">
-                      Sign Up
+                    <Link href="/auth" className="text-lg font-medium">
+                      Login
                     </Link>
                   </>
                 )}

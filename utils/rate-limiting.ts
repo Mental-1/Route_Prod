@@ -1,9 +1,9 @@
 import { NextRequest } from "next/server";
 
-interface RateLimitConfig {
+type RateLimitConfig = {
   windowMs: number; // Time window in milliseconds
   maxRequests: number; // Max requests per window
-}
+};
 
 interface RateLimitStore {
   [key: string]: {
@@ -12,7 +12,6 @@ interface RateLimitStore {
   };
 }
 
-// In-memory store (in production, use Redis or similar)
 const store: RateLimitStore = {};
 
 export function createRateLimiter(config: RateLimitConfig) {

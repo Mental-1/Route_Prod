@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { createClient } from "@/lib/supabase";
+import { createBrowserClient } from "@/utils/supabase/supabase-browser";
 import {
   Edit,
   Trash2,
@@ -61,7 +61,7 @@ export default function UserListingsPage() {
 
   const fetchUserListings = async () => {
     try {
-      const supabase = createClient();
+      const supabase = createBrowserClient();
       const {
         data: { user },
       } = await supabase.auth.getUser();
@@ -101,7 +101,7 @@ export default function UserListingsPage() {
 
   const fetchUserPlan = async () => {
     try {
-      const supabase = createClient();
+      const supabase = createBrowserClient();
       const {
         data: { user },
       } = await supabase.auth.getUser();
@@ -144,7 +144,7 @@ export default function UserListingsPage() {
 
   const handleDelete = async (listingId: string) => {
     try {
-      const supabase = createClient();
+      const supabase = createBrowserClient();
       const { error } = await supabase
         .from("listings")
         .delete()
@@ -175,7 +175,7 @@ export default function UserListingsPage() {
 
   const handleFeature = async (listingId: string) => {
     try {
-      const supabase = createClient();
+      const supabase = createBrowserClient();
       const { data, error } = await supabase.rpc("feature_listing", {
         listing_uuid: listingId,
         duration_days: 7,

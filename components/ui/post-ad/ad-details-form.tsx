@@ -20,7 +20,10 @@ import {
   useSubcategories,
 } from "@/app/post-ad/hooks/useCategories";
 import { AdDetailsFormData } from "@/lib/types/form-types";
-import { Category, SubCategory } from "@/utils/supabase/db-types";
+import type { Database } from "@/utils/supabase/database.types";
+
+type Category = Database["public"]["Tables"]["categories"]["Row"];
+type SubCategory = Database["public"]["Tables"]["subcategories"]["Row"];
 
 interface AdDetailsFormProps {
   initialData?: Partial<AdDetailsFormData>;

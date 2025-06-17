@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/accordion";
 import { Checkbox } from "@/components/ui/checkbox";
 
-// Sample listings data
+// TODO: Replace with actual API call to fetch listings
 const initialListings = [
   {
     id: 1,
@@ -108,7 +108,8 @@ export default function ListingsPage() {
 
     setLoading(true);
 
-    // Simulate API call - replace with actual API
+    //TODO: Simulate API call - replace with actual API to fetch listings
+
     setTimeout(() => {
       const newListings = [...initialListings]; // Add more listings here
       if (listings.length + newListings.length >= 24) {
@@ -274,8 +275,7 @@ export default function ListingsPage() {
                 <h3 className="font-medium mb-2">Price Range</h3>
                 <div className="space-y-4">
                   <Slider
-                    defaultValue={[0, 5000]}
-                    max={5000}
+                    defaultValue={[100]}
                     step={100}
                     value={priceRange}
                     onValueChange={setPriceRange}

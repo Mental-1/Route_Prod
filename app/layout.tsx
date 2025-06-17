@@ -1,46 +1,41 @@
-import type React from "react";
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
-import "./globals.css";
-import { Header } from "@/components/layout/header";
-import { ThemeProvider } from "@/components/theme-provider";
-import ReactQueryClientProvider from "@/components/reactQueryClientProvider";
+import type React from "react"
+import type { Metadata } from "next"
+import { Inter } from "next/font/google"
+import "./globals.css"
+import { ThemeProvider } from "@/components/theme-provider"
+import { AuthProvider } from "@/contexts/auth-context"
+import Navigation from "@/components/navigation"
+import { Footer } from "@/components/footer"
+import { Toaster } from "@/components/ui/toaster"
+import { QueryClientProvider} from "@tanstack/react-query"
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "RouteMe - Modern Classified Ads Marketplace",
-  description: "Buy, sell, and discover amazing deals in your neighborhood with precise location-based classified ads.",
-  keywords: [
-    "classified ads",
-    "marketplace",
-    "neighborhood",
-    "buy",
-    "sell",
-    "discover",
-  ],
-};
+  title: "RouteMe - Classified Ads",
+  description: "Find and post classified ads in your area",
+  keywords: "Jiji, OLX, classifieds, ads, marketplace, direction, rentals near me",
+}
 
 export default function RootLayout({
   children,
-}: {
-  children: React.ReactNode;
-}) {
+}: Readonly<{
+  children: React.ReactNode
+}>) {
   return (
-    <ReactQueryClientProvider>
-      <html lang="en" suppressHydrationWarning>
-        <body className={inter.className}>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-          >
-            <Header />
-            <main>{children}</main>
-          </ThemeProvider>
-        </body>
-      </html>
-    </ReactQueryClientProvider>
-  );
+    <html lang="en" suppressHydrationWarning>
+      <body className={inter.className}>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+          <AuthProvider>
+            <div className="flex min-h-screen flex-col">
+              <Navigation />
+              <main className="flex-1">{children}</main>
+              <Footer />
+            </div>
+            <Toaster />
+          </AuthProvider>
+        </ThemeProvider>
+      </body>
+    </html>
+  )
 }

@@ -18,7 +18,7 @@ const MapComponent = dynamic(() => import("@/components/map-component"), {
   ),
 });
 
-// Sample nearby listings
+// TODO: Replace with actual data fetching logic  for nearby listing using the postgis API in supabase
 const nearbyListings = [
   {
     id: 1,

@@ -22,7 +22,7 @@ export async function logAuditEvent(entry: AuditLogEntry) {
   try {
     const supabase = await createServerSupabaseClient();
 
-    const { error } = await supabase.from("audit_logs").insert({
+    const { error } = await supabase.from("admin_logs").insert({
       ...entry,
       created_at: new Date().toISOString(),
     });

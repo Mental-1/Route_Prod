@@ -1,6 +1,5 @@
-import { put } from "@vercel/blob";
 import { type NextRequest, NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase/supabase";
+import { createServerSupabaseClient } from "@/utils/supabase/server";
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,25 +15,24 @@ export async function POST(request: NextRequest) {
 
     const formData = await request.formData();
     const file = formData.get("file") as File;
-    const type = formData.get("type") as string; // 'listing' or 'profile'
+    const type = formData.get("type") as string;
 
     if (!file) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
-    // Validate file type and size
-    const maxSize = type === "profile" ? 5 * 1024 * 1024 : 50 * 1024 * 1024; // 5MB for profiles, 50MB for listings
+    const maxSize = type === "profile" ? 5 * 1024 * 1024 : 50 * 1024 * 1024;
     const allowedTypes =
       type === "profile"
         ? ["image/jpeg", "image/png", "image/webp"]
         : [
-            "image/jpeg",
-            "image/png",
-            "image/webp",
-            "video/mp4",
-            "video/webm",
-            "video/quicktime",
-          ];
+          "image/jpeg",
+          "image/png",
+          "image/webp",
+          "video/mp4",
+          "video/webm",
+          "video/quicktime",
+        ];
 
     if (file.size > maxSize) {
       return NextResponse.json(
@@ -60,20 +58,33 @@ export async function POST(request: NextRequest) {
     const extension = file.name.split(".").pop();
     const filename = `${type}/${user.id}/${timestamp}-${randomString}.${extension}`;
 
-    // Upload to Vercel Blob
-    const blob = await put(filename, file, {
-      access: "public",
-      addRandomSuffix: false,
-    });
+    const bucket = type === "profile" ? "profiles" : "listings";
+    const filePath = `${user.id}/${timestamp}${filename}-${randomString}.${extension}`;
 
-    return NextResponse.json({
-      url: blob.url,
-      filename: filename,
-      size: file.size,
-      type: file.type,
-    });
-  } catch (error) {
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from(bucket)
+      .upload(filePath, file, { contentType: file.type, upsert: false });
+
+    if (uploadError) {
+      console.error("Upload error:", uploadError);
+      return NextResponse.json(
+        { error: "Failed to upload file to storage." },
+        { status: 500 },
+      );
+    }
+    const {
+      data: { publicUrl },
+    } = supabase.storage.from(bucket).getPublicUrl(filePath);
+  }return NextResponse.json({
+    url: publicUrl,
+    filename: filePath,
+    size: file.size,
+    type: file.type,
+    bucket: bucket,
+  });
+} catch (error) {
     console.error("Upload error:", error);
     return NextResponse.json({ error: "Upload failed" }, { status: 500 });
   }
 }
+//TODO: Upload images to supabase storage instead of Vercel Blob

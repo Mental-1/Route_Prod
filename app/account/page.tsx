@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { createClient } from "@/utils/supabase/supabase";
+import { createBrowserClient } from "@/utils/supabase/supabase-browser";
 import { toast } from "@/components/ui/use-toast";
 import { Toaster } from "@/components/ui/toaster";
 import {
@@ -67,7 +67,7 @@ interface AuthUser {
 
 export default function AccountPage() {
   const router = useRouter();
-  const supabase = createClient();
+  const supabase = createBrowserClient();
   const [user, setUser] = useState<AuthUser | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -279,6 +279,7 @@ export default function AccountPage() {
                     })}
                   </div>
                 </div>
+                //TODO: Fetch actual listings count from the database.
 
                 <div className="grid grid-cols-3 gap-4 text-center pt-4 border-t">
                   <div>
