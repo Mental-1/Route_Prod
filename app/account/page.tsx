@@ -120,10 +120,13 @@ export default function AccountPage() {
         };
         setProfile(userProfile);
         setFormData({
-          ...userData,
-          website: userProfile.website,
-          rating: userProfile.rating,
-          reviews_count: userProfile.reviews_count,
+          full_name: userProfile.full_name ?? "",
+          username: userProfile.username ?? "",
+          bio: userProfile.bio ?? "",
+          phone_number: userProfile.phone_number ?? "",
+          location: userProfile.location ?? "",
+          website: userProfile.website ?? "",
+          reviews_count: userProfile.reviews_count ?? 0,
         });
       } else {
         // Create default profile
