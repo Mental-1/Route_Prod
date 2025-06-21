@@ -32,7 +32,6 @@ export async function middleware(request: NextRequest) {
     },
   );
 
-  // IMPORTANT: Avoid writing any logic between createServerClient and supabase.auth.getUser().
   // See https://supabase.com/docs/guides/auth/server-side/nextjs#auth-with-middleware-example
   const {
     data: { user },
@@ -40,11 +39,11 @@ export async function middleware(request: NextRequest) {
 
   // Protect authenticated routes
   const protectedRoutes = [
-    "/dashboard",
-    "/account",
+    "/app/dashboard",
+    "/app/account",
     // '/post',
     "/messages",
-    "/settings",
+    "/app/settings",
   ];
 
   const isProtectedRoute = protectedRoutes.some((route) =>
@@ -53,7 +52,7 @@ export async function middleware(request: NextRequest) {
 
   // Redirect to auth if accessing protected route without authentication
   if (isProtectedRoute && !user) {
-    const redirectUrl = new URL("/auth/signup", request.url);
+    const redirectUrl = new URL("/auth?tab=sign-up", request.url);
     redirectUrl.searchParams.set("redirectTo", request.nextUrl.pathname);
     return NextResponse.redirect(redirectUrl);
   }
@@ -65,7 +64,7 @@ export async function middleware(request: NextRequest) {
       request.nextUrl.pathname === "/login" ||
       request.nextUrl.pathname === "/signup")
   ) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+    return NextResponse.redirect(new URL("/app/dashboard", request.url));
   }
 
   return response;

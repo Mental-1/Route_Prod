@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/utils/supabase/server";
+import { getSupabaseRouteHandler } from "@/utils/supabase/server";
 import { title } from "node:process";
 
 export async function GET(request: Request) {
-  const supabase = await createServerSupabaseClient();
+  const supabase = await getSupabaseRouteHandler();
   const { searchParams } = new URL(request.url);
 
   const id = searchParams.get("id");
@@ -88,7 +88,7 @@ export async function GET(request: Request) {
   }
 }
 export async function POST(request: Request) {
-  const supabase = await createServerSupabaseClient();
+  const supabase = await getSupabaseRouteHandler();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -145,7 +145,7 @@ export async function POST(request: Request) {
 }
 
 export async function PUT(request: Request) {
-  const supabase = await createServerSupabaseClient();
+  const supabase = await getSupabaseRouteHandler();
 
   const {
     data: { user },
@@ -220,7 +220,7 @@ export async function PUT(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  const supabase = await createServerSupabaseClient();
+  const supabase = await getSupabaseRouteHandler();
   const { searchParams } = new URL(request.url);
 
   // Authentication check

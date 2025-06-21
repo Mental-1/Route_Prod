@@ -101,7 +101,7 @@ export default function ForgotPasswordPage() {
             </Button>
 
             <div className="text-center">
-              <Link href="/auth" className="text-sm text-muted-foreground hover:text-primary">
+              <Link href="/auth?tab=sign-up" className="text-sm text-muted-foreground hover:text-primary">
                 Back to sign in
               </Link>
             </div>

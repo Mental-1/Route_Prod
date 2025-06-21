@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/utils/supabase/server";
+import { getSupabaseRouteHandler } from "@/utils/supabase/server";
 import { searchSchema } from "@/lib/validations";
 import { generalApiLimiter, getClientIdentifier } from "@/utils/rate-limiting";
 import { createAuditLogger } from "@/utils/audit-logger";
@@ -69,7 +69,7 @@ export async function GET(request: NextRequest) {
     // Enhanced validation with better error messages
     try {
       const validatedInput = searchSchema.parse(input);
-      const supabase = await createServerSupabaseClient();
+      const supabase = await getSupabaseRouteHandler();
 
       // Log search for analytics (optional)
       const auditLogger = createAuditLogger({
@@ -127,7 +127,7 @@ export async function GET(request: NextRequest) {
       const { data: listingsPage, error: errorPage } = await supabase
         .from("listings")
         .select("*")
-        .range(offset, offset + limitPlusOne - 1)
+        .range(offset, offset + limitPlusOne - 1);
 
       if (errorPage) {
         // ...handle error...
@@ -190,12 +190,14 @@ export async function GET(request: NextRequest) {
         validationError !== null &&
         "errors" in validationError
       ) {
-        const errorDetails = (validationError as any).errors.map((err: any) => ({
-          path: err.path.join("."),
-          message: err.message,
-        }));
+        const errorDetails = (validationError as any).errors.map(
+          (err: any) => ({
+            path: err.path.join("."),
+            message: err.message,
+          }),
+        );
         return NextResponse.json(
-          { error: 'Invalid search parameters', details: errorDetails },
+          { error: "Invalid search parameters", details: errorDetails },
           { status: 400, headers: { "Content-Type": "application/json" } },
         );
       }

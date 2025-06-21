@@ -1,7 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/utils/supabase/server";
+import { getSupabaseServer } from "@/utils/supabase/server";
 import { MessageEncryption } from "@/lib/encryption";
 import { z } from "zod";
+import { get } from "react-hook-form";
 
 const sendMessageSchema = z.object({
   listingId: z.string().uuid(),
@@ -11,7 +12,7 @@ const sendMessageSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createServerSupabaseClient();
+    const supabase = await getSupabaseServer();
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -102,7 +103,7 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createServerSupabaseClient();
+    const supabase = await getSupabaseServer();
     const {
       data: { user },
     } = await supabase.auth.getUser();

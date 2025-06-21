@@ -1,4 +1,4 @@
-import { createServerSupabaseClient } from "@/utils/supabase/server";
+import { getSupabaseServer } from "@/utils/supabase/server";
 
 export interface AuditLogEntry {
   user_id?: string;
@@ -20,7 +20,7 @@ type RequiredAuditFields = "action" | "resource_type";
 
 export async function logAuditEvent(entry: AuditLogEntry) {
   try {
-    const supabase = await createServerSupabaseClient();
+    const supabase = await getSupabaseServer();
 
     const { error } = await supabase.from("admin_logs").insert({
       ...entry,

@@ -1,6 +1,6 @@
-import Link from "next/link"
-import { MapPin } from "lucide-react"
-import { ThemeToggle } from "@/components/theme-toggle"
+import Link from "next/link";
+import { MapPin } from "lucide-react";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export function Footer() {
   return (
@@ -13,29 +13,42 @@ export function Footer() {
               <span className="text-xl font-bold">RouteMe</span>
             </Link>
             <p className="mt-4 text-sm text-muted-foreground">
-              Find and post classified ads in your area. Buy, sell, and connect with your local community.
+              Find and post classified ads in your area. Buy, sell, and connect
+              with your local community.
             </p>
           </div>
           <div>
             <h3 className="text-lg font-medium">Quick Links</h3>
             <ul className="mt-4 space-y-2 text-sm">
               <li>
-                <Link href="/" className="text-muted-foreground hover:text-foreground">
+                <Link
+                  href="/"
+                  className="text-muted-foreground hover:text-foreground"
+                >
                   Home
                 </Link>
               </li>
               <li>
-                <Link href="/listings" className="text-muted-foreground hover:text-foreground">
+                <Link
+                  href="/listings"
+                  className="text-muted-foreground hover:text-foreground"
+                >
                   Listings
                 </Link>
               </li>
               <li>
-                <Link href="/map" className="text-muted-foreground hover:text-foreground">
+                <Link
+                  href="/map"
+                  className="text-muted-foreground hover:text-foreground"
+                >
                   Map View
                 </Link>
               </li>
               <li>
-                <Link href="/post-ad" className="text-muted-foreground hover:text-foreground">
+                <Link
+                  href="/post-ad"
+                  className="text-muted-foreground hover:text-foreground"
+                >
                   Post Ad
                 </Link>
               </li>
@@ -45,22 +58,34 @@ export function Footer() {
             <h3 className="text-lg font-medium">Categories</h3>
             <ul className="mt-4 space-y-2 text-sm">
               <li>
-                <Link href="/listings?category=1" className="text-muted-foreground hover:text-foreground">
+                <Link
+                  href="/listings?category=1"
+                  className="text-muted-foreground hover:text-foreground"
+                >
                   Vehicles
                 </Link>
               </li>
               <li>
-                <Link href="/listings?category=2" className="text-muted-foreground hover:text-foreground">
+                <Link
+                  href="/listings?category=2"
+                  className="text-muted-foreground hover:text-foreground"
+                >
                   Electronics
                 </Link>
               </li>
               <li>
-                <Link href="/listings?category=3" className="text-muted-foreground hover:text-foreground">
+                <Link
+                  href="/listings?category=3"
+                  className="text-muted-foreground hover:text-foreground"
+                >
                   Furniture
                 </Link>
               </li>
               <li>
-                <Link href="/listings?category=4" className="text-muted-foreground hover:text-foreground">
+                <Link
+                  href="/listings?category=4"
+                  className="text-muted-foreground hover:text-foreground"
+                >
                   Real Estate
                 </Link>
               </li>
@@ -117,16 +142,21 @@ export function Footer() {
             &copy; {new Date().getFullYear()} RouteMe. All rights reserved.
           </p>
           <div className="mt-4 flex items-center space-x-4 md:mt-0">
-            <ThemeToggle />
-            <Link href="/terms" className="text-sm text-muted-foreground hover:text-foreground">
+            <Link
+              href="/terms"
+              className="text-sm text-muted-foreground hover:text-foreground"
+            >
               Terms of Service
             </Link>
-            <Link href="/privacy" className="text-sm text-muted-foreground hover:text-foreground">
+            <Link
+              href="/privacy"
+              className="text-sm text-muted-foreground hover:text-foreground"
+            >
               Privacy Policy
             </Link>
           </div>
         </div>
       </div>
     </footer>
-  )
+  );
 }

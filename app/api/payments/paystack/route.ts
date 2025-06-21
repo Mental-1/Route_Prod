@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/utils/supabase/server";
+import { getSupabaseServer } from "@/utils/supabase/server";
 import { paystackPaymentSchema } from "@/lib/validations";
 
 export async function POST(request: NextRequest) {
@@ -7,7 +7,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const validatedData = paystackPaymentSchema.parse(body);
 
-    const supabase = await createServerSupabaseClient();
+    const supabase = await getSupabaseServer();
     const {
       data: { user },
       error: authError,

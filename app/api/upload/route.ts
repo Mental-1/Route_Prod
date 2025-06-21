@@ -1,9 +1,9 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/utils/supabase/server";
+import { getSupabaseRouteHandler } from "@/utils/supabase/server";
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createServerSupabaseClient();
+    const supabase = await getSupabaseRouteHandler();
     const {
       data: { user },
       error: authError,
@@ -26,13 +26,13 @@ export async function POST(request: NextRequest) {
       type === "profile"
         ? ["image/jpeg", "image/png", "image/webp"]
         : [
-          "image/jpeg",
-          "image/png",
-          "image/webp",
-          "video/mp4",
-          "video/webm",
-          "video/quicktime",
-        ];
+            "image/jpeg",
+            "image/png",
+            "image/webp",
+            "video/mp4",
+            "video/webm",
+            "video/quicktime",
+          ];
 
     if (file.size > maxSize) {
       return NextResponse.json(
@@ -75,14 +75,16 @@ export async function POST(request: NextRequest) {
     const {
       data: { publicUrl },
     } = supabase.storage.from(bucket).getPublicUrl(filePath);
-  }return NextResponse.json({
-    url: publicUrl,
-    filename: filePath,
-    size: file.size,
-    type: file.type,
-    bucket: bucket,
-  });
-} catch (error) {
+
+    return NextResponse.json({
+      url: publicUrl,
+      filename: filePath,
+      size: file.size,
+      type: file.type,
+      bucket: bucket,
+      user: user.id,
+    });
+  } catch (error) {
     console.error("Upload error:", error);
     return NextResponse.json({ error: "Upload failed" }, { status: 500 });
   }

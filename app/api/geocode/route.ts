@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/utils/supabase/server";
+import { getSupabaseServer } from "@/utils/supabase/server";
 import { z } from "zod";
 
 const geocodeSchema = z.object({
@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { address } = geocodeSchema.parse(body);
 
-    const supabase = await createServerSupabaseClient();
+    const supabase = await getSupabaseServer();
 
     // First check cache
     const { data: cached } = await supabase
@@ -106,7 +106,7 @@ export async function GET(request: NextRequest) {
       lng,
     });
 
-    const supabase = await createServerSupabaseClient();
+    const supabase = await getSupabaseServer();
 
     // Check for nearby cached results
     const { data: cached } = await supabase.rpc("reverse_geocode", {

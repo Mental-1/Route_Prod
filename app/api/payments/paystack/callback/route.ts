@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/utils/supabase/server";
+import { getSupabaseServer } from "@/utils/supabase/server";
 import crypto from "crypto";
 
 export async function POST(request: NextRequest) {
@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     if (event.event === "charge.success") {
       const { reference, status, amount } = event.data;
 
-      const supabase = await createServerSupabaseClient();
+      const supabase = await getSupabaseServer();
 
       // Update transaction status
       const { error } = await supabase

@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/utils/supabase/server";
+import { getSupabaseRouteHandler } from "@/utils/supabase/server";
 
 export async function GET(request: NextRequest) {
   // Verify the request is from Vercel Cron
@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const supabase = await createServerSupabaseClient();
+    const supabase = await getSupabaseRouteHandler();
 
     // Call the database function to handle expired listings
     const { error } = await supabase.rpc("handle_expired_listings");

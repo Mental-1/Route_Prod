@@ -4,10 +4,11 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
+
 import {
   Select,
   SelectContent,
@@ -19,7 +20,6 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { ImageUpload } from "@/components/image-upload";
 import { toast } from "@/components/ui/use-toast";
 import { parse } from "zod/v4/core";
-import { Category, SubCategory } from "@/utils/supabase/db-types";
 
 const steps = [
   { id: "details", label: "Details" },
@@ -784,7 +784,13 @@ function PaymentMethodStep({
   );
 }
 
-function PreviewStep({ formData, categories }: { formData: any; categories: any[] }) {
+function PreviewStep({
+  formData,
+  categories,
+}: {
+  formData: any;
+  categories: any[];
+}) {
   const selectedTier =
     paymentTiers.find((tier) => tier.id === formData.paymentTier) ||
     paymentTiers[0];

@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/utils/supabase/server";
+import { getSupabaseServer } from "@/utils/supabase/server";
 import crypto from "crypto";
 
 export async function POST(request: NextRequest) {
@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
     const { CheckoutRequestID, ResultCode, CallbackMetadata } =
       Body.stkCallback;
 
-    const supabase = await createServerSupabaseClient();
+    const supabase = await getSupabaseServer();
 
     // Update transaction status
     const status = ResultCode === 0 ? "completed" : "failed";

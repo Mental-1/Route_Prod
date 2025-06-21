@@ -35,6 +35,7 @@ interface FormData {
   bio: string;
   phone_number: string;
   location: string;
+  reviews_count: number;
   website: string;
 }
 
@@ -78,6 +79,7 @@ export default function AccountPage() {
     bio: "",
     phone_number: "",
     location: "",
+    reviews_count: 0,
     website: "",
   });
 
@@ -102,14 +104,26 @@ export default function AccountPage() {
         .single();
 
       if (profile) {
-        setProfile(profile as UserProfile);
+        const userProfile: UserProfile = {
+          id: profile.id,
+          full_name: profile.full_name ?? "",
+          username: profile.username ?? "",
+          email: profile.email ?? "",
+          bio: profile.bio ?? "",
+          phone_number: profile.phone_number ?? "",
+          location: profile.location ?? "",
+          website: profile.website ?? "",
+          created_at: profile.created_at ?? "",
+          updated_at: profile.updated_at ?? "",
+          rating: profile.rating ?? 0,
+          reviews_count: profile.reviews_count ?? 0,
+        };
+        setProfile(userProfile);
         setFormData({
-          full_name: profile.full_name || "",
-          username: profile.username || "",
-          bio: profile.bio || "",
-          phone_number: profile.phone_number || "",
-          location: profile.location || "",
-          website: profile.website || "",
+          ...userData,
+          website: userProfile.website,
+          rating: userProfile.rating,
+          reviews_count: userProfile.reviews_count,
         });
       } else {
         // Create default profile
@@ -134,6 +148,7 @@ export default function AccountPage() {
           phone_number: "",
           location: "",
           website: "",
+          reviews_count: defaultProfile.reviews_count || 0,
         });
       }
 
@@ -250,7 +265,6 @@ export default function AccountPage() {
                     {profile?.verified ? "Verified" : "Unverified"}
                   </Badge>
                 </div>
-
                 <div className="space-y-3">
                   <div className="flex items-center text-sm">
                     <Mail className="h-4 w-4 mr-2 text-muted-foreground" />
@@ -280,7 +294,6 @@ export default function AccountPage() {
                   </div>
                 </div>
                 //TODO: Fetch actual listings count from the database.
-
                 <div className="grid grid-cols-3 gap-4 text-center pt-4 border-t">
                   <div>
                     <p className="text-2xl font-bold text-primary">23</p>

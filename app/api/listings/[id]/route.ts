@@ -1,12 +1,12 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/utils/supabase/server";
+import { getSupabaseRouteHandler } from "@/utils/supabase/server";
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } },
 ) {
   try {
-    const supabase = await createServerSupabaseClient();
+    const supabase = await getSupabaseRouteHandler();
 
     const { data: listing, error } = await supabase
       .from("listings")

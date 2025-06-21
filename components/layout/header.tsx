@@ -18,7 +18,7 @@ import { createBrowserClient } from "@/utils/supabase/supabase-browser";
 import { NotificationDropdown } from "@/components/notifications/notification-dropdown";
 import { toast } from "@/hooks/use-toast";
 import { validators } from "tailwind-merge";
-import {ThemeToggle} from "@/components/theme-toggle";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export function Header() {
   const { theme, setTheme } = useTheme();
@@ -188,7 +188,7 @@ export function Header() {
               ) : (
                 <>
                   <DropdownMenuItem asChild>
-                    <Link href="/auth">Login</Link>
+                    <Link href="/auth?tab=sign-in">Login</Link>
                   </DropdownMenuItem>
                 </>
               )}
@@ -232,7 +232,10 @@ export function Header() {
                   </>
                 ) : (
                   <>
-                    <Link href="/auth" className="text-lg font-medium">
+                    <Link
+                      href="/auth?tab=sign-in"
+                      className="text-lg font-medium"
+                    >
                       Login
                     </Link>
                   </>
