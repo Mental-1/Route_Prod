@@ -1,6 +1,11 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { getSupabaseRouteHandler } from "@/utils/supabase/server";
 
+/**
+ * Handles authenticated file uploads via POST, storing files in Supabase Storage and returning their public URLs.
+ *
+ * Validates user authentication, file presence, size, and MIME type based on the provided `type` ("profile" or other). Stores the file in the appropriate Supabase Storage bucket with a unique filename and returns a JSON response containing the public URL, file metadata, and user ID. Responds with appropriate error messages and status codes for authentication, validation, or upload failures.
+ */
 export async function POST(request: NextRequest) {
   try {
     const supabase = await getSupabaseRouteHandler();

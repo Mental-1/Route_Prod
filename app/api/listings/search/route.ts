@@ -5,6 +5,11 @@ import { generalApiLimiter, getClientIdentifier } from "@/utils/rate-limiting";
 import { createAuditLogger } from "@/utils/audit-logger";
 import { toast } from "sonner";
 
+/**
+ * Handles search requests for listings with rate limiting, input validation, audit logging, and pagination.
+ *
+ * Processes search parameters from the request, validates them, and queries the listings database using a remote procedure. Returns a structured JSON response containing paginated listings, metadata, and relevant headers for caching and rate limiting. Responds with appropriate error messages and status codes for validation failures, rate limit violations, or unexpected errors.
+ */
 export async function GET(request: NextRequest) {
   try {
     // Rate limiting

@@ -5,6 +5,14 @@ interface ListingCardSkeletonProps {
   layout?: "grid" | "list"
 }
 
+/**
+ * Renders a skeleton placeholder for a listing card in either grid or list layout.
+ *
+ * Displays a loading UI that mimics the structure of a listing card, with different arrangements for "grid" and "list" layouts.
+ *
+ * @param layout - The layout variant for the skeleton, either "grid" or "list". Defaults to "grid".
+ * @returns A React element representing the skeleton placeholder for the specified layout.
+ */
 export function ListingCardSkeleton({ layout = "grid" }: ListingCardSkeletonProps) {
   if (layout === "list") {
     return (

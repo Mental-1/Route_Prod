@@ -1,6 +1,11 @@
 import { Skeleton } from "@/components/ui/skeleton"
 import { Card, CardContent } from "@/components/ui/card"
 
+/**
+ * Renders a skeleton placeholder for the listing detail page while content is loading.
+ *
+ * Displays a static layout of skeleton elements that mimic the structure of the listing detail view, including header, image gallery, description, details, seller information, and action buttons.
+ */
 export function ListingDetailSkeleton() {
   return (
     <div className="container py-8">

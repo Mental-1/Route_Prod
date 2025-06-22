@@ -20,6 +20,11 @@ import { toast } from "@/hooks/use-toast";
 import { validators } from "tailwind-merge";
 import { ThemeToggle } from "@/components/theme-toggle";
 
+/**
+ * Renders a responsive navigation header with authentication, notification, and theme toggling features.
+ *
+ * Displays navigation links, a theme toggle button, notification dropdown, and user menu. Adapts layout for desktop and mobile screens. Shows user-specific options and notification count when authenticated, and provides login access otherwise.
+ */
 export function Header() {
   const { theme, setTheme } = useTheme();
   const pathname = usePathname();

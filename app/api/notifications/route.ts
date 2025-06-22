@@ -2,6 +2,11 @@ import { type NextRequest, NextResponse } from "next/server";
 import { getSupabaseServer } from "@/utils/supabase/server";
 import { notificationSchema } from "@/lib/validations";
 
+/**
+ * Handles GET requests to retrieve paginated notifications for the authenticated user.
+ *
+ * Supports optional filtering by notification type and unread status. Returns a JSON response containing the notifications and pagination metadata. Responds with 401 if the user is not authenticated.
+ */
 export async function GET(request: NextRequest) {
   try {
     const supabase = await getSupabaseServer();
@@ -62,6 +67,11 @@ export async function GET(request: NextRequest) {
   }
 }
 
+/**
+ * Handles POST requests to create a new notification for the authenticated user.
+ *
+ * Validates the request body, invokes a Supabase remote procedure to create the notification, and returns the notification ID on success. Returns appropriate error responses for authentication failure, validation errors, or server issues.
+ */
 export async function POST(request: NextRequest) {
   try {
     const supabase = await getSupabaseServer();

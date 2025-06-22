@@ -9,6 +9,11 @@ import { createBrowserClient } from "@/utils/supabase/supabase-browser"
 import Link from "next/link"
 import { Check, Clock, DollarSign, Eye, Plus, Star } from "lucide-react"
 
+/**
+ * Renders the user dashboard page, displaying authenticated user information, profile statistics, recent activity, and quick navigation actions.
+ *
+ * Redirects unauthenticated users to the sign-in page. Fetches and displays user profile data, mock statistics, and recent activities. Provides navigation to account management, listings, transactions, messages, and settings.
+ */
 export default function DashboardPage() {
   const router = useRouter()
   const supabase = createBrowserClient()

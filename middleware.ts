@@ -1,6 +1,11 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+/**
+ * Middleware for authenticating and protecting routes using Supabase in a Next.js application.
+ *
+ * Assigns a unique request ID to each request, synchronizes cookies between request and response, and enforces authentication for specified protected routes. Redirects unauthenticated users to the sign-up page and redirects authenticated users away from authentication pages to the dashboard.
+ */
 export async function middleware(request: NextRequest) {
   const requestId = crypto.randomUUID();
   request.headers.set("x-request-id", requestId);

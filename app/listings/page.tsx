@@ -82,6 +82,11 @@ const subcategories = [
   { id: 6, name: "Cameras", categoryId: 4 },
 ];
 
+/**
+ * Renders the listings page with filtering, sorting, view toggling, and infinite scrolling.
+ *
+ * Displays a list of items for sale, allowing users to filter by category, price, condition, and distance, sort results, and switch between grid and list views. Supports infinite scroll to load more listings and includes a back-to-top button for improved navigation.
+ */
 export default function ListingsPage() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [priceRange, setPriceRange] = useState([0, 5000]);

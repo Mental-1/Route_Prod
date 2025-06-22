@@ -66,6 +66,11 @@ interface AuthUser {
   created_at: string;
 }
 
+/**
+ * Renders the user account page, allowing authenticated users to view and update their profile, manage account security, and review verification status.
+ *
+ * Redirects unauthenticated users to the sign-in page. Displays profile information, editable personal details, and account security options. Handles profile data fetching and updates using Supabase.
+ */
 export default function AccountPage() {
   const router = useRouter();
   const supabase = createBrowserClient();

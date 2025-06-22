@@ -1,6 +1,11 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
+/**
+ * Renders a grid of skeleton cards as a placeholder for loading category data.
+ *
+ * Displays 23 placeholder cards arranged responsively in 4 or 8 columns, each containing two skeleton elements to indicate loading state.
+ */
 export function CategoriesSkeleton() {
   // Show 8 skeletons for loading state
   return (

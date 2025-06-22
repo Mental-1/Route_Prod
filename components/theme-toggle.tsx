@@ -9,6 +9,13 @@ type ThemeToggleProps = {
   className?: string
 };
 
+/**
+ * Renders a dropdown menu for switching between light, dark, and system themes.
+ *
+ * Displays a button with animated sun and moon icons to indicate the current theme. Selecting an option from the dropdown updates the application's theme accordingly.
+ *
+ * @param className - Optional CSS class for customizing the button's appearance
+ */
 export function ThemeToggle( { className }: ThemeToggleProps) {
   const { setTheme } = useTheme()
 

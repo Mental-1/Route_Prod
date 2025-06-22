@@ -14,6 +14,13 @@ interface RateLimitStore {
 
 const store: RateLimitStore = {};
 
+/**
+ * Creates a rate limiter with the specified configuration.
+ *
+ * Returns an object with a `check` method that enforces rate limiting for a given identifier. The `check` method tracks request counts within a time window and determines if further requests are allowed.
+ *
+ * @returns An object with a `check` method that returns whether the request is allowed, how many requests remain, and the reset time for the identifier.
+ */
 export function createRateLimiter(config: RateLimitConfig) {
   return {
     check: (

@@ -2,6 +2,11 @@ import { type NextRequest, NextResponse } from "next/server";
 import { getSupabaseServer } from "@/utils/supabase/server";
 import { paystackPaymentSchema } from "@/lib/validations";
 
+/**
+ * Handles PayStack payment initialization and records the transaction.
+ *
+ * Parses and validates the incoming payment request, authenticates the user, initializes a PayStack transaction, and saves the transaction details to the database. Returns a JSON response with the PayStack authorization URL and transaction information, or an error message if any step fails.
+ */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();

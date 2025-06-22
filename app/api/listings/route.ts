@@ -2,6 +2,13 @@ import { NextResponse } from "next/server";
 import { getSupabaseRouteHandler } from "@/utils/supabase/server";
 import { title } from "node:process";
 
+/**
+ * Handles GET requests to retrieve listing data.
+ *
+ * If an `id` query parameter is provided, returns a single listing by ID or a 404 error if not found. Without an `id`, returns a paginated list of listings with total count and pagination metadata. Each listing includes additional mocked fields for distance, rating, and reviews.
+ *
+ * @returns A JSON response containing either a single formatted listing or a paginated list of listings with metadata.
+ */
 export async function GET(request: Request) {
   const supabase = await getSupabaseRouteHandler();
   const { searchParams } = new URL(request.url);
@@ -87,6 +94,11 @@ export async function GET(request: Request) {
     );
   }
 }
+/**
+ * Handles creation of a new listing.
+ *
+ * Authenticates the user, parses and sanitizes the request body, and inserts a new listing into the database. Returns the created listing data on success, or an error response if authentication fails or an internal error occurs.
+ */
 export async function POST(request: Request) {
   const supabase = await getSupabaseRouteHandler();
   const {
@@ -144,6 +156,11 @@ export async function POST(request: Request) {
   }
 }
 
+/**
+ * Handles updating an existing listing after verifying user authentication and ownership.
+ *
+ * Expects a JSON body containing the listing `id` and fields to update. Returns appropriate error responses for missing ID, unauthorized access, forbidden ownership, not found, or server errors. On success, returns the updated listing data.
+ */
 export async function PUT(request: Request) {
   const supabase = await getSupabaseRouteHandler();
 
@@ -219,6 +236,11 @@ export async function PUT(request: Request) {
   }
 }
 
+/**
+ * Deletes a listing by ID after verifying user authentication and ownership.
+ *
+ * Requires the authenticated user to own the listing. Returns appropriate error responses for missing ID, unauthorized access, forbidden action, not found, or server errors. On success, returns a confirmation message with the deleted listing ID.
+ */
 export async function DELETE(request: Request) {
   const supabase = await getSupabaseRouteHandler();
   const { searchParams } = new URL(request.url);
