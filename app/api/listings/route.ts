@@ -12,7 +12,6 @@ export async function GET(request: Request) {
 
   try {
     if (id) {
-      // Fetch a single listing by ID
       const { data, error } = await supabase
         .from("listings")
         .select("*")
@@ -235,8 +234,7 @@ export async function DELETE(request: Request) {
   }
 
   try {
-    const id = searchParams.get("id"); // Get ID from query parameters
-
+    const id = searchParams.get("id");
     if (!id) {
       return NextResponse.json(
         { message: "Listing ID is required for deletion." },

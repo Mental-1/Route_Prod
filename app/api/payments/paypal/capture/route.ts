@@ -1,11 +1,11 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/utils/supabase/server";
+import { getSupabaseRouteHandler } from "@/utils/supabase/server";
 
 export async function POST(request: NextRequest) {
   try {
     const { orderId } = await request.json();
 
-    const supabase = await createServerSupabaseClient();
+    const supabase = await getSupabaseRouteHandler();
     const {
       data: { user },
       error: authError,
@@ -15,7 +15,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Get PayPal access token
     const authResponse = await fetch(
       `${process.env.PAYPAL_BASE_URL}/v1/oauth2/token`,
       {
@@ -30,7 +29,6 @@ export async function POST(request: NextRequest) {
 
     const authData = await authResponse.json();
 
-    // Capture PayPal order
     const captureResponse = await fetch(
       `${process.env.PAYPAL_BASE_URL}/v2/checkout/orders/${orderId}/capture`,
       {
@@ -45,7 +43,6 @@ export async function POST(request: NextRequest) {
     const captureData = await captureResponse.json();
 
     if (captureData.status === "COMPLETED") {
-      // Update transaction status
       const { error } = await supabase
         .from("transactions")
         .update({
@@ -58,7 +55,6 @@ export async function POST(request: NextRequest) {
         console.error("Failed to update transaction:", error);
       }
 
-      // Send notification to user
       const { data: transaction } = await supabase
         .from("transactions")
         .select("user_id, amount")

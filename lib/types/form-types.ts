@@ -90,14 +90,14 @@ export interface Session {
 }
 
 export const sessionOptions: SessionOptions = {
-  password: process.env.IRON_SESSION_PASSWORD!,
+  password:
+    process.env.IRON_SESSION_PASSWORD ||
+    (() => {
+      throw new Error("IRON_SESSION_PASSWORD environment variable is required");
+    })(),
   cookieName: "iron-session",
   cookieOptions: {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
   },
-};
-
-export const defaultSession: SessionData = {
-  isLoggedIn: false,
 };

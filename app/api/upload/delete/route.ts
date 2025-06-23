@@ -1,10 +1,10 @@
 import { del } from "@vercel/blob";
 import { type NextRequest, NextResponse } from "next/server";
-import { getSupabaseServer } from "@/utils/supabase/server";
+import { getSupabaseRouteHandler } from "@/utils/supabase/server";
 
 export async function DELETE(request: NextRequest) {
   try {
-    const supabase = await getSupabaseServer();
+    const supabase = await getSupabaseRouteHandler();
     const {
       data: { user },
       error: authError,
@@ -20,7 +20,6 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "No URL provided" }, { status: 400 });
     }
 
-    // Verify the user owns this file by checking the path
     if (!url.includes(`/${user.id}/`)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }

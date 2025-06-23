@@ -111,7 +111,7 @@ export default function ListingsPage() {
     //TODO: Simulate API call - replace with actual API to fetch listings
 
     setTimeout(() => {
-      const newListings = [...initialListings]; // Add more listings here
+      const newListings = [...initialListings];
       if (listings.length + newListings.length >= 24) {
         // Limit for demo
         setHasMore(false);
@@ -275,8 +275,9 @@ export default function ListingsPage() {
                 <h3 className="font-medium mb-2">Price Range</h3>
                 <div className="space-y-4">
                   <Slider
-                    defaultValue={[100]}
-                    step={100}
+                    defaultValue={[0, 1000000]}
+                    step={10000}
+                    max={1000000}
                     value={priceRange}
                     onValueChange={setPriceRange}
                   />

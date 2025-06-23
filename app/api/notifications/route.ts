@@ -1,10 +1,10 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { getSupabaseServer } from "@/utils/supabase/server";
+import { getSupabaseRouteHandler } from "@/utils/supabase/server";
 import { notificationSchema } from "@/lib/validations";
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await getSupabaseServer();
+    const supabase = await getSupabaseRouteHandler();
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await getSupabaseServer();
+    const supabase = await getSupabaseRouteHandler();
     const {
       data: { user },
     } = await supabase.auth.getUser();

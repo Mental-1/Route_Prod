@@ -11,7 +11,11 @@ import React, {
 import { getSupabaseClient } from "@/utils/supabase/client";
 import { Toast as toast } from "@/components/ui/toast";
 import { useRouter } from "next/router";
-import { MediaDetailsSchema, PlanDetailsSchema,AdDetailsSchema } from "../validate-details";
+import {
+  MediaDetailsSchema,
+  PlanDetailsSchema,
+  AdDetailsSchema,
+} from "@/lib/validations";
 
 // --- Types ---
 interface AdDetails {
@@ -253,29 +257,42 @@ export const AdPostingProvider = ({ children }: { children: ReactNode }) => {
       if (error) throw error;
 
       if (data) {
-        const parsedAdDetails = AdDetailsSchema.nullable().safeParse(data.ad_details);
-          const parsedMedia = MediaDetailsSchema.safeParse(data.media_details);
-          const parsedSelectedPlan = PlanDetailsSchema.safeParse(data.selected_plan);
+        const parsedAdDetails = AdDetailsSchema.nullable().safeParse(
+          data.ad_details,
+        );
+        const parsedMedia = MediaDetailsSchema.safeParse(data.media_details);
+        const parsedSelectedPlan = PlanDetailsSchema.safeParse(
+          data.selected_plan,
+        );
 
-          if (!parsedAdDetails.success || !parsedMedia.success || !parsedSelectedPlan.success) {
-            // Handle validation errors, e.g., log them, show a toast, or throw
-            console.error("Validation error loading draft:", parsedAdDetails.error || parsedMedia.error || parsedSelectedPlan.error);
-            dispatch({ type: "SET_ERROR", payload: "Invalid draft data found." });
-            router.push("/post-ad");
-            return;
-          }
+        if (
+          !parsedAdDetails.success ||
+          !parsedMedia.success ||
+          !parsedSelectedPlan.success
+        ) {
+          // Handle validation errors, e.g., log them, show a toast, or throw
+          console.error(
+            "Validation error loading draft:",
+            parsedAdDetails.error ||
+              parsedMedia.error ||
+              parsedSelectedPlan.error,
+          );
+          dispatch({ type: "SET_ERROR", payload: "Invalid draft data found." });
+          router.push("/post-ad");
+          return;
+        }
 
-          dispatch({
-            type: "SET_STATE",
-            payload: {
-              adDetails: parsedAdDetails.data, // This is now guaranteed to be AdDetails | null
-              media: parsedMedia.data,
-              selectedPlan: parsedSelectedPlan.data,
-              profile_id: data.profile_id,
-              payment_status: data.payment_status,
-              draftId: data.id,
-            },
-          });
+        dispatch({
+          type: "SET_STATE",
+          payload: {
+            adDetails: parsedAdDetails.data, // This is now guaranteed to be AdDetails | null
+            media: parsedMedia.data,
+            selectedPlan: parsedSelectedPlan.data,
+            profile_id: data.profile_id,
+            payment_status: data.payment_status,
+            draftId: data.id,
+          },
+        });
       }
     } catch (error: any) {
       dispatch({ type: "SET_ERROR", payload: "Error loading ad draft" });

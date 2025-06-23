@@ -27,7 +27,7 @@ import { Bell, Shield, Globe, Download, Trash2 } from "lucide-react";
 
 export default function SettingsPage() {
   const router = useRouter();
-  const supabase = useMemo(() => createBrowserClient(),[]);
+  const supabase = useMemo(() => createBrowserClient(), []);
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [settings, setSettings] = useState({
@@ -491,29 +491,6 @@ export default function SettingsPage() {
                     </SelectContent>
                   </Select>
                 </div>
-
-                {/* <div className="space-y-2">
-                  <Label htmlFor="theme">Theme</Label>
-                  <Select
-                    value={settings.preferences.theme}
-                    onValueChange={(value) =>
-                      setSettings((prev) => ({
-                        ...prev,
-                        preferences: { ...prev.preferences, theme: value },
-                      }))
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="light">Light</SelectItem>
-                      <SelectItem value="dark">Dark</SelectItem>
-                      <SelectItem value="system">System</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              */}
               </div>
             </CardContent>
           </Card>

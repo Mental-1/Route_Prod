@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { getSupabaseServer } from "@/utils/supabase/server";
+import { getSupabaseRouteHandler } from "@/utils/supabase/server";
 import { paystackPaymentSchema } from "@/lib/validations";
 
 export async function POST(request: NextRequest) {
@@ -7,7 +7,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const validatedData = paystackPaymentSchema.parse(body);
 
-    const supabase = await getSupabaseServer();
+    const supabase = await getSupabaseRouteHandler();
     const {
       data: { user },
       error: authError,
@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
         },
         body: JSON.stringify({
           email: validatedData.email,
-          amount: validatedData.amount * 100, // Convert to kobo
+          amount: validatedData.amount * 100,
           currency: "NGN",
           reference: `routeme_${user.id}_${Date.now()}`,
           callback_url: `${process.env.NEXT_PUBLIC_APP_URL}/api/payments/paystack/callback`,

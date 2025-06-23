@@ -2,7 +2,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export function CategoriesSkeleton() {
-  // Show 8 skeletons for loading state
   return (
     <div className="grid grid-cols-4 md:grid-cols-8 gap-3">
       {Array.from({ length: 23 }).map((_, i) => (

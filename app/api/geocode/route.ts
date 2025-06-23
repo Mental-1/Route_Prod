@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { getSupabaseServer } from "@/utils/supabase/server";
+import { getSupabaseRouteHandler } from "@/utils/supabase/server";
 import { z } from "zod";
 
 const geocodeSchema = z.object({
@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { address } = geocodeSchema.parse(body);
 
-    const supabase = await getSupabaseServer();
+    const supabase = await getSupabaseRouteHandler();
 
     // First check cache
     const { data: cached } = await supabase
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Use external geocoding service (Google Maps, Mapbox, etc.)
+    // Use external geocoding service
     const geocodeUrl = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(address)}.json?access_token=${process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN}&limit=1`;
 
     const response = await fetch(geocodeUrl);
@@ -106,7 +106,7 @@ export async function GET(request: NextRequest) {
       lng,
     });
 
-    const supabase = await getSupabaseServer();
+    const supabase = await getSupabaseRouteHandler();
 
     // Check for nearby cached results
     const { data: cached } = await supabase.rpc("reverse_geocode", {

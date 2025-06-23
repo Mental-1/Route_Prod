@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { getSupabaseServer } from "@/utils/supabase/server";
-import crypto from "crypto";
+import { getSupabaseRouteHandler } from "@/utils/supabase/server";
+import crypto from "node:crypto";
 
 export async function POST(request: NextRequest) {
   try {
@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
     const { CheckoutRequestID, ResultCode, CallbackMetadata } =
       Body.stkCallback;
 
-    const supabase = await getSupabaseServer();
+    const supabase = await getSupabaseRouteHandler();
 
     // Update transaction status
     const status = ResultCode === 0 ? "completed" : "failed";
@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
         .eq("checkout_request_id", CheckoutRequestID)
         .single();
 
-      if (transaction && transaction.user_id) {
+      if (transaction?.user_id) {
         await supabase.from("notifications").insert({
           user_id: transaction.user_id,
           title: "Payment Successful",

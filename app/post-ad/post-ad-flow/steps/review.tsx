@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/router";
+import { useRouter } from "next/navigation";
 import { useAdPosting } from "@/app/post-ad/post-ad-flow/components/ad-posting-provider";
 import { Button } from "@/components/ui/button";
 import {

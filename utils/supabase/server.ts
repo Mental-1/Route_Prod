@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import type { Database } from "@/utils/supabase/database.types";
+import { serializeCookieHeader } from "@supabase/ssr";
 
 // For server components (read-only)
 export async function getSupabaseServer() {
@@ -79,9 +80,7 @@ export function getSupabaseMiddleware(request: Request) {
           cookiesToSet.forEach(({ name, value, options }) => {
             response.headers.append(
               "Set-Cookie",
-              `${name}=${value}; ${Object.entries(options || {})
-                .map(([k, v]) => `${k}=${v}`)
-                .join("; ")}`,
+              serializeCookieHeader(name, value, options),
             );
           });
         },

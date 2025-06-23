@@ -90,7 +90,24 @@ export default function UserListingsPage() {
           variant: "destructive",
         });
       } else {
-        setListings(listings || []);
+        setListings(
+          (listings || []).map((l) => ({
+            id: l.id,
+            title: l.title,
+            description: l.description,
+            price: l.price ?? 0,
+            location: l.location ?? "",
+            condition: l.condition ?? "",
+            status: l.status ?? "",
+            featured: l.featured ?? false,
+            featured_until: l.featured_until ?? undefined,
+            images: l.images ?? [],
+            views: l.views ?? 0,
+            created_at: l.created_at ?? "",
+            updated_at: l.updated_at ?? "",
+            category: l.category ?? { name: "" },
+          })),
+        );
       }
     } catch (error) {
       console.error("Error:", error);

@@ -1,8 +1,8 @@
 import { NextRequest } from "next/server";
 
 type RateLimitConfig = {
-  windowMs: number; // Time window in milliseconds
-  maxRequests: number; // Max requests per window
+  windowMs: number;
+  maxRequests: number;
 };
 
 interface RateLimitStore {

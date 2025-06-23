@@ -37,7 +37,8 @@ const nextConfig = {
           },
           {
             key: "Access-Control-Allow-Origin",
-            value: "https://routteme.com",
+            value:
+              process.env.NEXT_PUBLIC_CORS_ORIGIN || "https://routteme.com",
           },
           {
             key: "Access-Control-Allow-Methods",
@@ -51,6 +52,10 @@ const nextConfig = {
             key: "Content-Security-Policy",
             value:
               "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://api.routteme.com; frame-src 'self' https://www.youtube.com https://player.vimeo.com;",
+          },
+          {
+            key: "Permissions-Policy",
+            value: "camera=(), microphone=(), geolocation=(), payment=()",
           },
         ],
       },

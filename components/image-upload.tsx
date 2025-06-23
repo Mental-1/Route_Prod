@@ -12,7 +12,7 @@ import { useFileUpload } from "@/hooks/useFileUpload";
 interface ImageUploadProps {
   maxImages: number;
   maxVideos: number;
-  onChange: (urls: string[]) => void;
+  onChangeAction: (urls: string[]) => void;
   value: string[];
   className?: string;
   uploadType: "listing" | "profile";
@@ -21,7 +21,7 @@ interface ImageUploadProps {
 export function ImageUpload({
   maxImages = 10,
   maxVideos = 2,
-  onChange,
+  onChangeAction,
   value = [],
   className,
   uploadType = "listing",
@@ -96,13 +96,13 @@ export function ImageUpload({
 
     const uploadResults = await uploadFiles(validFiles);
     const newUrls = uploadResults.map((result) => result.url);
-    onChange([...value, ...newUrls]);
+    onChangeAction([...value, ...newUrls]);
   };
 
   const removeFile = async (url: string) => {
     const success = await deleteFile(url);
     if (success) {
-      onChange(value.filter((u) => u !== url));
+      onChangeAction([...value.filter((u) => u !== url)]);
     }
   };
 
@@ -213,11 +213,10 @@ export function ImageUpload({
             size="sm"
             onClick={async (e) => {
               e.stopPropagation();
-              // Delete all files
               for (const url of value) {
                 await deleteFile(url);
               }
-              onChange([]);
+              onChangeAction([]);
             }}
             disabled={uploading}
           >

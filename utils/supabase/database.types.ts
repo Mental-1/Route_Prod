@@ -821,6 +821,22 @@ export type Database = {
         Args: { notification_id: string }
         Returns: boolean
       }
+      reverse_geocode: {
+        Args: { lat: number; lng: number }
+        Returns: {
+          address: string
+          city: string | null
+          country: string | null
+          created_at: string | null
+          formatted_address: string | null
+          geometry: unknown | null
+          id: string
+          latitude: number
+          longitude: number
+          postal_code: string | null
+          state: string | null
+        }[]
+      }
       search_listings: {
         Args:
           | {

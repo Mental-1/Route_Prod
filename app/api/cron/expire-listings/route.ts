@@ -11,7 +11,6 @@ export async function GET(request: NextRequest) {
   try {
     const supabase = await getSupabaseRouteHandler();
 
-    // Call the database function to handle expired listings
     const { error } = await supabase.rpc("handle_expired_listings");
 
     if (error) {
