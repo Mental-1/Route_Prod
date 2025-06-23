@@ -110,7 +110,7 @@ export async function POST(request: Request) {
       location: body.location || "Unknown Location",
       category: body.category || "Other",
       status: String(body.status) || "Active",
-      images: String(body.images) || [],
+      images: Array.isArray(body.images) ? body.images : [],
       tags: body.tags || [],
       contact_info: body.contact_info || "No contact information provided",
       updated_at: new Date().toISOString(),
