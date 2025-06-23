@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
-import { createServerSupabaseClient } from "@/utils/supabase/server";
+import { getSupabaseServer } from "@/utils/supabase/server";
 import {
   AdDetailsFormData,
   ActionResponse,
@@ -43,7 +43,7 @@ type CreateListingInput = z.infer<typeof createListingSchema>;
 
 // Get user context with enhanced error handling
 async function getUserContext() {
-  const supabase = await createServerSupabaseClient();
+  const supabase = await getSupabaseServer();
   const {
     data: { user },
     error,
@@ -65,7 +65,7 @@ async function getUserContext() {
 
 // Check user permissions and limits
 async function checkUserLimits(userId: string) {
-  const supabase = await createServerSupabaseClient();
+  const supabase = await getSupabaseServer();
 
   // Get user's current subscription/plan
   const { data: subscription } = await supabase
@@ -102,7 +102,7 @@ async function checkUserLimits(userId: string) {
 
 // Validate category and subcategory
 async function validateCategories(categoryId: number, subcategoryId?: number) {
-  const supabase = await createServerSupabaseClient();
+  const supabase = await getSupabaseServer();
 
   // Validate category
   const { data: category, error: categoryError } = await supabase
@@ -341,7 +341,7 @@ export async function updateListingAction(
     }
 
     const { user } = await getUserContext();
-    const supabase = await createServerSupabaseClient();
+    const supabase = await getSupabaseServer();
 
     // Verify ownership
     const { data: existingListing, error: fetchError } = await supabase
@@ -434,7 +434,7 @@ export async function deleteListingAction(
 ): Promise<ActionResponse> {
   try {
     const { user, profile } = await getUserContext();
-    const supabase = await createServerSupabaseClient();
+    const supabase = await getSupabaseServer();
 
     // Verify ownership
     const { data: existingListing, error: fetchError } = await supabase
@@ -505,7 +505,7 @@ export async function markAsSoldAction(
 ): Promise<ActionResponse> {
   try {
     const { user } = await getUserContext();
-    const supabase = await createServerSupabaseClient();
+    const supabase = await getSupabaseServer();
 
     // Update listing status
     const { error } = await supabase
