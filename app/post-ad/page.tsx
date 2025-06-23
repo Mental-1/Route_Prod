@@ -92,7 +92,7 @@ export default function PostAdPage() {
     condition: "new",
     location: "",
     mediaUrls: [] as string[],
-    paymentTier: "Free",
+    paymentTier: "free",
     paymentMethod: "",
     phoneNumber: "",
     email: "",
