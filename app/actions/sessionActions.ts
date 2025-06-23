@@ -5,16 +5,20 @@ import {
 } from "@/lib/types/form-types";
 import { getIronSession } from "iron-session";
 import { cookies } from "next/headers";
-import { createServerSupabaseClient } from "@/utils/supabase/server";
+import { getSupabaseServer } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 import { signInSchema, signUpSchema, validateForm } from "@/lib/validations";
 import { revalidatePath } from "next/cache";
 import bcrypt from "bcryptjs";
 import { SignJWT, jwtVerify } from "jose";
+import { get } from "react-hook-form";
 
 // Security constants
 const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || "your-secret-key-change-this"
+  process.env.JWT_SECRET ||
+    (() => {
+      throw new Error("JWT_SECRET environment variable is required");
+    })(),
 );
 const BCRYPT_ROUNDS = 12;
 const MAX_LOGIN_ATTEMPTS = 5;
@@ -73,30 +77,39 @@ const sanitizeError = (error: any): string => {
   };
 
   const errorMessage = error?.message || "An error occurred";
-  return secureErrors[errorMessage] || "Authentication failed. Please try again.";
+  return (
+    secureErrors[errorMessage] || "Authentication failed. Please try again."
+  );
 };
 
-const logSecurityEvent = (event: string, details: any, level: "info" | "warn" | "error" = "info") => {
+const logSecurityEvent = (
+  event: string,
+  details: any,
+  level: "info" | "warn" | "error" = "info",
+) => {
   const timestamp = new Date().toISOString();
   const logData = {
     timestamp,
     event,
     level,
-    // Remove sensitive data from logs
     details: {
       ...details,
       password: details.password ? "[REDACTED]" : undefined,
-      email: details.email ? details.email.replace(/(.{2}).*(@.*)/, "$1***$2") : undefined,
+      email: details.email
+        ? details.email.replace(/(.{2}).*(@.*)/, "$1***$2")
+        : undefined,
     },
   };
-  
+
   console.log(`[AUTH-${level.toUpperCase()}]`, JSON.stringify(logData));
 };
 
 // Rate limiting utilities
 const loginAttempts = new Map<string, LoginAttempt>();
 
-const checkRateLimit = (identifier: string): { allowed: boolean; remainingAttempts?: number } => {
+const checkRateLimit = (
+  identifier: string,
+): { allowed: boolean; remainingAttempts?: number } => {
   const attempts = loginAttempts.get(identifier);
   const now = Date.now();
 
@@ -122,14 +135,17 @@ const checkRateLimit = (identifier: string): { allowed: boolean; remainingAttemp
   }
 
   const remainingAttempts = MAX_LOGIN_ATTEMPTS - attempts.count;
-  return { 
-    allowed: attempts.count < MAX_LOGIN_ATTEMPTS, 
-    remainingAttempts: Math.max(0, remainingAttempts)
+  return {
+    allowed: attempts.count < MAX_LOGIN_ATTEMPTS,
+    remainingAttempts: Math.max(0, remainingAttempts),
   };
 };
 
 const recordFailedAttempt = (identifier: string) => {
-  const attempts = loginAttempts.get(identifier) || { count: 0, lastAttempt: 0 };
+  const attempts = loginAttempts.get(identifier) || {
+    count: 0,
+    lastAttempt: 0,
+  };
   attempts.count += 1;
   attempts.lastAttempt = Date.now();
 
@@ -148,15 +164,18 @@ const clearFailedAttempts = (identifier: string) => {
 // Session management
 export const getSession = async () => {
   "use server";
-  
+
   try {
     const cookieStore = await cookies();
-    const session = await getIronSession<SessionData>(cookieStore, sessionOptions);
-    
+    const session = await getIronSession<SessionData>(
+      cookieStore,
+      sessionOptions,
+    );
+
     if (!session.isLoggedIn) {
       Object.assign(session, defaultSession);
     }
-    
+
     return session;
   } catch (error) {
     logSecurityEvent("SESSION_ERROR", { error: error.message }, "error");
@@ -176,7 +195,11 @@ export const SignIn = async (formData: FormData) => {
   // Validate input
   const validation = validateForm(signInSchema, rawData);
   if (!validation.success) {
-    logSecurityEvent("SIGNIN_VALIDATION_FAILED", { errors: validation.errors }, "warn");
+    logSecurityEvent(
+      "SIGNIN_VALIDATION_FAILED",
+      { errors: validation.errors },
+      "warn",
+    );
     return { success: false, errors: validation.errors };
   }
 
@@ -186,14 +209,16 @@ export const SignIn = async (formData: FormData) => {
   const rateLimit = checkRateLimit(email);
   if (!rateLimit.allowed) {
     logSecurityEvent("SIGNIN_RATE_LIMITED", { email }, "warn");
-    return { 
-      success: false, 
-      errors: { email: "Too many failed attempts. Account temporarily locked." }
+    return {
+      success: false,
+      errors: {
+        email: "Too many failed attempts. Account temporarily locked.",
+      },
     };
   }
 
   try {
-    const supabase = await createServerSupabaseClient();
+    const supabase = await getSupabaseServer();
 
     // Sign in with Supabase
     const { data, error } = await supabase.auth.signInWithPassword({
@@ -204,16 +229,20 @@ export const SignIn = async (formData: FormData) => {
     if (error) {
       recordFailedAttempt(email);
       const sanitizedError = sanitizeError(error);
-      
-      logSecurityEvent("SIGNIN_FAILED", { 
-        email, 
-        error: error.message,
-        remainingAttempts: rateLimit.remainingAttempts! - 1
-      }, "warn");
-      
-      return { 
-        success: false, 
-        errors: { email: sanitizedError }
+
+      logSecurityEvent(
+        "SIGNIN_FAILED",
+        {
+          email,
+          error: error.message,
+          remainingAttempts: rateLimit.remainingAttempts! - 1,
+        },
+        "warn",
+      );
+
+      return {
+        success: false,
+        errors: { email: sanitizedError },
       };
     }
 
@@ -233,31 +262,34 @@ export const SignIn = async (formData: FormData) => {
 
     // Create iron session
     const cookieStore = await cookies();
-    const session = await getIronSession<SessionData>(cookieStore, sessionOptions);
-    
+    const session = await getIronSession<SessionData>(
+      cookieStore,
+      sessionOptions,
+    );
+
     Object.assign(session, {
       isLoggedIn: true,
       user_id: data.user!.id,
       id: data.session!.access_token,
-      expires_at: Math.floor(Date.now() / 1000) + (24 * 60 * 60),
+      expires_at: Math.floor(Date.now() / 1000) + 24 * 60 * 60,
       created_at: new Date().toISOString(),
       isPaid: false,
       isVerified: !!data.user!.email_confirmed_at,
       customToken, // Store our custom JWT
     });
-    
+
     await session.save();
 
     logSecurityEvent("SIGNIN_SUCCESS", { userId: data.user!.id }, "info");
-    
+
     return { success: true, user: data.user };
   } catch (error: any) {
     recordFailedAttempt(email);
     logSecurityEvent("SIGNIN_ERROR", { email, error: error.message }, "error");
-    
-    return { 
-      success: false, 
-      errors: { email: "Authentication failed. Please try again." }
+
+    return {
+      success: false,
+      errors: { email: "Authentication failed. Please try again." },
     };
   }
 };
@@ -280,14 +312,26 @@ export const SignUp = async (formData: FormData) => {
   // Validate input
   const validation = validateForm(signUpSchema, rawData);
   if (!validation.success) {
-    logSecurityEvent("SIGNUP_VALIDATION_FAILED", { errors: validation.errors }, "warn");
+    logSecurityEvent(
+      "SIGNUP_VALIDATION_FAILED",
+      { errors: validation.errors },
+      "warn",
+    );
     return { success: false, errors: validation.errors };
   }
 
-  const { email, password, fullName, username, phoneNumber, birthDate, nationality } = validation.data;
+  const {
+    email,
+    password,
+    fullName,
+    username,
+    phoneNumber,
+    birthDate,
+    nationality,
+  } = validation.data;
 
   try {
-    const supabase = await createServerSupabaseClient();
+    const supabase = await getSupabaseServer();
 
     // Check if username already exists
     const { data: existingUser } = await supabase
@@ -315,8 +359,8 @@ export const SignUp = async (formData: FormData) => {
         data: {
           full_name: fullName,
           username: username,
-          phone_number: phoneNumber, // Store original for profile
-          phone_number_hash: encryptedPhone, // Store encrypted for security
+          phone_number: phoneNumber,
+          phone_number_hash: encryptedPhone,
           birth_date: birthDate,
           nationality: nationality,
         },
@@ -325,36 +369,49 @@ export const SignUp = async (formData: FormData) => {
 
     if (error) {
       const sanitizedError = sanitizeError(error);
-      logSecurityEvent("SIGNUP_FAILED", { 
-        email, 
-        username, 
-        error: error.message 
-      }, "warn");
-      
-      return { 
-        success: false, 
-        errors: { email: sanitizedError }
+      logSecurityEvent(
+        "SIGNUP_FAILED",
+        {
+          email,
+          username,
+          error: error.message,
+        },
+        "warn",
+      );
+
+      return {
+        success: false,
+        errors: { email: sanitizedError },
       };
     }
 
-    logSecurityEvent("SIGNUP_SUCCESS", { 
-      userId: data.user?.id,
-      email,
-      username 
-    }, "info");
+    logSecurityEvent(
+      "SIGNUP_SUCCESS",
+      {
+        userId: data.user?.id,
+        email,
+        username,
+      },
+      "info",
+    );
 
     return {
       success: true,
       user: data.user,
-      message: "Account created successfully! Please check your email to verify your account.",
+      message:
+        "Account created successfully! Please check your email to verify your account.",
     };
   } catch (error: any) {
-    logSecurityEvent("SIGNUP_ERROR", { 
-      email, 
-      username, 
-      error: error.message 
-    }, "error");
-    
+    logSecurityEvent(
+      "SIGNUP_ERROR",
+      {
+        email,
+        username,
+        error: error.message,
+      },
+      "error",
+    );
+
     return {
       success: false,
       errors: { email: "Registration failed. Please try again." },
@@ -367,35 +424,39 @@ export const SignInWithGoogle = async () => {
   "use server";
 
   try {
-    const supabase = await createServerSupabaseClient();
-    
+    const supabase = await getSupabaseServer();
+
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/auth/callback`,
+        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/auth/callback`,
         queryParams: {
-          access_type: 'offline',
-          prompt: 'consent',
+          access_type: "offline",
+          prompt: "consent",
         },
       },
     });
 
     if (error) {
-      logSecurityEvent("GOOGLE_SIGNIN_FAILED", { error: error.message }, "warn");
-      return { 
-        success: false, 
-        error: "Google sign-in failed. Please try again." 
+      logSecurityEvent(
+        "GOOGLE_SIGNIN_FAILED",
+        { error: error.message },
+        "warn",
+      );
+      return {
+        success: false,
+        error: "Google sign-in failed. Please try again.",
       };
     }
 
     logSecurityEvent("GOOGLE_SIGNIN_INITIATED", {}, "info");
-    
+
     return { success: true, data };
   } catch (error: any) {
     logSecurityEvent("GOOGLE_SIGNIN_ERROR", { error: error.message }, "error");
-    return { 
-      success: false, 
-      error: "Authentication service unavailable." 
+    return {
+      success: false,
+      error: "Authentication service unavailable.",
     };
   }
 };
@@ -408,12 +469,15 @@ export const SignOut = async () => {
     const session = await getSession();
     const userId = session.user_id;
 
-    const supabase = await createServerSupabaseClient();
+    const supabase = await getSupabaseServer();
     await supabase.auth.signOut();
 
     // Clear iron session
     const cookieStore = await cookies();
-    const ironSession = await getIronSession<SessionData>(cookieStore, sessionOptions);
+    const ironSession = await getIronSession<SessionData>(
+      cookieStore,
+      sessionOptions,
+    );
     ironSession.destroy();
 
     logSecurityEvent("SIGNOUT_SUCCESS", { userId }, "info");
@@ -427,12 +491,15 @@ export const SignOut = async () => {
 };
 
 // Verify Session Action
-export const VerifySession = async (): Promise<{ valid: boolean; user?: any }> => {
+export const VerifySession = async (): Promise<{
+  valid: boolean;
+  user?: any;
+}> => {
   "use server";
 
   try {
     const session = await getSession();
-    
+
     if (!session.isLoggedIn || !session.customToken) {
       return { valid: false };
     }
@@ -440,22 +507,37 @@ export const VerifySession = async (): Promise<{ valid: boolean; user?: any }> =
     // Verify custom JWT
     const payload = await verifySecureJWT(session.customToken);
     if (!payload) {
-      logSecurityEvent("SESSION_INVALID_JWT", { userId: session.user_id }, "warn");
+      logSecurityEvent(
+        "SESSION_INVALID_JWT",
+        { userId: session.user_id },
+        "warn",
+      );
       return { valid: false };
     }
 
     // Additional verification with Supabase
-    const supabase = await createServerSupabaseClient();
-    const { data: { user }, error } = await supabase.auth.getUser();
+    const supabase = await getSupabaseServer();
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser();
 
     if (error || !user) {
-      logSecurityEvent("SESSION_INVALID_USER", { userId: session.user_id }, "warn");
+      logSecurityEvent(
+        "SESSION_INVALID_USER",
+        { userId: session.user_id },
+        "warn",
+      );
       return { valid: false };
     }
 
     return { valid: true, user };
   } catch (error: any) {
-    logSecurityEvent("SESSION_VERIFICATION_ERROR", { error: error.message }, "error");
+    logSecurityEvent(
+      "SESSION_VERIFICATION_ERROR",
+      { error: error.message },
+      "error",
+    );
     return { valid: false };
   }
 };
@@ -471,32 +553,42 @@ export const RequestPasswordReset = async (formData: FormData) => {
   }
 
   try {
-    const supabase = await createServerSupabaseClient();
-    
+    const supabase = await getSupabaseServer();
+
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/auth/reset-password`,
+      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/auth/reset-password`,
     });
 
     if (error) {
-      logSecurityEvent("PASSWORD_RESET_FAILED", { email, error: error.message }, "warn");
+      logSecurityEvent(
+        "PASSWORD_RESET_FAILED",
+        { email, error: error.message },
+        "warn",
+      );
       // Don't reveal if email exists or not
-      return { 
-        success: true, 
-        message: "If an account with that email exists, we've sent a password reset link." 
+      return {
+        success: true,
+        message:
+          "If an account with that email exists, we've sent a password reset link.",
       };
     }
 
     logSecurityEvent("PASSWORD_RESET_REQUESTED", { email }, "info");
-    
-    return { 
-      success: true, 
-      message: "If an account with that email exists, we've sent a password reset link." 
+
+    return {
+      success: true,
+      message:
+        "If an account with that email exists, we've sent a password reset link.",
     };
   } catch (error: any) {
-    logSecurityEvent("PASSWORD_RESET_ERROR", { email, error: error.message }, "error");
-    return { 
-      success: false, 
-      error: "Password reset unavailable. Please try again later." 
+    logSecurityEvent(
+      "PASSWORD_RESET_ERROR",
+      { email, error: error.message },
+      "error",
+    );
+    return {
+      success: false,
+      error: "Password reset unavailable. Please try again later.",
     };
   }
 };

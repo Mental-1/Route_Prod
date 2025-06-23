@@ -5,7 +5,17 @@ import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, MapPin, Menu, X, User, LogOut } from "lucide-react";
+import {
+  Search,
+  MapPin,
+  Menu,
+  X,
+  User,
+  LogOut,
+  LayoutDashboard,
+  Settings,
+  Plus,
+} from "lucide-react";
 import { useState } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -112,14 +122,15 @@ export default function Navigation() {
             <span>Account</span>
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => router.push("/dashboard")}>
-            <User className="mr-2 h-4 w-4" />
+            <LayoutDashboard className="mr-2 h-4 w-4" />
             <span>Dashboard</span>
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => router.push("/settings")}>
-            <User className="mr-2 h-4 w-4" />
+            <Settings className="mr-2 h-4 w-4" />
             <span>Settings</span>
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => router.push("/post-ad")}>
+            <Plus className="mr-2 h-4 w-4" />
             <span>Post Ad</span>
           </DropdownMenuItem>
           <DropdownMenuSeparator />

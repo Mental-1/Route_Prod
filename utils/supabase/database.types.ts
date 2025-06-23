@@ -491,31 +491,31 @@ export type Database = {
           deleted_at: string | null
           deletion_reason: string | null
           email: string | null
-          email_notifications: boolean | null
-          email_verified: boolean | null
+          email_notifications: boolean
+          email_verified: boolean
           full_name: string | null
           id: string
-          language: string | null
-          listing_count: number | null
-          listing_updates: boolean | null
+          language: string
+          listing_count: number
+          listing_updates: boolean
           location: string | null
-          marketing_emails: boolean | null
+          marketing_emails: boolean
           nationality: string | null
-          new_messages: boolean | null
+          new_messages: boolean
           phone: string | null
           phone_number: string | null
-          phone_verified: boolean | null
-          price_alerts: boolean | null
-          profile_visibility: string | null
-          push_notifications: boolean | null
-          rating: number | null
-          reviews_count: number | null
-          show_email: boolean | null
-          show_last_seen: boolean | null
-          show_phone: boolean | null
-          sms_notifications: boolean | null
-          theme: string | null
-          timezone: string | null
+          phone_verified: boolean
+          price_alerts: boolean
+          profile_visibility: string
+          push_notifications: boolean
+          rating: number
+          reviews_count: number
+          show_email: boolean
+          show_last_seen: boolean
+          show_phone: boolean
+          sms_notifications: boolean
+          theme: string
+          timezone: string
           updated_at: string | null
           username: string
           website: string | null
@@ -530,31 +530,31 @@ export type Database = {
           deleted_at?: string | null
           deletion_reason?: string | null
           email?: string | null
-          email_notifications?: boolean | null
-          email_verified?: boolean | null
+          email_notifications?: boolean
+          email_verified?: boolean
           full_name?: string | null
           id: string
-          language?: string | null
-          listing_count?: number | null
-          listing_updates?: boolean | null
+          language?: string
+          listing_count?: number
+          listing_updates?: boolean
           location?: string | null
-          marketing_emails?: boolean | null
+          marketing_emails?: boolean
           nationality?: string | null
-          new_messages?: boolean | null
+          new_messages?: boolean
           phone?: string | null
           phone_number?: string | null
-          phone_verified?: boolean | null
-          price_alerts?: boolean | null
-          profile_visibility?: string | null
-          push_notifications?: boolean | null
-          rating?: number | null
-          reviews_count?: number | null
-          show_email?: boolean | null
-          show_last_seen?: boolean | null
-          show_phone?: boolean | null
-          sms_notifications?: boolean | null
-          theme?: string | null
-          timezone?: string | null
+          phone_verified?: boolean
+          price_alerts?: boolean
+          profile_visibility?: string
+          push_notifications?: boolean
+          rating?: number
+          reviews_count?: number
+          show_email?: boolean
+          show_last_seen?: boolean
+          show_phone?: boolean
+          sms_notifications?: boolean
+          theme?: string
+          timezone?: string
           updated_at?: string | null
           username: string
           website?: string | null
@@ -569,31 +569,31 @@ export type Database = {
           deleted_at?: string | null
           deletion_reason?: string | null
           email?: string | null
-          email_notifications?: boolean | null
-          email_verified?: boolean | null
+          email_notifications?: boolean
+          email_verified?: boolean
           full_name?: string | null
           id?: string
-          language?: string | null
-          listing_count?: number | null
-          listing_updates?: boolean | null
+          language?: string
+          listing_count?: number
+          listing_updates?: boolean
           location?: string | null
-          marketing_emails?: boolean | null
+          marketing_emails?: boolean
           nationality?: string | null
-          new_messages?: boolean | null
+          new_messages?: boolean
           phone?: string | null
           phone_number?: string | null
-          phone_verified?: boolean | null
-          price_alerts?: boolean | null
-          profile_visibility?: string | null
-          push_notifications?: boolean | null
-          rating?: number | null
-          reviews_count?: number | null
-          show_email?: boolean | null
-          show_last_seen?: boolean | null
-          show_phone?: boolean | null
-          sms_notifications?: boolean | null
-          theme?: string | null
-          timezone?: string | null
+          phone_verified?: boolean
+          price_alerts?: boolean
+          profile_visibility?: string
+          push_notifications?: boolean
+          rating?: number
+          reviews_count?: number
+          show_email?: boolean
+          show_last_seen?: boolean
+          show_phone?: boolean
+          sms_notifications?: boolean
+          theme?: string
+          timezone?: string
           updated_at?: string | null
           username?: string
           website?: string | null

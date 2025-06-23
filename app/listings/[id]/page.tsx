@@ -118,7 +118,7 @@ export default function ListingDetailPage() {
       // Get user's current location with improved options
       const position = await new Promise<GeolocationPosition>((resolve, reject) => {
         const options: PositionOptions = {
-          enableHighAccuracy: true, // Use less accurate but faster positioning
+          enableHighAccuracy: true, // Use high accuracy positioning for better precision
           timeout: 15000, // Increase timeout to 15 seconds
           maximumAge: 600000, // Accept cached position up to 10 minutes old
         }

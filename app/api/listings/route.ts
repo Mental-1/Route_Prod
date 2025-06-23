@@ -28,7 +28,7 @@ export async function GET(request: Request) {
       if (error) {
         console.error("Error fetching single listing:", error);
         return NextResponse.json(
-          { error: "An error occurred" },
+          { error: "Listing not found" },
           { status: 500 },
         );
       }
@@ -110,7 +110,7 @@ export async function POST(request: Request) {
       location: body.location || "Unknown Location",
       category: body.category || "Other",
       status: String(body.status) || "Active",
-      images: Array.isArray(body.images) ? body.images : [],
+      images: String(body.images) || [],
       tags: body.tags || [],
       contact_info: body.contact_info || "No contact information provided",
       updated_at: new Date().toISOString(),

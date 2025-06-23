@@ -1,59 +1,78 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
-import { Slider } from "@/components/ui/slider"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Badge } from "@/components/ui/badge"
-import { MapPin, Search } from "lucide-react"
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
-import type { Database } from "@/utils/supabase/database.types"
-import { getSupabaseClient } from "@/utils/supabase/client"
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Slider } from "@/components/ui/slider";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { MapPin, Search } from "lucide-react";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import type { Database } from "@/utils/supabase/database.types";
+import { getSupabaseClient } from "@/utils/supabase/client";
+import { Toast as toast } from "@/components/ui/toast";
 
-type Category = Database["public"]["Tables"]["categories"]["Row"]
+type Category = Database["public"]["Tables"]["categories"]["Row"];
 
 interface FilterSidebarProps {
-  categories: Category[]
+  categories: Category[];
   initialFilters?: {
-    category?: string
-    minPrice?: string
-    maxPrice?: string
-    location?: string
-    distance?: string
-    condition?: string[]
-    rating?: string
-  }
-  onFilterChange: (filters: any) => void
-  className?: string
+    category?: string;
+    minPrice?: string;
+    maxPrice?: string;
+    location?: string;
+    distance?: string;
+    condition?: string[];
+    rating?: string;
+  };
+  onFilterChange: (filters: any) => void;
+  className?: string;
 }
-
-export function FilterSidebar({ categories, initialFilters = {}, onFilterChange, className = "" }: FilterSidebarProps) {
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const supabase = getSupabaseClient()
+toast.error("Unable to get your location. Please enter it manually.");
+export function FilterSidebar({
+  categories,
+  initialFilters = {},
+  onFilterChange,
+  className = "",
+}: FilterSidebarProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const supabase = getSupabaseClient();
 
   // Filter states
-  const [selectedCategory, setSelectedCategory] = useState<string>(initialFilters.category || "all")
+  const [selectedCategory, setSelectedCategory] = useState<string>(
+    initialFilters.category || "all",
+  );
   const [priceRange, setPriceRange] = useState<[number, number]>([
     initialFilters.minPrice ? Number.parseInt(initialFilters.minPrice) : 0,
-    initialFilters.maxPrice ? Number.parseInt(initialFilters.maxPrice) : 1000000,
-  ])
-  const [location, setLocation] = useState<string>(initialFilters.location || "")
+    initialFilters.maxPrice
+      ? Number.parseInt(initialFilters.maxPrice)
+      : 1000000,
+  ]);
+  const [location, setLocation] = useState<string>(
+    initialFilters.location || "",
+  );
   const [distance, setDistance] = useState<number>(
     initialFilters.distance ? Number.parseInt(initialFilters.distance) : 50,
-  )
+  );
   const [selectedConditions, setSelectedConditions] = useState<string[]>(
     initialFilters.condition
       ? typeof initialFilters.condition === "string"
         ? [initialFilters.condition]
         : initialFilters.condition
       : [],
-  )
-  const [rating, setRating] = useState<number>(initialFilters.rating ? Number.parseInt(initialFilters.rating) : 0)
-  const [activeFilters, setActiveFilters] = useState<string[]>([])
+  );
+  const [rating, setRating] = useState<number>(
+    initialFilters.rating ? Number.parseInt(initialFilters.rating) : 0,
+  );
+  const [activeFilters, setActiveFilters] = useState<string[]>([]);
 
   // Conditions options
   const conditions = [
@@ -62,21 +81,28 @@ export function FilterSidebar({ categories, initialFilters = {}, onFilterChange,
     { id: "good", label: "Good" },
     { id: "fair", label: "Fair" },
     { id: "poor", label: "Poor" },
-  ]
+  ];
 
   // Update active filters
   useEffect(() => {
-    const filters = []
+    const filters = [];
 
-    if (selectedCategory !== "all") filters.push("Category")
-    if (priceRange[0] > 0 || priceRange[1] < 1000000) filters.push("Price")
-    if (location) filters.push("Location")
-    if (distance !== 50) filters.push("Distance")
-    if (selectedConditions.length > 0) filters.push("Condition")
-    if (rating > 0) filters.push("Rating")
+    if (selectedCategory !== "all") filters.push("Category");
+    if (priceRange[0] > 0 || priceRange[1] < 1000000) filters.push("Price");
+    if (location) filters.push("Location");
+    if (distance !== 50) filters.push("Distance");
+    if (selectedConditions.length > 0) filters.push("Condition");
+    if (rating > 0) filters.push("Rating");
 
-    setActiveFilters(filters)
-  }, [selectedCategory, priceRange, location, distance, selectedConditions, rating])
+    setActiveFilters(filters);
+  }, [
+    selectedCategory,
+    priceRange,
+    location,
+    distance,
+    selectedConditions,
+    rating,
+  ]);
 
   // Apply filters
   const applyFilters = () => {
@@ -88,57 +114,62 @@ export function FilterSidebar({ categories, initialFilters = {}, onFilterChange,
       distance: distance !== 50 ? distance.toString() : undefined,
       condition: selectedConditions.length > 0 ? selectedConditions : undefined,
       rating: rating > 0 ? rating.toString() : undefined,
-    }
+    };
 
-    onFilterChange(filters)
+    onFilterChange(filters);
 
     // Update URL with filters
-    const params = new URLSearchParams(searchParams.toString())
+    const params = new URLSearchParams(searchParams.toString());
 
     Object.entries(filters).forEach(([key, value]) => {
       if (value === undefined) {
-        params.delete(key)
+        params.delete(key);
       } else if (Array.isArray(value)) {
-        params.delete(key)
-        value.forEach((v) => params.append(key, v))
+        params.delete(key);
+        value.forEach((v) => params.append(key, v));
       } else {
-        params.set(key, value)
+        params.set(key, value);
       }
-    })
+    });
 
-    router.push(`/listings?${params.toString()}`)
-  }
+    router.push(`/listings?${params.toString()}`);
+  };
 
   // Reset filters
   const resetFilters = () => {
-    setSelectedCategory("all")
-    setPriceRange([0, 1000000])
-    setLocation("")
-    setDistance(50)
-    setSelectedConditions([])
-    setRating(0)
+    setSelectedCategory("all");
+    setPriceRange([0, 1000000]);
+    setLocation("");
+    setDistance(50);
+    setSelectedConditions([]);
+    setRating(0);
 
-    onFilterChange({})
-    router.push("/listings")
-  }
+    onFilterChange({});
+    router.push("/listings");
+  };
 
   // Get user's current location
   const getUserLocation = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         async (position) => {
-          const { latitude, longitude } = position.coords
+          const { latitude, longitude } = position.coords;
 
           // In a real app, we would use a geocoding service to get the address
           // For now, we'll just use the coordinates
-          setLocation(`${latitude.toFixed(6)}, ${longitude.toFixed(6)}`)
+          setLocation(`${latitude.toFixed(6)}, ${longitude.toFixed(6)}`);
         },
         (error) => {
-          console.error("Error getting location:", error)
+          console.error("Error getting location:", error);
+          toast({
+            title: "Unable to get your location. Please enter it manually.",
+            variant: "destructive",
+            duration: 5000,
+          });
         },
-      )
+      );
     }
-  }
+  };
 
   return (
     <div className={`space-y-6 ${className}`}>
@@ -161,7 +192,10 @@ export function FilterSidebar({ categories, initialFilters = {}, onFilterChange,
         </div>
       )}
 
-      <Accordion type="multiple" defaultValue={["category", "price", "location"]}>
+      <Accordion
+        type="multiple"
+        defaultValue={["category", "price", "location"]}
+      >
         <AccordionItem value="category">
           <AccordionTrigger>Category</AccordionTrigger>
           <AccordionContent>
@@ -169,6 +203,14 @@ export function FilterSidebar({ categories, initialFilters = {}, onFilterChange,
               <div
                 className={`px-2 py-1 rounded cursor-pointer ${selectedCategory === "all" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
                 onClick={() => setSelectedCategory("all")}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    setSelectedCategory("all");
+                  }
+                }}
+                role="button"
+                tabIndex={0}
               >
                 All Categories
               </div>
@@ -177,6 +219,14 @@ export function FilterSidebar({ categories, initialFilters = {}, onFilterChange,
                   key={category.id}
                   className={`px-2 py-1 rounded cursor-pointer ${selectedCategory === category.id.toString() ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
                   onClick={() => setSelectedCategory(category.id.toString())}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setSelectedCategory("all");
+                    }
+                  }}
+                  role="button"
+                  tabIndex={0}
                 >
                   {category.icon} {category.name}
                 </div>
@@ -201,7 +251,12 @@ export function FilterSidebar({ categories, initialFilters = {}, onFilterChange,
                   type="number"
                   placeholder="Min"
                   value={priceRange[0]}
-                  onChange={(e) => setPriceRange([Number.parseInt(e.target.value) || 0, priceRange[1]])}
+                  onChange={(e) =>
+                    setPriceRange([
+                      Number.parseInt(e.target.value) || 0,
+                      priceRange[1],
+                    ])
+                  }
                   className="w-full"
                 />
                 <span>to</span>
@@ -209,7 +264,12 @@ export function FilterSidebar({ categories, initialFilters = {}, onFilterChange,
                   type="number"
                   placeholder="Max"
                   value={priceRange[1]}
-                  onChange={(e) => setPriceRange([priceRange[0], Number.parseInt(e.target.value) || 1000000])}
+                  onChange={(e) =>
+                    setPriceRange([
+                      priceRange[0],
+                      Number.parseInt(e.target.value) || 1000000,
+                    ])
+                  }
                   className="w-full"
                 />
               </div>
@@ -263,13 +323,22 @@ export function FilterSidebar({ categories, initialFilters = {}, onFilterChange,
                     checked={selectedConditions.includes(condition.id)}
                     onCheckedChange={(checked) => {
                       if (checked) {
-                        setSelectedConditions([...selectedConditions, condition.id])
+                        setSelectedConditions([
+                          ...selectedConditions,
+                          condition.id,
+                        ]);
                       } else {
-                        setSelectedConditions(selectedConditions.filter((id) => id !== condition.id))
+                        setSelectedConditions(
+                          selectedConditions.filter(
+                            (id) => id !== condition.id,
+                          ),
+                        );
                       }
                     }}
                   />
-                  <Label htmlFor={`condition-${condition.id}`}>{condition.label}</Label>
+                  <Label htmlFor={`condition-${condition.id}`}>
+                    {condition.label}
+                  </Label>
                 </div>
               ))}
             </div>
@@ -283,7 +352,13 @@ export function FilterSidebar({ categories, initialFilters = {}, onFilterChange,
               <div className="flex items-center justify-between">
                 <Label>Minimum Rating: {rating}+ stars</Label>
               </div>
-              <Slider value={[rating]} min={0} max={5} step={1} onValueChange={(value) => setRating(value[0])} />
+              <Slider
+                value={[rating]}
+                min={0}
+                max={5}
+                step={1}
+                onValueChange={(value) => setRating(value[0])}
+              />
               <div className="flex justify-between">
                 <span>Any</span>
                 <span>5 stars</span>
@@ -297,5 +372,5 @@ export function FilterSidebar({ categories, initialFilters = {}, onFilterChange,
         Apply Filters
       </Button>
     </div>
-  )
+  );
 }
