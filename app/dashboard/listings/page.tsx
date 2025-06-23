@@ -47,6 +47,11 @@ interface Listing {
   category: { name: string };
 }
 
+/**
+ * Displays and manages the current user's listings, allowing viewing, editing, deleting, and featuring of items.
+ *
+ * Provides an interface for users to view their posted listings, edit them within a limited time window, delete listings with confirmation, and feature listings if eligible based on their subscription plan. Handles authentication, data fetching, and user feedback through toast notifications.
+ */
 export default function UserListingsPage() {
   const router = useRouter();
   const { toast } = useToast();

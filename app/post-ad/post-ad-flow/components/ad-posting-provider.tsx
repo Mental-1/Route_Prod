@@ -110,6 +110,15 @@ type Action =
   | { type: "SET_ERROR"; payload: string | null }
   | { type: "RESET" };
 
+/**
+ * Reducer function for managing the ad posting state based on dispatched actions.
+ *
+ * Handles updates to ad details, media, selected plan, metadata, loading and error states, setting the entire state, and resetting to the initial state.
+ *
+ * @param state - The current ad posting state
+ * @param action - The action describing the state update
+ * @returns The updated ad posting state
+ */
 function adPostingReducer(
   state: AdPostingState,
   action: Action,

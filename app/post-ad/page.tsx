@@ -649,6 +649,14 @@ function PaymentTierStep({
   );
 }
 
+/**
+ * Renders the payment method selection step for paid ad plans.
+ *
+ * Displays available payment methods and collects additional information based on the selected method. If the selected plan is free, indicates that no payment is required.
+ *
+ * @param formData - The current form data, including selected payment tier and payment method
+ * @param updateFormData - Function to update the form data with user selections
+ */
 function PaymentMethodStep({
   formData,
   updateFormData,
@@ -787,6 +795,11 @@ function PaymentMethodStep({
   );
 }
 
+/**
+ * Displays a preview of the ad based on the current form data and selected category.
+ *
+ * Shows the ad's title, price, negotiable status, media thumbnails, description, category, condition, location, and selected payment plan.
+ */
 function PreviewStep({
   formData,
   categories,

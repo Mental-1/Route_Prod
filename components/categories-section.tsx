@@ -32,6 +32,11 @@ const fallbackCategories = [
   { id: 23, name: "Jobs", icon: "💼" },
 ];
 
+/**
+ * Displays a section with a grid of category cards, fetching data from the API and falling back to predefined categories if needed.
+ *
+ * Renders a loading skeleton while fetching, and shows each category as a clickable card linking to filtered listings. Includes a header with a "View All" button.
+ */
 export default function CategoriesSection() {
   const { data, isLoading, isError } = useQuery({
     queryKey: ["categories"],

@@ -11,6 +11,11 @@ const reverseGeocodeSchema = z.object({
   lng: z.number(),
 });
 
+/**
+ * Handles geocoding requests by converting an address to geographic coordinates.
+ *
+ * Accepts a JSON body with an `address` field, validates it, and checks for cached geocoding results in Supabase. If not cached, queries the Mapbox API for geocoding data, caches the result, and returns the latitude, longitude, formatted address, and address components. Returns a 404 error if the address is not found, or a 500 error if geocoding fails.
+ */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -95,6 +100,11 @@ export async function POST(request: NextRequest) {
   }
 }
 
+/**
+ * Handles reverse geocoding requests by latitude and longitude.
+ *
+ * Attempts to retrieve a cached address for the provided coordinates from Supabase. If no cached result is found, queries the Mapbox API for reverse geocoding and returns the formatted address. Returns a 404 error if the location cannot be resolved, or a 500 error on failure.
+ */
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);

@@ -18,6 +18,11 @@ type PartialAuditLogEntry = Partial<AuditLogEntry>;
 // Helper type for ensuring required fields are present
 type RequiredAuditFields = "action" | "resource_type";
 
+/**
+ * Inserts an audit log entry into the "admin_logs" table in the Supabase backend.
+ *
+ * Adds a timestamp to the entry and logs any errors encountered during the insertion process.
+ */
 export async function logAuditEvent(entry: AuditLogEntry) {
   try {
     const supabase = await getSupabaseServer();

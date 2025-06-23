@@ -49,6 +49,13 @@ interface Listing {
   }
 }
 
+/**
+ * Displays a detailed view of a specific listing, including images, description, location, seller information, and interactive actions.
+ *
+ * Provides features such as image gallery navigation, saving and sharing the listing, viewing the location on a map, getting directions from the user's current location, and contacting the seller. Handles loading states, error notifications, and fallback behaviors for unsupported features.
+ *
+ * @returns The rendered listing detail page component.
+ */
 export default function ListingDetailPage() {
   const params = useParams()
   const router = useRouter()

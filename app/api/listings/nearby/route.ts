@@ -1,6 +1,11 @@
 import { getSupabaseRouteHandler } from "@/utils/supabase/server";
 import { type NextRequest, NextResponse } from "next/server";
 
+/**
+ * Handles GET requests to retrieve active listings near specified geographic coordinates within a given radius.
+ *
+ * Accepts `lat`, `lng`, and `radius` as query parameters, returning listings within the radius (in kilometers) of the provided latitude and longitude. If the optimized RPC call fails, falls back to a manual geospatial query, and finally to recent listings if necessary. Returns a JSON response containing the listings or an error message.
+ */
 export async function GET(request: NextRequest) {
   try {
     const supabase = await getSupabaseRouteHandler();

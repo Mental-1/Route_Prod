@@ -14,6 +14,18 @@ type NotificationType =
   | "expiry_warning"
   | "expired";
 
+/**
+ * Creates a new notification for a user in the database.
+ *
+ * Inserts a notification record with the specified title, message, type, and optional listing association. The notification is marked as unread by default.
+ *
+ * @param userId - The ID of the user to receive the notification
+ * @param title - The notification title
+ * @param message - The notification message content
+ * @param type - The category of the notification
+ * @param listingId - The associated listing ID, if applicable
+ * @returns An object indicating success or failure, with an error message if creation fails
+ */
 export async function createNotification({
   userId,
   title,
@@ -46,6 +58,12 @@ export async function createNotification({
   return { success: true };
 }
 
+/**
+ * Marks a specific notification as read by updating its status in the database.
+ *
+ * @param notificationId - The unique identifier of the notification to mark as read
+ * @returns An object indicating success or failure, with an error message if applicable
+ */
 export async function markNotificationAsRead(notificationId: string) {
   const supabase = await getSupabaseRouteHandler();
 
@@ -62,6 +80,12 @@ export async function markNotificationAsRead(notificationId: string) {
   return { success: true };
 }
 
+/**
+ * Marks all unread notifications for the specified user as read.
+ *
+ * @param userId - The ID of the user whose notifications will be updated
+ * @returns An object indicating success or containing an error message if the update fails
+ */
 export async function markAllNotificationsAsRead(userId: string) {
   const supabase = await getSupabaseRouteHandler();
 
@@ -79,6 +103,17 @@ export async function markAllNotificationsAsRead(userId: string) {
   return { success: true };
 }
 
+/**
+ * Sends an expiry warning notification for a listing that is nearing expiration.
+ *
+ * Creates an in-app notification for the user and, if the user has enabled email notifications and an email address is available, sends an email alert about the upcoming listing expiration.
+ *
+ * @param userId - The ID of the user to notify
+ * @param listingId - The ID of the listing that is expiring
+ * @param listingTitle - The title of the expiring listing
+ * @param daysRemaining - The number of days remaining before the listing expires
+ * @returns An object indicating success
+ */
 export async function sendExpiryNotification(
   userId: string,
   listingId: string,
@@ -139,6 +174,14 @@ export async function sendExpiryNotification(
   return { success: true };
 }
 
+/**
+ * Marks a listing as expired and notifies the listing owner.
+ *
+ * Updates the specified listing's status to "expired" and creates a notification for the owner informing them that the listing is no longer visible and can be renewed. Returns a success or error object based on the outcome.
+ *
+ * @param listingId - The unique identifier of the listing to expire
+ * @returns An object indicating success or containing error details if the operation fails
+ */
 export async function markListingAsExpired(listingId: string) {
   const supabase = await getSupabaseRouteHandler();
 

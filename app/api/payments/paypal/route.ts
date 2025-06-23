@@ -2,6 +2,11 @@ import { type NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/utils/supabase/server";
 import { paypalPaymentSchema } from "@/lib/validations";
 
+/**
+ * Handles PayPal payment creation and transaction recording for authenticated users.
+ *
+ * Validates the incoming request body, obtains a PayPal access token, creates a PayPal order, and records the transaction in the database. Returns a JSON response with the PayPal order ID, approval URL, and transaction details on success. Responds with appropriate error messages and status codes on failure.
+ */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
