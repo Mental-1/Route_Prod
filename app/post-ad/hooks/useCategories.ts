@@ -1,8 +1,9 @@
-// app/post-ad/hooks/useCategories.ts
-import { useQuery } from "@tanstack/react-query";
+import type { Database } from "@/utils/supabase/database.types";
 import { createBrowserClient } from "@/utils/supabase/supabase-browser";
-import { Category, SubCategory } from "@/utils/supabase/db-types";
+import { useQuery } from "@tanstack/react-query";
 
+type Category = Database["public"]["Tables"]["categories"]["Row"];
+type SubCategory = Database["public"]["Tables"]["subcategories"]["Row"];
 export const useCategories = () => {
   const supabase = createBrowserClient();
 
@@ -22,7 +23,7 @@ export const useCategories = () => {
   });
 };
 
-export const useSubcategories = (categoryId: string | null) => {
+export const useSubcategories = (categoryId: number | null) => {
   const supabase = createBrowserClient();
 
   return useQuery({
@@ -45,7 +46,6 @@ export const useSubcategories = (categoryId: string | null) => {
   });
 };
 
-// Advanced: Use supabase-cache-helpers for real-time updates
 import { useQuery as useSupabaseQuery } from "@supabase-cache-helpers/postgrest-react-query";
 
 export const useCategoriesWithRealtime = () => {

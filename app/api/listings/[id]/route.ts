@@ -1,12 +1,19 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/utils/supabase/server";
+import { getSupabaseRouteHandler } from "@/utils/supabase/server";
 
+/**
+ * Handles GET requests to retrieve a single active listing by its ID, including related category, subcategory, and seller information.
+ *
+ * @param request - The incoming HTTP request
+ * @param params - An object containing the listing ID as `id`
+ * @returns A JSON response with the listing data if found, or an error message with the appropriate HTTP status code
+ */
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } },
 ) {
   try {
-    const supabase = await createServerSupabaseClient();
+    const supabase = await getSupabaseRouteHandler();
 
     const { data: listing, error } = await supabase
       .from("listings")

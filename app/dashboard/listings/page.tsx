@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { createClient } from "@/lib/supabase";
+import { createBrowserClient } from "@/utils/supabase/supabase-browser";
 import {
   Edit,
   Trash2,
@@ -47,6 +47,11 @@ interface Listing {
   category: { name: string };
 }
 
+/**
+ * Displays and manages the current user's listings, allowing viewing, editing, deleting, and featuring of items.
+ *
+ * Provides an interface for users to view their posted listings, edit them within a limited time window, delete listings with confirmation, and feature listings if eligible based on their subscription plan. Handles authentication, data fetching, and user feedback through toast notifications.
+ */
 export default function UserListingsPage() {
   const router = useRouter();
   const { toast } = useToast();
@@ -61,7 +66,7 @@ export default function UserListingsPage() {
 
   const fetchUserListings = async () => {
     try {
-      const supabase = createClient();
+      const supabase = createBrowserClient();
       const {
         data: { user },
       } = await supabase.auth.getUser();
@@ -90,7 +95,24 @@ export default function UserListingsPage() {
           variant: "destructive",
         });
       } else {
-        setListings(listings || []);
+        setListings(
+          (listings || []).map((l) => ({
+            id: l.id,
+            title: l.title,
+            description: l.description,
+            price: l.price ?? 0,
+            location: l.location ?? "",
+            condition: l.condition ?? "",
+            status: l.status ?? "",
+            featured: l.featured ?? false,
+            featured_until: l.featured_until ?? undefined,
+            images: l.images ?? [],
+            views: l.views ?? 0,
+            created_at: l.created_at ?? "",
+            updated_at: l.updated_at ?? "",
+            category: l.category ?? { name: "" },
+          })),
+        );
       }
     } catch (error) {
       console.error("Error:", error);
@@ -101,7 +123,7 @@ export default function UserListingsPage() {
 
   const fetchUserPlan = async () => {
     try {
-      const supabase = createClient();
+      const supabase = createBrowserClient();
       const {
         data: { user },
       } = await supabase.auth.getUser();
@@ -144,7 +166,7 @@ export default function UserListingsPage() {
 
   const handleDelete = async (listingId: string) => {
     try {
-      const supabase = createClient();
+      const supabase = createBrowserClient();
       const { error } = await supabase
         .from("listings")
         .delete()
@@ -175,7 +197,7 @@ export default function UserListingsPage() {
 
   const handleFeature = async (listingId: string) => {
     try {
-      const supabase = createClient();
+      const supabase = createBrowserClient();
       const { data, error } = await supabase.rpc("feature_listing", {
         listing_uuid: listingId,
         duration_days: 7,

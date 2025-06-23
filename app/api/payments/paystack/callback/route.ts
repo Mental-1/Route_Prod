@@ -1,7 +1,15 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/utils/supabase/server";
+import { getSupabaseRouteHandler } from "@/utils/supabase/server";
 import crypto from "crypto";
 
+/**
+ * Handles Paystack webhook POST requests to process payment events.
+ *
+ * Verifies the webhook signature, updates the transaction status in the database, and sends a notification to the user upon successful payment.
+ *
+ * @param request - The incoming Next.js API request containing the Paystack webhook payload.
+ * @returns A JSON response indicating success or an error message with the appropriate HTTP status code.
+ */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.text();
@@ -22,7 +30,7 @@ export async function POST(request: NextRequest) {
     if (event.event === "charge.success") {
       const { reference, status, amount } = event.data;
 
-      const supabase = await createServerSupabaseClient();
+      const supabase = await getSupabaseRouteHandler();
 
       // Update transaction status
       const { error } = await supabase

@@ -67,9 +67,18 @@ function MapUpdater({
   return null
 }
 
+/**
+ * Displays an interactive map with markers for the user's location and a list of property listings.
+ *
+ * The map centers on the user's location, shows a blue marker for the user, and red markers for each listing. Selecting a listing highlights its marker and brings it to the foreground. The map view updates dynamically based on the user's location or selected listing.
+ *
+ * @param userLocation - The latitude and longitude of the user's current position
+ * @param listings - An array of listing objects to display as markers on the map
+ * @param selectedListing - The ID of the currently selected listing, or null if none is selected
+ */
 export default function MapComponent({ userLocation, listings, selectedListing }: MapComponentProps) {
   return (
-    <MapContainer center={userLocation} zoom={14} style={{ height: "100%", width: "100%" }} zoomControl={false}>
+    <MapContainer center={userLocation} zoom={14} style={{ height: "100%", width: "100%" }} zoomControl={true} scrollWheelZoom={true}>
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

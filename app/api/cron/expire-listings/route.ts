@@ -1,6 +1,11 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/utils/supabase/server";
+import { getSupabaseRouteHandler } from "@/utils/supabase/server";
 
+/**
+ * Handles a GET request to process expired listings via a Supabase RPC, requiring authorization.
+ *
+ * Verifies the request using a secret token, then invokes the "handle_expired_listings" RPC to process expired listings in the database. Returns a JSON response indicating success or an appropriate error message.
+ */
 export async function GET(request: NextRequest) {
   // Verify the request is from Vercel Cron
   const authHeader = request.headers.get("authorization");
@@ -9,9 +14,8 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const supabase = await createServerSupabaseClient();
+    const supabase = await getSupabaseRouteHandler();
 
-    // Call the database function to handle expired listings
     const { error } = await supabase.rpc("handle_expired_listings");
 
     if (error) {

@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/accordion";
 import { Checkbox } from "@/components/ui/checkbox";
 
-// Sample listings data
+// TODO: Replace with actual API call to fetch listings
 const initialListings = [
   {
     id: 1,
@@ -82,6 +82,11 @@ const subcategories = [
   { id: 6, name: "Cameras", categoryId: 4 },
 ];
 
+/**
+ * Renders the listings page with filtering, sorting, view toggling, and infinite scrolling.
+ *
+ * Displays a list of items for sale, allowing users to filter by category, price, condition, and distance, sort results, and switch between grid and list views. Supports infinite scroll to load more listings and includes a back-to-top button for improved navigation.
+ */
 export default function ListingsPage() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [priceRange, setPriceRange] = useState([0, 5000]);
@@ -108,9 +113,10 @@ export default function ListingsPage() {
 
     setLoading(true);
 
-    // Simulate API call - replace with actual API
+    //TODO: Simulate API call - replace with actual API to fetch listings
+
     setTimeout(() => {
-      const newListings = [...initialListings]; // Add more listings here
+      const newListings = [...initialListings];
       if (listings.length + newListings.length >= 24) {
         // Limit for demo
         setHasMore(false);
@@ -274,9 +280,9 @@ export default function ListingsPage() {
                 <h3 className="font-medium mb-2">Price Range</h3>
                 <div className="space-y-4">
                   <Slider
-                    defaultValue={[0, 5000]}
-                    max={5000}
-                    step={100}
+                    defaultValue={[0, 1000000]}
+                    step={10000}
+                    max={1000000}
                     value={priceRange}
                     onValueChange={setPriceRange}
                   />

@@ -7,49 +7,45 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import dynamic from "next/dynamic";
+import { CategoriesSkeleton } from "@/components/categories-skeleton";
+
+const CategoriesSection = dynamic(
+  () => import("../components/categories-section"),
+  {
+    loading: () => (
+      <div className="container px-4">
+        <CategoriesSkeleton />
+      </div>
+    ),
+    ssr: false,
+  },
+);
 
 //TODO:
 //  Hardcoded categories will implement dynamic fetching from the backend
-const categories = [
-  { id: 1, name: "Automobiles", icon: "🚗" },
-  { id: 2, name: "Property", icon: "🏠" },
-  { id: 3, name: "Phones & Tablets", icon: "📱" },
-  { id: 4, name: "Electronics", icon: "💻" },
-  { id: 5, name: "House Appliances", icon: "🧹" },
-  { id: 6, name: "Furniture", icon: "🪑" },
-  { id: 7, name: "Health", icon: "💊" },
-  { id: 8, name: "Beauty", icon: "💄" },
-  { id: 9, name: "Fashion", icon: "👗" },
-  { id: 10, name: "Sports", icon: "⚽" },
-  { id: 11, name: "Books", icon: "📚" },
-  { id: 12, name: "Music", icon: "🎵" },
-  { id: 13, name: "Games", icon: "🎮" },
-  { id: 14, name: "Toys", icon: "🧸" },
-  { id: 15, name: "Baby Items", icon: "🍼" },
-  { id: 16, name: "Pets", icon: "🐕" },
-  { id: 17, name: "Garden", icon: "🌱" },
-  { id: 18, name: "Tools", icon: "🔧" },
-  { id: 19, name: "Art", icon: "🎨" },
-  { id: 20, name: "Jewelry", icon: "💎" },
-  { id: 21, name: "Food", icon: "🍕" },
-  { id: 22, name: "Services", icon: "🛠️" },
-  { id: 23, name: "Jobs", icon: "💼" },
-];
-
-// Sample recent listings
 const recentListings = [
   {
     id: 1,
     title: "iPhone 13 Pro Max",
-    price: 899,
-    image: "/placeholder.svg?height=100&width=100",
-    condition: "Excellent",
-    distance: "2.1 km away",
+    price: 1099,
+    location: "San Francisco",
     rating: 4.8,
-    reviews: 23,
+  },
+  {
+    id: 2,
+    title: "MacBook Pro 16",
+    price: 2399,
+    location: "New York",
+    rating: 4.9,
   },
 ];
 
+/**
+ * Renders the marketplace homepage with hero, categories, recent listings, and call-to-action sections.
+ *
+ * Displays a search bar, dynamically loaded categories, a grid of recent listings, and a prompt to post a new ad.
+ */
 export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -87,33 +83,7 @@ export default function HomePage() {
       </section>
 
       {/* Categories Section */}
-      <section className="py-10">
-        <div className="container px-4">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold">Categories</h2>
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/categories">View All</Link>
-            </Button>
-          </div>
-
-          <div className="grid grid-cols-4 md:grid-cols-8 gap-3">
-            {categories.map((category) => (
-              <Link
-                key={category.id}
-                href={`/listings?category=${category.id}`}
-              >
-                <Card className="hover:shadow-md transition-shadow cursor-pointer border-0 bg-muted/50">
-                  <CardContent className="p-3 text-center">
-                    <div className="text-2xl mb-1">{category.icon}</div>
-                    <h3 className="text-xs font-medium">{category.name}</h3>
-                  </CardContent>
-                </Card>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
+      <CategoriesSection />
       {/* Recent Listings Section */}
       <section className="py-10">
         <div className="container px-4">

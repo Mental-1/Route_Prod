@@ -9,17 +9,22 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { ArrowLeft, Mail } from "lucide-react"
-import { createClient } from "@/lib/supabase"
+import { createBrowserClient } from "@/utils/supabase/supabase-browser"
 import { forgotPasswordSchema, type ForgotPasswordInput } from "@/lib/validations"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 
+/**
+ * Renders a password reset request page where users can submit their email to receive a password reset link.
+ *
+ * Displays a form with email validation, handles submission to Supabase authentication, and provides feedback for loading, success, and error states.
+ */
 export default function ForgotPasswordPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [message, setMessage] = useState("")
   const [error, setError] = useState("")
   const router = useRouter()
-  const supabase = createClient()
+  const supabase = createBrowserClient()
 
   const {
     register,
@@ -42,7 +47,7 @@ export default function ForgotPasswordPage() {
       if (error) {
         setError(error.message)
       } else {
-        setMessage("Check your email for a password reset link.")
+        setMessage("If this email exists a password reset link was sent.")
       }
     } catch (err) {
       setError("An unexpected error occurred. Please try again.")
@@ -101,7 +106,7 @@ export default function ForgotPasswordPage() {
             </Button>
 
             <div className="text-center">
-              <Link href="/auth/signin" className="text-sm text-muted-foreground hover:text-primary">
+              <Link href="/auth?tab=sign-up" className="text-sm text-muted-foreground hover:text-primary">
                 Back to sign in
               </Link>
             </div>

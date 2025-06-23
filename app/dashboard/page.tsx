@@ -5,13 +5,18 @@ import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { createClient } from "@/lib/supabase"
+import { createBrowserClient } from "@/utils/supabase/supabase-browser"
 import Link from "next/link"
 import { Check, Clock, DollarSign, Eye, Plus, Star } from "lucide-react"
 
+/**
+ * Renders the user dashboard page, displaying authenticated user information, profile statistics, recent activity, and quick navigation actions.
+ *
+ * Redirects unauthenticated users to the sign-in page. Fetches and displays user profile data, mock statistics, and recent activities. Provides navigation to account management, listings, transactions, messages, and settings.
+ */
 export default function DashboardPage() {
   const router = useRouter()
-  const supabase = createClient()
+  const supabase = createBrowserClient()
   const [user, setUser] = useState<any>(null)
   const [profile, setProfile] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -221,6 +226,8 @@ export default function DashboardPage() {
 
               <div className="grid grid-cols-3 gap-4 text-center mb-6">
                 <div>
+
+// TODO: Write function to get the number of items sold, active listings, and saved items
                   <p className="text-2xl font-bold text-primary">23</p>
                   <p className="text-xs text-muted-foreground">Items Sold</p>
                 </div>
@@ -300,6 +307,8 @@ export default function DashboardPage() {
                     Transactions
                   </Link>
                 </Button>
+                //TODO: Get the number of unread messages from the database, render them in the dashboard.
+                
                 <Button asChild variant="outline" className="w-full justify-start">
                   <Link href="/dashboard/messages">
                     <svg

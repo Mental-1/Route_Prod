@@ -1,9 +1,14 @@
 import { NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/utils/supabase/server";
+import { getSupabaseRouteHandler } from "@/utils/supabase/server";
 
+/**
+ * Handles GET requests to retrieve all categories from the database, ordered by name.
+ *
+ * Returns a JSON response containing the list of categories on success, or an error message with a 500 status code if retrieval fails.
+ */
 export async function GET() {
   try {
-    const supabase = await createServerSupabaseClient();
+    const supabase = await getSupabaseRouteHandler();
 
     const { data: categories, error } = await supabase
       .from("categories")

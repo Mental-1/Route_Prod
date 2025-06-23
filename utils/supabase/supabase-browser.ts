@@ -1,10 +1,8 @@
 import { createClient } from "@supabase/supabase-js";
-import type { Database } from "./db-types";
+import type { Database } from "./database.types";
 
-// Singleton pattern for browser client
 let supabaseClient: ReturnType<typeof createClient<Database>> | null = null;
 
-// Create a single supabase client for the browser
 export const createBrowserClient = () => {
   if (!supabaseClient) {
     supabaseClient = createClient<Database>(

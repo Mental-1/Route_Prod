@@ -9,6 +9,57 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      ad_drafts: {
+        Row: {
+          ad_details: Json | null
+          category: number | null
+          created_at: string | null
+          id: string
+          media_details: Json | null
+          payment_status: string | null
+          profile_id: string
+          selected_plan: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          ad_details?: Json | null
+          category?: number | null
+          created_at?: string | null
+          id?: string
+          media_details?: Json | null
+          payment_status?: string | null
+          profile_id: string
+          selected_plan?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          ad_details?: Json | null
+          category?: number | null
+          created_at?: string | null
+          id?: string
+          media_details?: Json | null
+          payment_status?: string | null
+          profile_id?: string
+          selected_plan?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ad_drafts_category_fkey"
+            columns: ["category"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_drafts_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       admin_logs: {
         Row: {
           action: string
@@ -157,6 +208,48 @@ export type Database = {
           },
         ]
       }
+      geocoded_locations: {
+        Row: {
+          address: string
+          city: string | null
+          country: string | null
+          created_at: string | null
+          formatted_address: string | null
+          geometry: unknown | null
+          id: string
+          latitude: number
+          longitude: number
+          postal_code: string | null
+          state: string | null
+        }
+        Insert: {
+          address: string
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          formatted_address?: string | null
+          geometry?: unknown | null
+          id?: string
+          latitude: number
+          longitude: number
+          postal_code?: string | null
+          state?: string | null
+        }
+        Update: {
+          address?: string
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          formatted_address?: string | null
+          geometry?: unknown | null
+          id?: string
+          latitude?: number
+          longitude?: number
+          postal_code?: string | null
+          state?: string | null
+        }
+        Relationships: []
+      }
       listings: {
         Row: {
           category_id: number | null
@@ -177,6 +270,7 @@ export type Database = {
           plan_id: string | null
           plan_name: string | null
           price: number | null
+          search_vector: unknown | null
           status: string | null
           subcategory_id: number | null
           title: string
@@ -203,6 +297,7 @@ export type Database = {
           plan_id?: string | null
           plan_name?: string | null
           price?: number | null
+          search_vector?: unknown | null
           status?: string | null
           subcategory_id?: number | null
           title: string
@@ -229,6 +324,7 @@ export type Database = {
           plan_id?: string | null
           plan_name?: string | null
           price?: number | null
+          search_vector?: unknown | null
           status?: string | null
           subcategory_id?: number | null
           title?: string
@@ -391,19 +487,38 @@ export type Database = {
           bio: string | null
           birth_date: string | null
           created_at: string | null
+          currency: string | null
+          deleted_at: string | null
+          deletion_reason: string | null
           email: string | null
-          email_notifications: boolean | null
-          email_verified: boolean | null
+          email_notifications: boolean
+          email_verified: boolean
           full_name: string | null
           id: string
-          listing_count: number | null
+          language: string
+          listing_count: number
+          listing_updates: boolean
           location: string | null
+          marketing_emails: boolean
           nationality: string | null
+          new_messages: boolean
           phone: string | null
-          phone_verified: boolean | null
-          push_notifications: boolean | null
+          phone_number: string | null
+          phone_verified: boolean
+          price_alerts: boolean
+          profile_visibility: string
+          push_notifications: boolean
+          rating: number
+          reviews_count: number
+          show_email: boolean
+          show_last_seen: boolean
+          show_phone: boolean
+          sms_notifications: boolean
+          theme: string
+          timezone: string
           updated_at: string | null
-          user_name: string
+          username: string
+          website: string | null
         }
         Insert: {
           authenticated?: boolean | null
@@ -411,19 +526,38 @@ export type Database = {
           bio?: string | null
           birth_date?: string | null
           created_at?: string | null
+          currency?: string | null
+          deleted_at?: string | null
+          deletion_reason?: string | null
           email?: string | null
-          email_notifications?: boolean | null
-          email_verified?: boolean | null
+          email_notifications?: boolean
+          email_verified?: boolean
           full_name?: string | null
           id: string
-          listing_count?: number | null
+          language?: string
+          listing_count?: number
+          listing_updates?: boolean
           location?: string | null
+          marketing_emails?: boolean
           nationality?: string | null
+          new_messages?: boolean
           phone?: string | null
-          phone_verified?: boolean | null
-          push_notifications?: boolean | null
+          phone_number?: string | null
+          phone_verified?: boolean
+          price_alerts?: boolean
+          profile_visibility?: string
+          push_notifications?: boolean
+          rating?: number
+          reviews_count?: number
+          show_email?: boolean
+          show_last_seen?: boolean
+          show_phone?: boolean
+          sms_notifications?: boolean
+          theme?: string
+          timezone?: string
           updated_at?: string | null
-          user_name: string
+          username: string
+          website?: string | null
         }
         Update: {
           authenticated?: boolean | null
@@ -431,19 +565,38 @@ export type Database = {
           bio?: string | null
           birth_date?: string | null
           created_at?: string | null
+          currency?: string | null
+          deleted_at?: string | null
+          deletion_reason?: string | null
           email?: string | null
-          email_notifications?: boolean | null
-          email_verified?: boolean | null
+          email_notifications?: boolean
+          email_verified?: boolean
           full_name?: string | null
           id?: string
-          listing_count?: number | null
+          language?: string
+          listing_count?: number
+          listing_updates?: boolean
           location?: string | null
+          marketing_emails?: boolean
           nationality?: string | null
+          new_messages?: boolean
           phone?: string | null
-          phone_verified?: boolean | null
-          push_notifications?: boolean | null
+          phone_number?: string | null
+          phone_verified?: boolean
+          price_alerts?: boolean
+          profile_visibility?: string
+          push_notifications?: boolean
+          rating?: number
+          reviews_count?: number
+          show_email?: boolean
+          show_last_seen?: boolean
+          show_phone?: boolean
+          sms_notifications?: boolean
+          theme?: string
+          timezone?: string
           updated_at?: string | null
-          user_name?: string
+          username?: string
+          website?: string | null
         }
         Relationships: []
       }
@@ -618,6 +771,27 @@ export type Database = {
         Args: { user_uuid: string; listing_uuid: string }
         Returns: boolean
       }
+      cleanup_old_notifications: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      create_notification: {
+        Args:
+          | {
+              p_user_id: string
+              p_title: string
+              p_message: string
+              p_type: string
+            }
+          | {
+              target_user_id: string
+              notification_type: string
+              notification_title: string
+              notification_message: string
+              notification_data?: Json
+            }
+        Returns: undefined
+      }
       feature_listing: {
         Args: { listing_uuid: string; duration_days?: number }
         Returns: boolean
@@ -635,45 +809,78 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      increment_listing_views: {
+        Args: { listing_id: string }
+        Returns: undefined
+      }
+      mark_all_notifications_as_read: {
+        Args: { user_uuid?: string }
+        Returns: number
+      }
+      mark_notification_as_read: {
+        Args: { notification_id: string }
+        Returns: boolean
+      }
+      reverse_geocode: {
+        Args: { lat: number; lng: number }
+        Returns: {
+          address: string
+          city: string | null
+          country: string | null
+          created_at: string | null
+          formatted_address: string | null
+          geometry: unknown | null
+          id: string
+          latitude: number
+          longitude: number
+          postal_code: string | null
+          state: string | null
+        }[]
+      }
       search_listings: {
-        Args: {
-          search_query?: string
-          category_filter?: number
-          subcategory_filter?: number
-          location_filter?: string
-          min_price_filter?: number
-          max_price_filter?: number
-          condition_filter?: string
-          user_lat?: number
-          user_lng?: number
-          radius_km?: number
-          sort_by?: string
-          page_limit?: number
-          page_offset?: number
-        }
+        Args:
+          | {
+              p_search_term: string
+              p_min_price?: number
+              p_max_price?: number
+              p_location?: string
+              p_condition?: string
+              p_category_filter?: string
+              p_limit?: number
+              p_offset?: number
+            }
+          | {
+              search_query?: string
+              category_filter?: number
+              subcategory_filter?: number
+              location_filter?: string
+              min_price_filter?: number
+              max_price_filter?: number
+              condition_filter?: string
+              user_lat?: number
+              user_lng?: number
+              radius_km?: number
+              sort_by?: string
+              page_limit?: number
+              page_offset?: number
+            }
+          | {
+              search_term: string
+              min_price?: number
+              max_price?: number
+              location?: string
+              condition?: string
+              category_filter?: string
+            }
         Returns: {
           id: string
           title: string
           description: string
-          price: number
           location: string
-          latitude: number
-          longitude: number
           condition: string
-          featured: boolean
-          images: string[]
-          views: number
-          created_at: string
-          updated_at: string
-          category_id: number
-          category_name: string
-          subcategory_id: number
-          subcategory_name: string
-          user_id: string
-          seller_name: string
-          seller_username: string
-          seller_avatar: string
-          distance_km: number
+          price: number
+          category: string
+          rank: number
         }[]
       }
       unfeature_expired_listings: {

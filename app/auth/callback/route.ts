@@ -1,62 +1,22 @@
-import type { EmailOtpType } from "@supabase/supabase-js"
-import { redirect } from "next/navigation"
-import type { NextRequest } from "next/server"
-import { createServerSupabaseClient } from "@/utils/supabase/server"
+import { getSupabaseRouteHandler } from "@/utils/supabase/server";
+import { NextResponse } from "next/server";
 
-export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url)
-  const token_hash = searchParams.get("token_hash")
-  const type = searchParams.get("type") as EmailOtpType | null
-  const next = searchParams.get("next") ?? "/dashboard"
+/**
+ * Handles the OAuth callback by exchanging a code for a session and redirecting to the home page.
+ *
+ * Extracts the "code" parameter from the request URL, exchanges it for an authentication session if present, and redirects the user to the site's root path.
+ */
+export async function GET(request: Request) {
+  const requestUrl = new URL(request.url);
+  const code = requestUrl.searchParams.get("code");
 
-  if (token_hash && type) {
-    const supabase = await createServerSupabaseClient()
-
-    try {
-      const { data, error } = await supabase.auth.verifyOtp({
-        type,
-        token_hash,
-      })
-
-      if (error) {
-        console.error("Email verification error:", error)
-        redirect(`/auth/signin?error=${encodeURIComponent(error.message)}`)
-      }
-
-      if (data.user) {
-        // Update user metadata to mark as verified
-        const { error: updateError } = await supabase.auth.updateUser({
-          data: { email_verified: true },
-        })
-
-        if (updateError) {
-          console.error("Error updating user verification status:", updateError)
-        }
-
-        // Create welcome notification
-        try {
-          await supabase.rpc("create_notification", {
-            target_user_id: data.user.id,
-            notification_type: "account",
-            notification_title: "Welcome to RouteMe!",
-            notification_message:
-              "Your email has been verified successfully. You can now start buying and selling on RouteMe.",
-            notification_data: { action: "email_verified" },
-          })
-        } catch (notificationError) {
-          console.error("Error creating welcome notification:", notificationError)
-        }
-
-        redirect(
-          `/auth/signin?message=${encodeURIComponent("Email verified successfully! You can now sign in.")}&type=success`,
-        )
-      }
-    } catch (error) {
-      console.error("Verification process error:", error)
-      redirect(`/auth/signin?error=${encodeURIComponent("Email verification failed. Please try again.")}`)
-    }
+  if (code) {
+    const supabase = await getSupabaseRouteHandler();
+    // Exchange the code for a session.
+    // The database trigger associated with auth.users will handle profile creation automatically.
+    await supabase.auth.exchangeCodeForSession(code);
   }
 
-  // Redirect to sign in with error if no token or type
-  redirect("/auth/signin?error=Invalid verification link")
+  // URL to redirect to after sign in process completes
+  return NextResponse.redirect(`${requestUrl.origin}/`);
 }

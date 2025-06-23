@@ -1,9 +1,9 @@
 import { NextRequest } from "next/server";
 
-interface RateLimitConfig {
-  windowMs: number; // Time window in milliseconds
-  maxRequests: number; // Max requests per window
-}
+type RateLimitConfig = {
+  windowMs: number;
+  maxRequests: number;
+};
 
 interface RateLimitStore {
   [key: string]: {
@@ -12,9 +12,15 @@ interface RateLimitStore {
   };
 }
 
-// In-memory store (in production, use Redis or similar)
 const store: RateLimitStore = {};
 
+/**
+ * Creates a rate limiter with the specified configuration.
+ *
+ * Returns an object with a `check` method that enforces rate limiting for a given identifier. The `check` method tracks request counts within a time window and determines if further requests are allowed.
+ *
+ * @returns An object with a `check` method that returns whether the request is allowed, how many requests remain, and the reset time for the identifier.
+ */
 export function createRateLimiter(config: RateLimitConfig) {
   return {
     check: (

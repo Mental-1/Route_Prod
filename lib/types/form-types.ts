@@ -1,3 +1,5 @@
+import { SessionOptions } from "iron-session";
+
 export interface AdFormData {
   title: string;
   description: string;
@@ -74,3 +76,28 @@ export interface ValidatedListingData {
   phoneNumber?: string;
   email?: string;
 }
+export interface SessionData {
+  id?: string;
+  user_id?: string;
+  expires_at: number;
+  created_at: string;
+  isLoggedIn: boolean;
+  isPaid: boolean;
+  isVerified: boolean;
+}
+export interface Session {
+  data: SessionData;
+}
+
+export const sessionOptions: SessionOptions = {
+  password:
+    process.env.IRON_SESSION_PASSWORD ||
+    (() => {
+      throw new Error("IRON_SESSION_PASSWORD environment variable is required");
+    })(),
+  cookieName: "iron-session",
+  cookieOptions: {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+  },
+};

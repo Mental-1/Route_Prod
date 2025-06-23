@@ -1,68 +1,79 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { createServerSupabaseClient } from "@/lib/supabase"
-import { paypalPaymentSchema } from "@/lib/validations"
+import { type NextRequest, NextResponse } from "next/server";
+import { createServerSupabaseClient } from "@/utils/supabase/server";
+import { paypalPaymentSchema } from "@/lib/validations";
 
+/**
+ * Handles PayPal payment creation and transaction recording for authenticated users.
+ *
+ * Validates the incoming request body, obtains a PayPal access token, creates a PayPal order, and records the transaction in the database. Returns a JSON response with the PayPal order ID, approval URL, and transaction details on success. Responds with appropriate error messages and status codes on failure.
+ */
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    const validatedData = paypalPaymentSchema.parse(body)
+    const body = await request.json();
+    const validatedData = paypalPaymentSchema.parse(body);
 
-    const supabase = await createServerSupabaseClient()
+    const supabase = await createServerSupabaseClient();
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser()
+    } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Get PayPal access token
-    const authResponse = await fetch(`${process.env.PAYPAL_BASE_URL}/v1/oauth2/token`, {
-      method: "POST",
-      headers: {
-        Authorization: `Basic ${Buffer.from(`${process.env.PAYPAL_CLIENT_ID}:${process.env.PAYPAL_CLIENT_SECRET}`).toString("base64")}`,
-        "Content-Type": "application/x-www-form-urlencoded",
+    const authResponse = await fetch(
+      `${process.env.PAYPAL_BASE_URL}/v1/oauth2/token`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Basic ${Buffer.from(`${process.env.PAYPAL_CLIENT_ID}:${process.env.PAYPAL_CLIENT_SECRET}`).toString("base64")}`,
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: "grant_type=client_credentials",
       },
-      body: "grant_type=client_credentials",
-    })
+    );
 
-    const authData = await authResponse.json()
+    const authData = await authResponse.json();
 
     if (!authData.access_token) {
-      throw new Error("Failed to get PayPal access token")
+      throw new Error("Failed to get PayPal access token");
     }
 
     // Create PayPal order
-    const orderResponse = await fetch(`${process.env.PAYPAL_BASE_URL}/v2/checkout/orders`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${authData.access_token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        intent: "CAPTURE",
-        purchase_units: [
-          {
-            amount: {
-              currency_code: validatedData.currency,
-              value: validatedData.amount.toString(),
-            },
-            description: "RouteMe Payment",
-            custom_id: user.id,
-          },
-        ],
-        application_context: {
-          return_url: `${process.env.NEXT_PUBLIC_APP_URL}/payments/success`,
-          cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/payments/cancel`,
+    const orderResponse = await fetch(
+      `${process.env.PAYPAL_BASE_URL}/v2/checkout/orders`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${authData.access_token}`,
+          "Content-Type": "application/json",
         },
-      }),
-    })
+        body: JSON.stringify({
+          intent: "CAPTURE",
+          purchase_units: [
+            {
+              amount: {
+                currency_code: validatedData.currency,
+                value: validatedData.amount.toString(),
+              },
+              description: "RouteMe Payment",
+              custom_id: user.id,
+            },
+          ],
+          application_context: {
+            return_url: `${process.env.NEXT_PUBLIC_APP_URL}/payments/success`,
+            cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/payments/cancel`,
+          },
+        }),
+      },
+    );
 
-    const orderData = await orderResponse.json()
+    const orderData = await orderResponse.json();
 
     if (orderData.status !== "CREATED") {
-      throw new Error("Failed to create PayPal order")
+      throw new Error("Failed to create PayPal order");
     }
 
     // Save transaction to database
@@ -76,22 +87,27 @@ export async function POST(request: NextRequest) {
         reference: orderData.id,
       })
       .select()
-      .single()
+      .single();
 
     if (dbError) {
-      throw new Error("Failed to save transaction")
+      throw new Error("Failed to save transaction");
     }
 
-    const approvalUrl = orderData.links.find((link: any) => link.rel === "approve")?.href
+    const approvalUrl = orderData.links.find(
+      (link: any) => link.rel === "approve",
+    )?.href;
 
     return NextResponse.json({
       success: true,
       order_id: orderData.id,
       approval_url: approvalUrl,
       transaction: transaction,
-    })
+    });
   } catch (error) {
-    console.error("PayPal payment error:", error)
-    return NextResponse.json({ error: error instanceof Error ? error.message : "Payment failed" }, { status: 500 })
+    console.error("PayPal payment error:", error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Payment failed" },
+      { status: 500 },
+    );
   }
 }

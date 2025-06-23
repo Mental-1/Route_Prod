@@ -4,10 +4,11 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
+
 import {
   Select,
   SelectContent,
@@ -19,7 +20,10 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { ImageUpload } from "@/components/image-upload";
 import { toast } from "@/components/ui/use-toast";
 import { parse } from "zod/v4/core";
-import { Category, SubCategory } from "@/utils/supabase/db-types";
+
+import type { Database } from "@/utils/supabase/database.types";
+type Category = Database["public"]["Tables"]["categories"]["Row"];
+type SubCategory = Database["public"]["Tables"]["subcategories"]["Row"];
 
 const steps = [
   { id: "details", label: "Details" },
@@ -34,7 +38,7 @@ const paymentTiers = [
     id: "free",
     name: "Free",
     price: 0,
-    features: ["1 photo", "Basic listing", "7 days duration"],
+    features: ["2 photos", "Basic listing", "7 days duration"],
   },
   {
     id: "basic",
@@ -42,7 +46,7 @@ const paymentTiers = [
     price: 500,
     features: [
       "5 photos",
-      "Featured listing",
+      "Boosted visibility",
       "30 days duration",
       "Priority support",
     ],
@@ -87,7 +91,7 @@ export default function PostAdPage() {
     negotiable: false,
     condition: "new",
     location: "",
-    mediaUrls: [] as string[], // Changed from separate images and videos arrays
+    mediaUrls: [] as string[],
     paymentTier: "free",
     paymentMethod: "",
     phoneNumber: "",
@@ -551,7 +555,6 @@ function MediaUploadStep({
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
         <p className="text-sm text-blue-800">
           <strong>Current Plan: {selectedTier.name}</strong>
-          <br />• You can upload up to 10 images and 2 videos
           <br />• Your plan allows: {limits.images} images
           {limits.videos > 0 ? ` and ${limits.videos} videos` : " (no videos)"}
           <br />• Only the allowed number will be published with your listing
@@ -612,7 +615,7 @@ function PaymentTierStep({
               <div className="text-center">
                 <h3 className="text-lg font-semibold">{tier.name}</h3>
                 <div className="text-2xl font-bold text-blue-600 my-2">
-                  ${tier.price}
+                  Ksh{tier.price}
                   {tier.price > 0 && (
                     <span className="text-sm text-muted-foreground">
                       /month
@@ -646,6 +649,14 @@ function PaymentTierStep({
   );
 }
 
+/**
+ * Renders the payment method selection step for paid ad plans.
+ *
+ * Displays available payment methods and collects additional information based on the selected method. If the selected plan is free, indicates that no payment is required.
+ *
+ * @param formData - The current form data, including selected payment tier and payment method
+ * @param updateFormData - Function to update the form data with user selections
+ */
 function PaymentMethodStep({
   formData,
   updateFormData,
@@ -676,7 +687,7 @@ function PaymentMethodStep({
       <div className="bg-muted p-4 rounded-lg">
         <p className="font-medium">{selectedTier.name} Plan</p>
         <p className="text-2xl font-bold text-blue-600">
-          ${selectedTier.price}
+          Ksh{selectedTier.price}
         </p>
       </div>
 
@@ -784,7 +795,18 @@ function PaymentMethodStep({
   );
 }
 
-function PreviewStep({ formData, categories }: { formData: any; categories: any[] }) {
+/**
+ * Displays a preview of the ad based on the current form data and selected category.
+ *
+ * Shows the ad's title, price, negotiable status, media thumbnails, description, category, condition, location, and selected payment plan.
+ */
+function PreviewStep({
+  formData,
+  categories,
+}: {
+  formData: any;
+  categories: any[];
+}) {
   const selectedTier =
     paymentTiers.find((tier) => tier.id === formData.paymentTier) ||
     paymentTiers[0];
@@ -804,7 +826,7 @@ function PreviewStep({ formData, categories }: { formData: any; categories: any[
                 {formData.title || "Ad Title"}
               </h3>
               <p className="text-2xl font-bold text-green-600">
-                ${formData.price || "0"}
+                Ksh{formData.price || "0"}
               </p>
               {formData.negotiable && (
                 <span className="text-sm text-muted-foreground">

@@ -1,10 +1,11 @@
-import { createServerSupabaseClient } from "@/utils/supabase/server";
+import { getSupabaseServer } from "@/utils/supabase/server";
 import { searchSchema } from "@/lib/validations";
+import { get } from "react-hook-form";
 
 export const resolvers = {
   Query: {
     me: async (_: any, __: any, context: any) => {
-      const supabase = await createServerSupabaseClient();
+      const supabase = await getSupabaseServer();
       const {
         data: { user },
       } = await supabase.auth.getUser();
@@ -25,7 +26,7 @@ export const resolvers = {
     },
 
     listing: async (_: any, { id }: { id: string }) => {
-      const supabase = await createServerSupabaseClient();
+      const supabase = await getSupabaseServer();
 
       const { data: listing } = await supabase
         .from("listings")
@@ -45,7 +46,7 @@ export const resolvers = {
     },
 
     listings: async (_: any, { input }: { input: any }) => {
-      const supabase = await createServerSupabaseClient();
+      const supabase = await getSupabaseServer();
       const validatedInput = searchSchema.parse(input || {});
 
       const { data: listings } = await supabase.rpc("search_listings", {
@@ -75,7 +76,7 @@ export const resolvers = {
     },
 
     categories: async () => {
-      const supabase = await createServerSupabaseClient();
+      const supabase = await getSupabaseServer();
       const { data: categories } = await supabase
         .from("categories")
         .select("*")
@@ -85,7 +86,7 @@ export const resolvers = {
     },
 
     savedListings: async () => {
-      const supabase = await createServerSupabaseClient();
+      const supabase = await getSupabaseServer();
       const {
         data: { user },
       } = await supabase.auth.getUser();
@@ -112,7 +113,7 @@ export const resolvers = {
 
   Mutation: {
     createListing: async (_: any, { input }: { input: any }, context: any) => {
-      const supabase = await createServerSupabaseClient();
+      const supabase = await getSupabaseServer();
       const {
         data: { user },
       } = await supabase.auth.getUser();
@@ -133,7 +134,7 @@ export const resolvers = {
     },
 
     updateProfile: async (_: any, { input }: { input: any }) => {
-      const supabase = await createServerSupabaseClient();
+      const supabase = await getSupabaseServer();
       const {
         data: { user },
       } = await supabase.auth.getUser();
@@ -155,7 +156,7 @@ export const resolvers = {
     },
 
     incrementViews: async (_: any, { listingId }: { listingId: string }) => {
-      const supabase = await createServerSupabaseClient();
+      const supabase = await getSupabaseServer();
 
       await supabase.rpc("increment_listing_views", {
         listing_id: listingId,

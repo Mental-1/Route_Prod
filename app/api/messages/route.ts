@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/utils/supabase/server";
+import { getSupabaseRouteHandler } from "@/utils/supabase/server";
 import { MessageEncryption } from "@/lib/encryption";
 import { z } from "zod";
 
@@ -9,9 +9,14 @@ const sendMessageSchema = z.object({
   content: z.string().min(1).max(1000),
 });
 
+/**
+ * Handles sending an encrypted message related to a listing.
+ *
+ * Authenticates the user, validates the request body, determines conversation roles, and ensures a conversation exists with an associated encryption key. Encrypts the message content and stores it in the database. Returns a success response with the new message ID or an appropriate error status.
+ */
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createServerSupabaseClient();
+    const supabase = await getSupabaseRouteHandler();
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -24,13 +29,14 @@ export async function POST(request: NextRequest) {
     const { listingId, recipientId, content } = sendMessageSchema.parse(body);
 
     // Get listing to determine buyer/seller roles
-    const { data: listing } = await supabase
+    const { data: listing, error: listingError } = await supabase
       .from("listings")
       .select("user_id")
       .eq("id", listingId)
       .single();
 
-    if (!listing) {
+    if (listingError || !listing) {
+      console.error("Error fetching listing:", listingError);
       return NextResponse.json({ error: "Listing not found" }, { status: 404 });
     }
 
@@ -38,8 +44,7 @@ export async function POST(request: NextRequest) {
     const buyerId = isSeller ? recipientId : user.id;
     const sellerId = isSeller ? user.id : recipientId;
 
-    // Generate or get conversation
-    let { data: conversation } = await supabase
+    let { data: conversation, error: conversationFetchError } = await supabase
       .from("conversations")
       .select("*")
       .eq("listing_id", listingId)
@@ -47,30 +52,43 @@ export async function POST(request: NextRequest) {
       .eq("seller_id", sellerId)
       .single();
 
+    if (conversationFetchError && conversationFetchError.code !== "PGRST116") {
+      console.error("Error fetching conversation:", conversationFetchError);
+      return NextResponse.json(
+        { error: "Failed to fetch conversation" },
+        { status: 500 },
+      );
+    }
+
     if (!conversation) {
-      // Create new conversation with encryption key
       const encryptionKey = await MessageEncryption.generateKey();
       const exportedKey = await MessageEncryption.exportKey(encryptionKey);
 
-      const { data: newConversation } = await supabase
-        .from("conversations")
-        .insert({
-          listing_id: listingId,
-          buyer_id: buyerId,
-          seller_id: sellerId,
-          encryption_key: exportedKey,
-        })
-        .select()
-        .single();
+      const { data: newConversation, error: newConversationError } =
+        await supabase
+          .from("conversations")
+          .insert({
+            listing_id: listingId,
+            buyer_id: buyerId,
+            seller_id: sellerId,
+            encryption_key: exportedKey,
+          })
+          .select()
+          .single();
 
+      if (newConversationError || !newConversation) {
+        console.error("Error creating new conversation:", newConversationError);
+        return NextResponse.json(
+          { error: "Failed to create conversation" },
+          { status: 500 },
+        );
+      }
       conversation = newConversation;
     }
 
-    // Encrypt message
     const key = await MessageEncryption.importKey(conversation.encryption_key);
     const { encrypted, iv } = await MessageEncryption.encrypt(content, key);
 
-    // Save encrypted message
     const { data: message, error } = await supabase
       .from("encrypted_messages")
       .insert({
@@ -93,6 +111,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, messageId: message.id });
   } catch (error) {
     console.error("Message API error:", error);
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Invalid request data", details: error.flatten() },
+        { status: 400 },
+      );
+    }
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 },
@@ -100,9 +124,14 @@ export async function POST(request: NextRequest) {
   }
 }
 
+/**
+ * Retrieves and decrypts all messages for a specified conversation if the authenticated user is a participant.
+ *
+ * Returns a JSON response containing an array of decrypted messages with metadata, or appropriate error responses for unauthorized access, missing parameters, or not found conversations.
+ */
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createServerSupabaseClient();
+    const supabase = await getSupabaseRouteHandler();
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -121,35 +150,48 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get conversation and verify access
-    const { data: conversation } = await supabase
+    const { data: conversation, error: conversationError } = await supabase
       .from("conversations")
       .select("*")
       .eq("id", conversationId)
       .single();
+
+    if (conversationError) {
+      console.error("Error fetching conversation for GET:", conversationError);
+      return NextResponse.json(
+        { error: "Failed to retrieve conversation" },
+        { status: 500 },
+      );
+    }
 
     if (
       !conversation ||
       (conversation.buyer_id !== user.id && conversation.seller_id !== user.id)
     ) {
       return NextResponse.json(
-        { error: "Conversation not found" },
+        { error: "Conversation not found or access denied" },
         { status: 404 },
       );
     }
 
-    // Get encrypted messages
-    const { data: encryptedMessages } = await supabase
+    const { data: encryptedMessages, error: messagesError } = await supabase
       .from("encrypted_messages")
       .select("*")
       .eq("conversation_id", conversationId)
       .order("created_at", { ascending: true });
 
+    if (messagesError) {
+      console.error("Error fetching encrypted messages:", messagesError);
+      return NextResponse.json(
+        { error: "Failed to retrieve messages" },
+        { status: 500 },
+      );
+    }
+
     if (!encryptedMessages) {
       return NextResponse.json({ messages: [] });
     }
 
-    // Decrypt messages
     const key = await MessageEncryption.importKey(conversation.encryption_key);
     const messages = await Promise.all(
       encryptedMessages.map(async (msg) => {

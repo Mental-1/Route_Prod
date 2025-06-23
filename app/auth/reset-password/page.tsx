@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -9,19 +9,23 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { ArrowLeft, Eye, EyeOff } from "lucide-react"
-import { createClient } from "@/lib/supabase"
+import { createBrowserClient } from "@/utils/supabase/supabase-browser"
 import { resetPasswordSchema, type ResetPasswordInput } from "@/lib/validations"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 
+/**
+ * Renders the password reset page, allowing users to set a new password using a valid reset link.
+ *
+ * Validates the reset link, handles password update via Supabase authentication, manages form validation and error states, and redirects to the sign-in page upon successful password reset.
+ */
 export default function ResetPasswordPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [error, setError] = useState("")
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const supabase = createClient()
+  const supabase = createBrowserClient()
 
   const {
     register,

@@ -3,168 +3,145 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
-  --radius: 0.65rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.141 0.005 285.823);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.141 0.005 285.823);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.141 0.005 285.823);
-  --primary: oklch(0.623 0.214 259.815);
-  --primary-foreground: oklch(0.97 0.014 254.604);
-  --secondary: oklch(0.967 0.001 286.375);
-  --secondary-foreground: oklch(0.21 0.006 285.885);
-  --muted: oklch(0.967 0.001 286.375);
-  --muted-foreground: oklch(0.552 0.016 285.938);
-  --accent: oklch(0.967 0.001 286.375);
-  --accent-foreground: oklch(0.21 0.006 285.885);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.985 0 0); /* <-- Added */
-  --border: oklch(0.92 0.004 286.32);
-  --input: oklch(0.92 0.004 286.32);
-  --ring: oklch(0.623 0.214 259.815);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.141 0.005 285.823);
-  --sidebar-primary: oklch(0.623 0.214 259.815);
-  --sidebar-primary-foreground: oklch(0.97 0.014 254.604);
-  --sidebar-accent: oklch(0.967 0.001 286.375);
-  --sidebar-accent-foreground: oklch(0.21 0.006 285.885);
-  --sidebar-border: oklch(0.92 0.004 286.32);
-  --sidebar-ring: oklch(0.623 0.214 259.815);
+    :root {
+        --background: 0 0% 100%;
+        --foreground: 222.2 84% 4.9%;
+        --card: 0 0% 100%;
+        --card-foreground: 222.2 84% 4.9%;
+        --popover: 0 0% 100%;
+        --popover-foreground: 222.2 84% 4.9%;
+        --primary: 221.2 83.2% 53.3%;
+        --primary-foreground: 210 40% 98%;
+        --secondary: 210 40% 96.1%;
+        --secondary-foreground: 222.2 47.4% 11.2%;
+        --muted: 210 40% 96.1%;
+        --muted-foreground: 215.4 16.3% 46.9%;
+        --accent: 210 40% 96.1%;
+        --accent-foreground: 222.2 47.4% 11.2%;
+        --destructive: 0 84.2% 60.2%;
+        --destructive-foreground: 210 40% 98%;
+        --border: 214.3 31.8% 91.4%;
+        --input: 214.3 31.8% 91.4%;
+        --ring: 221.2 83.2% 53.3%;
+        --radius: 0.5rem;
+        --sidebar-primary: 221.2 83.2% 53.3%;
+        --sidebar-primary-foreground: 210 40% 98%;
+    }
+
+    .dark {
+        --background: 222.2 84% 4.9%;
+        --foreground: 210 40% 98%;
+        --card: 222.2 84% 4.9%;
+        --card-foreground: 210 40% 98%;
+        --popover: 222.2 84% 4.9%;
+        --popover-foreground: 210 40% 98%;
+        --primary: 217.2 91.2% 59.8%;
+        --primary-foreground: 222.2 47.4% 11.2%;
+        --secondary: 217.2 32.6% 17.5%;
+        --secondary-foreground: 210 40% 98%;
+        --muted: 217.2 32.6% 17.5%;
+        --muted-foreground: 215 20.2% 65.1%;
+        --accent: 217.2 32.6% 17.5%;
+        --accent-foreground: 210 40% 98%;
+        --destructive: 0 62.8% 30.6%;
+        --destructive-foreground: 210 40% 98%;
+        --border: 217.2 32.6% 17.5%;
+        --input: 217.2 32.6% 17.5%;
+        --ring: 224.3 76.3% 48%;
+        --sidebar-primary: 217.2 91.2% 59.8%;
+        --sidebar-primary-foreground: 222.2 47.4% 11.2%;
+    }
 }
 
-.dark {
---background: oklch(0.141 0.005 285.823);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.21 0.006 285.885);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.21 0.006 285.885);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.546 0.245 262.881);
-  --primary-foreground: oklch(0.379 0.146 265.522);
-  --secondary: oklch(0.274 0.006 286.033);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.274 0.006 286.033);
-  --muted-foreground: oklch(0.705 0.015 286.067);
-  --accent: oklch(0.274 0.006 286.033);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --destructive-foreground: oklch(0.985 0 0); /* <-- Added */
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.488 0.243 264.376);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.21 0.006 285.885);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.546 0.245 262.881);
-  --sidebar-primary-foreground: oklch(0.379 0.146 265.522);
-  --sidebar-accent: oklch(0.274 0.006 286.033);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.488 0.243 264.376);
-}
+@layer base {
+    * {
+        @apply border-border;
+    }
+    body {
+        @apply bg-background text-foreground;
+    }
+    @layer components {
+        .notification-dot {
+            @apply absolute -top-1 -right-1 h-3 w-3 bg-destructive rounded-full animate-pulse;
+        }
 
-  }
+        .notification-badge {
+            @apply absolute -top-1 -right-1 h-5 w-5 bg-destructive text-destructive-foreground text-xs rounded-full flex items-center justify-center font-medium;
+        }
+    }
 
-  * {
-    @apply border-border;
-  }
+    /* Fix for Leaflet map */
+    .leaflet-container {
+        z-index: 0;
+    }
 
-  body {
-    @apply bg-background text-foreground;
-  }
+    .leaflet-control,
+    .leaflet-pane {
+        z-index: 0 !important;
+    }
 
-@layer components {
-  .notification-dot {
-    @apply absolute -top-1 -right-1 h-3 w-3 bg-destructive rounded-full animate-pulse;
-  }
+    /* Ensure dropdowns appear above map */
+    .dropdown-menu-content {
+        z-index: 1000 !important;
+    }
 
-  .notification-badge {
-    @apply absolute -top-1 -right-1 h-5 w-5 bg-destructive text-destructive-foreground text-xs rounded-full flex items-center justify-center font-medium;
-  }
-}
+    /* Back to top button */
+    .back-to-top {
+        position: fixed;
+        bottom: 2rem;
+        right: 2rem;
+        z-index: 50;
+        transition: all 0.3s ease;
+    }
 
-/* Fix for Leaflet map */
-.leaflet-container {
-  z-index: 0;
-}
+    .back-to-top.hidden {
+        opacity: 0;
+        pointer-events: none;
+        transform: translateY(10px);
+    }
 
-.leaflet-control,
-.leaflet-pane {
-  z-index: 0 !important;
-}
+    /* Infinite scroll loading */
+    .loading-spinner {
+        @apply animate-spin rounded-full h-8 w-8 border-b-2 border-primary;
+    }
 
-/* Ensure dropdowns appear above map */
-.dropdown-menu-content {
-  z-index: 1000 !important;
-}
+    /* Image upload preview - Fixed to avoid @apply with group utility */
+    .image-preview {
+        @apply relative overflow-hidden rounded-lg;
+    }
 
-/* Back to top button */
-.back-to-top {
-  position: fixed;
-  bottom: 2rem;
-  right: 2rem;
-  z-index: 50;
-  transition: all 0.3s ease;
-}
+    /* Apply group class directly in HTML/JSX instead */
+    .image-preview:hover .image-overlay {
+        @apply opacity-100;
+    }
 
-.back-to-top.hidden {
-  opacity: 0;
-  pointer-events: none;
-  transform: translateY(10px);
-}
+    .image-overlay {
+        @apply absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 transition-opacity;
+    }
 
-/* Infinite scroll loading */
-.loading-spinner {
-  @apply animate-spin rounded-full h-8 w-8 border-b-2 border-primary;
-}
+    /* Form validation styles */
+    .field-error {
+        @apply text-destructive text-sm mt-1;
+    }
 
-/* Image upload preview - Fixed to avoid @apply with group utility */
-.image-preview {
-  @apply relative overflow-hidden rounded-lg;
-}
+    .field-success {
+        @apply text-green-600 text-sm mt-1;
+    }
 
-/* Apply group class directly in HTML/JSX instead */
-.image-preview:hover .image-overlay {
-  @apply opacity-100;
-}
+    /* Custom scrollbar */
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+    }
 
-.image-overlay {
-  @apply absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 transition-opacity;
-}
+    .custom-scrollbar::-webkit-scrollbar-track {
+        @apply bg-muted;
+    }
 
-/* Form validation styles */
-.field-error {
-  @apply text-destructive text-sm mt-1;
-}
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        @apply bg-muted-foreground rounded-full;
+    }
 
-.field-success {
-  @apply text-green-600 text-sm mt-1;
-}
-
-/* Custom scrollbar */
-.custom-scrollbar::-webkit-scrollbar {
-  width: 6px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-track {
-  @apply bg-muted;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  @apply bg-muted-foreground rounded-full;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  @apply bg-foreground;
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        @apply bg-foreground;
+    }
 }

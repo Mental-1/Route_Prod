@@ -49,6 +49,13 @@ interface Listing {
   }
 }
 
+/**
+ * Displays a detailed view of a specific listing, including images, description, location, seller information, and interactive actions.
+ *
+ * Provides features such as image gallery navigation, saving and sharing the listing, viewing the location on a map, getting directions from the user's current location, and contacting the seller. Handles loading states, error notifications, and fallback behaviors for unsupported features.
+ *
+ * @returns The rendered listing detail page component.
+ */
 export default function ListingDetailPage() {
   const params = useParams()
   const router = useRouter()
@@ -118,7 +125,7 @@ export default function ListingDetailPage() {
       // Get user's current location with improved options
       const position = await new Promise<GeolocationPosition>((resolve, reject) => {
         const options: PositionOptions = {
-          enableHighAccuracy: false, // Use less accurate but faster positioning
+          enableHighAccuracy: true, // Use high accuracy positioning for better precision
           timeout: 15000, // Increase timeout to 15 seconds
           maximumAge: 600000, // Accept cached position up to 10 minutes old
         }

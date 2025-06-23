@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { createClient } from "@/utils/supabase/supabase";
+import { createBrowserClient } from "@/utils/supabase/supabase-browser";
 import { toast } from "@/components/ui/use-toast";
 import { Toaster } from "@/components/ui/toaster";
 import {
@@ -35,6 +35,7 @@ interface FormData {
   bio: string;
   phone_number: string;
   location: string;
+  reviews_count: number;
   website: string;
 }
 
@@ -65,9 +66,14 @@ interface AuthUser {
   created_at: string;
 }
 
+/**
+ * Renders the user account page, allowing authenticated users to view and update their profile, manage account security, and review verification status.
+ *
+ * Redirects unauthenticated users to the sign-in page. Displays profile information, editable personal details, and account security options. Handles profile data fetching and updates using Supabase.
+ */
 export default function AccountPage() {
   const router = useRouter();
-  const supabase = createClient();
+  const supabase = createBrowserClient();
   const [user, setUser] = useState<AuthUser | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -78,6 +84,7 @@ export default function AccountPage() {
     bio: "",
     phone_number: "",
     location: "",
+    reviews_count: 0,
     website: "",
   });
 
@@ -102,14 +109,29 @@ export default function AccountPage() {
         .single();
 
       if (profile) {
-        setProfile(profile as UserProfile);
+        const userProfile: UserProfile = {
+          id: profile.id,
+          full_name: profile.full_name ?? "",
+          username: profile.username ?? "",
+          email: profile.email ?? "",
+          bio: profile.bio ?? "",
+          phone_number: profile.phone_number ?? "",
+          location: profile.location ?? "",
+          website: profile.website ?? "",
+          created_at: profile.created_at ?? "",
+          updated_at: profile.updated_at ?? "",
+          rating: profile.rating ?? 0,
+          reviews_count: profile.reviews_count ?? 0,
+        };
+        setProfile(userProfile);
         setFormData({
-          full_name: profile.full_name || "",
-          username: profile.username || "",
-          bio: profile.bio || "",
-          phone_number: profile.phone_number || "",
-          location: profile.location || "",
-          website: profile.website || "",
+          full_name: userProfile.full_name ?? "",
+          username: userProfile.username ?? "",
+          bio: userProfile.bio ?? "",
+          phone_number: userProfile.phone_number ?? "",
+          location: userProfile.location ?? "",
+          website: userProfile.website ?? "",
+          reviews_count: userProfile.reviews_count ?? 0,
         });
       } else {
         // Create default profile
@@ -134,6 +156,7 @@ export default function AccountPage() {
           phone_number: "",
           location: "",
           website: "",
+          reviews_count: defaultProfile.reviews_count || 0,
         });
       }
 
@@ -250,7 +273,6 @@ export default function AccountPage() {
                     {profile?.verified ? "Verified" : "Unverified"}
                   </Badge>
                 </div>
-
                 <div className="space-y-3">
                   <div className="flex items-center text-sm">
                     <Mail className="h-4 w-4 mr-2 text-muted-foreground" />
@@ -279,7 +301,7 @@ export default function AccountPage() {
                     })}
                   </div>
                 </div>
-
+                //TODO: Fetch actual listings count from the database.
                 <div className="grid grid-cols-3 gap-4 text-center pt-4 border-t">
                   <div>
                     <p className="text-2xl font-bold text-primary">23</p>
