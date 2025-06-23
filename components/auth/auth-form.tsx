@@ -39,6 +39,11 @@ const signUpSchema = z.object({
     .regex(/^\+?[0-9\- ]+$/, "Invalid phone number"),
 });
 
+/**
+ * Renders an authentication form with sign-in and sign-up modes, including input validation and integration with Supabase authentication.
+ *
+ * Provides email/password sign-in and sign-up, collects user details for registration, and displays error or informational messages. Supports toggling password visibility and switching between authentication modes.
+ */
 export function AuthForm() {
   const router = useRouter();
   const [email, setEmail] = useState("");

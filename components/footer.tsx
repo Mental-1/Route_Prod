@@ -2,6 +2,11 @@ import Link from "next/link";
 import { MapPin } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 
+/**
+ * Renders the website footer with branding, navigation links, category filters, and social media connections.
+ *
+ * The footer includes a site logo and description, quick navigation links, category-based listing links, external social media links, and a bottom section with copyright and policy links.
+ */
 export function Footer() {
   return (
     <footer className="border-t bg-background">

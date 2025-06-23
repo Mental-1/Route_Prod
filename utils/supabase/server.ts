@@ -3,7 +3,13 @@ import { cookies } from "next/headers";
 import type { Database } from "@/utils/supabase/database.types";
 import { serializeCookieHeader } from "@supabase/ssr";
 
-// For server components (read-only)
+/**
+ * Creates a Supabase client for use in Next.js server components with read-only cookie access.
+ *
+ * The client is configured using environment variables for the Supabase URL and anon key. Cookie retrieval is supported, but attempts to set cookies are silently ignored if not permitted in the server component context.
+ *
+ * @returns A Supabase client instance typed with the application database.
+ */
 export async function getSupabaseServer() {
   const cookieStore = await cookies();
   return createServerClient<Database>(
@@ -30,7 +36,13 @@ export async function getSupabaseServer() {
   );
 }
 
-// For route handlers and server actions (read/write)
+/**
+ * Creates a Supabase client for use in Next.js route handlers and server actions with read and write access.
+ *
+ * The client is configured to manage cookies using the Next.js cookies API, enabling session persistence and authentication in server-side contexts.
+ * 
+ * @returns A Supabase client instance typed with the application's database schema.
+ */
 export async function getSupabaseRouteHandler() {
   const cookieStore = await cookies();
   return createServerClient<Database>(
@@ -51,7 +63,14 @@ export async function getSupabaseRouteHandler() {
   );
 }
 
-// For middleware
+/**
+ * Creates a Supabase client for use in Next.js middleware, handling cookies via request and response headers.
+ *
+ * Parses cookies from the incoming request and provides a response object with any new cookies set in the `Set-Cookie` header.
+ *
+ * @param request - The incoming HTTP request object containing cookies in its headers.
+ * @returns An object containing the Supabase client and a response with updated cookie headers.
+ */
 export function getSupabaseMiddleware(request: Request) {
   let response = new Response();
 
@@ -91,7 +110,12 @@ export function getSupabaseMiddleware(request: Request) {
   return { supabase, response };
 }
 
-// Service role client for admin operations
+/**
+ * Creates a Supabase client with service role privileges for admin-level operations.
+ *
+ * Throws an error if the service role key environment variable is not set. Cookie handling is disabled for this client.
+ * @returns A Supabase client instance with service role access.
+ */
 export function getSupabaseServiceRole() {
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
     throw new Error(

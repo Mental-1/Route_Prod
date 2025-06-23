@@ -41,6 +41,11 @@ const recentListings = [
   },
 ];
 
+/**
+ * Renders the marketplace homepage with hero, categories, recent listings, and call-to-action sections.
+ *
+ * Displays a search bar, dynamically loaded categories, a grid of recent listings, and a prompt to post a new ad.
+ */
 export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState("");
 

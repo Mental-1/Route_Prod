@@ -18,6 +18,13 @@ export const metadata: Metadata = {
     "Jiji, OLX, classifieds, ads, marketplace, direction, rentals near me",
 };
 
+/**
+ * Defines the root layout for the application, providing global context providers, navigation, footer, and toast notifications.
+ *
+ * Wraps the main content with React Query, theme, and authentication providers, and applies global styles and metadata.
+ *
+ * @param children - The content to be rendered within the main layout area
+ */
 export default function RootLayout({
   children,
 }: Readonly<{

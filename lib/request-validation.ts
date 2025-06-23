@@ -1,3 +1,12 @@
+/**
+ * Validates an HTTP request against size and content type constraints, then parses and returns its JSON body.
+ *
+ * Throws an error if the request body exceeds the specified maximum size or if the content type is not allowed.
+ *
+ * @param request - The incoming HTTP request to validate
+ * @param options - Validation options including maximum body size and allowed content types
+ * @returns The parsed JSON object from the request body
+ */
 export async function validateRequest(
   request: Request,
   options: {

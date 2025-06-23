@@ -2,6 +2,14 @@ import { type NextRequest, NextResponse } from "next/server";
 import { getSupabaseRouteHandler } from "@/utils/supabase/server";
 import crypto from "node:crypto";
 
+/**
+ * Handles M-Pesa payment callback POST requests, verifies request authenticity, updates transaction status, and sends user notifications.
+ *
+ * Validates the HMAC SHA-256 signature of the incoming callback, parses and verifies the callback data, updates the corresponding transaction record in the database, and, if the payment is successful, notifies the user of the completed payment.
+ *
+ * @param request - The incoming HTTP request containing the M-Pesa callback data
+ * @returns A JSON response indicating success or an error with the appropriate HTTP status code
+ */
 export async function POST(request: NextRequest) {
   try {
     const signature = request.headers.get("x-mpesa-signature");

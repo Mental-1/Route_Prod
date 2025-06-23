@@ -1,6 +1,14 @@
 import { NextResponse } from "next/server";
 import { getSupabaseRouteHandler } from "@/utils/supabase/server";
 
+/**
+ * Handles GET requests to retrieve subcategories from the database, optionally filtered by a parent category ID.
+ *
+ * Extracts the `category_id` query parameter from the request URL. If provided, only subcategories with a matching `parent_category_id` are returned. Results are ordered by name.
+ *
+ * @param request - The incoming HTTP request
+ * @returns A JSON response containing the list of subcategories or an error message with a 500 status code on failure
+ */
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);

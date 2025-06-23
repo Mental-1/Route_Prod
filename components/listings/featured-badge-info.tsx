@@ -12,6 +12,11 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { InfoIcon } from "lucide-react"
 
+/**
+ * Renders a button with a "Featured" badge that opens a dialog explaining the benefits and acquisition methods of featured listings.
+ *
+ * The dialog provides information on how to obtain the "Featured" badge through different plans or by upgrading a listing, and describes the advantages of featured status.
+ */
 export function FeaturedBadgeInfo() {
   return (
     <Dialog>

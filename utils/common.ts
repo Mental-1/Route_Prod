@@ -1,11 +1,23 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
+/**
+ * Combines class names and merges Tailwind CSS classes, removing duplicates and resolving conflicts.
+ *
+ * @returns A single string of merged class names.
+ */
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-// Date formatting utilities
+/**
+ * Returns a human-readable relative time string for the given date, such as "2 days ago" or "Just now".
+ *
+ * If the input is null or undefined, returns "Date not available".
+ *
+ * @param dateString - The date string to format
+ * @returns A relative time string representing how long ago the date was
+ */
 export function formatDate(dateString: string | null | undefined): string {
   if (!dateString) return "Date not available";
 
@@ -28,6 +40,14 @@ export function formatDate(dateString: string | null | undefined): string {
   }
 }
 
+/**
+ * Returns the time portion (hours and minutes) of a date string in the user's locale format.
+ *
+ * If the input is null or undefined, returns an empty string.
+ *
+ * @param dateString - The date string to format
+ * @returns The formatted time string in "HH:mm" format, or an empty string if input is invalid
+ */
 export function formatMessageTime(
   dateString: string | null | undefined,
 ): string {
@@ -37,6 +57,14 @@ export function formatMessageTime(
   return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
+/**
+ * Formats a date string into a localized date with year, short month, and day.
+ *
+ * Returns "Date not available" if the input is null or undefined.
+ *
+ * @param dateString - The date string to format
+ * @returns The formatted date string or "Date not available" if input is missing
+ */
 export function formatListingDate(
   dateString: string | null | undefined,
 ): string {
@@ -50,32 +78,68 @@ export function formatListingDate(
   return new Date(dateString).toLocaleDateString(undefined, options);
 }
 
-// Safe array operations
+/**
+ * Returns a new array with all null and undefined values removed.
+ *
+ * @returns An array containing only non-null, non-undefined items from the input array.
+ */
 export function filterNullValues<T>(array: (T | null | undefined)[]): T[] {
   return array.filter((item): item is T => item !== null && item !== undefined);
 }
 
-// Form validation helpers
+/**
+ * Checks if the input string is a valid email address.
+ *
+ * @param email - The email address to validate
+ * @returns True if the email is valid, otherwise false
+ */
 export function validateEmail(email: string): boolean {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(email);
 }
 
+/**
+ * Validates whether a string is a valid international phone number.
+ *
+ * The phone number may start with an optional plus sign and must contain only digits, with a maximum length of 16 digits (excluding spaces).
+ *
+ * @param phone - The phone number string to validate
+ * @returns `true` if the phone number is valid, otherwise `false`
+ */
 export function validatePhone(phone: string): boolean {
   const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/;
   return phoneRegex.test(phone.replace(/\s/g, ""));
 }
 
-// File upload helpers
+/**
+ * Checks if a file's MIME type is included in the list of allowed types.
+ *
+ * @param file - The file to validate
+ * @param allowedTypes - Array of permitted MIME type strings
+ * @returns True if the file's type is allowed; otherwise, false
+ */
 export function validateFileType(file: File, allowedTypes: string[]): boolean {
   return allowedTypes.includes(file.type);
 }
 
+/**
+ * Checks if a file's size is less than or equal to the specified maximum size in megabytes.
+ *
+ * @param file - The file to validate
+ * @param maxSizeInMB - The maximum allowed file size in megabytes
+ * @returns `true` if the file size is within the limit, otherwise `false`
+ */
 export function validateFileSize(file: File, maxSizeInMB: number): boolean {
   const maxSizeInBytes = maxSizeInMB * 1024 * 1024;
   return file.size <= maxSizeInBytes;
 }
 
+/**
+ * Converts a byte value into a human-readable file size string with appropriate units (Bytes, KB, MB, GB).
+ *
+ * @param bytes - The file size in bytes
+ * @returns The formatted file size string with units
+ */
 export function formatFileSize(bytes: number): string {
   if (bytes === 0) return "0 Bytes";
   const k = 1024;
@@ -84,12 +148,24 @@ export function formatFileSize(bytes: number): string {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
 }
 
-// String utilities
+/**
+ * Truncates a string to a specified maximum length, appending an ellipsis if the string exceeds that length.
+ *
+ * @param text - The input string to truncate
+ * @param maxLength - The maximum allowed length of the returned string before truncation
+ * @returns The truncated string with an ellipsis if it was longer than `maxLength`
+ */
 export function truncateText(text: string, maxLength: number): string {
   if (text.length <= maxLength) return text;
   return text.substring(0, maxLength) + "...";
 }
 
+/**
+ * Converts a string into a URL-friendly slug by lowercasing, removing special characters, replacing spaces and underscores with hyphens, and trimming leading or trailing hyphens.
+ *
+ * @param text - The input string to convert
+ * @returns The generated slug string
+ */
 export function generateSlug(text: string): string {
   return text
     .toLowerCase()
@@ -98,7 +174,12 @@ export function generateSlug(text: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
-// URL utilitiesExtract
+/**
+ * Constructs a URL query string from an object, omitting keys with null, undefined, or empty string values.
+ *
+ * @param params - An object containing key-value pairs to be converted into search parameters
+ * @returns A URL-encoded query string representing the provided parameters
+ */
 export function buildSearchParams(
   params: Record<string, string | number | boolean | null | undefined>,
 ): string {
@@ -113,7 +194,12 @@ export function buildSearchParams(
   return searchParams.toString();
 }
 
-// Location utilities
+/**
+ * Parses a location string separated by "|" into an object with optional `city` and `country` properties.
+ *
+ * @param location - The location string in the format "city|country"
+ * @returns An object containing `city` and `country` if available; properties are omitted if missing or empty
+ */
 export function parseLocation(location: string | null | undefined): {
   city?: string;
   country?: string;
@@ -127,13 +213,28 @@ export function parseLocation(location: string | null | undefined): {
   };
 }
 
+/**
+ * Returns a formatted location string combining city and country, or a default message if both are missing.
+ *
+ * @param city - The city name (optional)
+ * @param country - The country name (optional)
+ * @returns A string in the format "City, Country", "City", "Country", or "Location not specified"
+ */
 export function formatLocation(city?: string, country?: string): string {
   if (!city && !country) return "Location not specified";
   if (city && country) return `${city}, ${country}`;
   return city || country || "Location not specified";
 }
 
-// Price utilities
+/**
+ * Formats a number as a localized currency string.
+ *
+ * Returns "Price not specified" if the input price is null or undefined. Uses "KES" as the default currency.
+ *
+ * @param price - The numeric value to format as currency
+ * @param currency - The ISO currency code to use (default is "KES")
+ * @returns The formatted currency string or a default message if price is not provided
+ */
 export function formatPrice(
   price: number | null | undefined,
   currency: string = "KES",
@@ -148,7 +249,14 @@ export function formatPrice(
   }).format(price);
 }
 
-// Status utilities
+/**
+ * Returns a Tailwind CSS class string representing the color associated with a given status.
+ *
+ * Maps status values such as "active", "pending", "rejected", etc., to corresponding background and text color classes. Defaults to gray styling for unknown or missing statuses.
+ *
+ * @param status - The status string to map to a color class
+ * @returns A string of Tailwind CSS classes for background and text color
+ */
 export function getStatusColor(status: string | null | undefined): string {
   switch (status?.toLowerCase()) {
     case "active":
@@ -169,7 +277,13 @@ export function getStatusColor(status: string | null | undefined): string {
   }
 }
 
-// Error handling utilities
+/**
+ * Extracts a human-readable error message from an unknown error input.
+ *
+ * Returns the message property if the input is an Error object, the string itself if the input is a string, or a generic message otherwise.
+ *
+ * @returns The extracted error message or a default message if unavailable.
+ */
 export function getErrorMessage(error: unknown): string {
   if (error instanceof Error) {
     return error.message;
@@ -180,7 +294,13 @@ export function getErrorMessage(error: unknown): string {
   return "An unexpected error occurred";
 }
 
-// Debounce utility
+/**
+ * Returns a debounced version of the given function that delays its execution until after the specified wait time has elapsed since the last call.
+ *
+ * @param func - The function to debounce
+ * @param wait - The delay in milliseconds
+ * @returns A debounced function with the same parameters as `func`
+ */
 export function debounce<T extends (...args: any[]) => void>(
   func: T,
   wait: number,
@@ -195,7 +315,11 @@ export function debounce<T extends (...args: any[]) => void>(
   };
 }
 
-// Local storage utilities
+/**
+ * Provides safe wrappers for localStorage methods that handle client-side checks and errors.
+ *
+ * Returns an object with `getItem`, `setItem`, and `removeItem` methods that return `null` or `false` if localStorage is unavailable or an error occurs.
+ */
 export function safeLocalStorage() {
   const isClient = typeof window !== "undefined";
 
@@ -229,7 +353,13 @@ export function safeLocalStorage() {
   };
 }
 
-// Array utilities
+/**
+ * Groups items in an array into an object keyed by the result of a provided function.
+ *
+ * @param array - The array of items to group
+ * @param keyFn - Function that returns the key for each item
+ * @returns An object where each key maps to an array of items sharing that key
+ */
 export function groupBy<T>(
   array: T[],
   keyFn: (item: T) => string,
@@ -247,6 +377,13 @@ export function groupBy<T>(
   );
 }
 
+/**
+ * Returns a new array containing only the first occurrence of each unique item, determined by the key generated from `keyFn`.
+ *
+ * @param array - The array to filter for unique items
+ * @param keyFn - A function that returns a unique key for each item
+ * @returns An array of unique items based on the generated keys
+ */
 export function uniqueBy<T>(
   array: T[],
   keyFn: (item: T) => string | number,
@@ -262,7 +399,15 @@ export function uniqueBy<T>(
   });
 }
 
-// Image utilities
+/**
+ * Returns a valid image URL, using a fallback placeholder if the input is missing or invalid.
+ *
+ * If the input path is null, undefined, or empty, the fallback URL is returned. If the path starts with "http", it is returned as is.
+ *
+ * @param path - The image path or URL to validate
+ * @param fallback - The fallback URL to use if the path is missing or invalid (defaults to "/placeholder.svg")
+ * @returns The resolved image URL or the fallback URL
+ */
 export function generateImageUrl(
   path: string | null | undefined,
   fallback: string = "/placeholder.svg",
@@ -272,6 +417,17 @@ export function generateImageUrl(
   return path;
 }
 
+/**
+ * Returns the original image URL if provided and not a placeholder.
+ *
+ * Intended as a placeholder for future integration with image optimization services.
+ *
+ * @param url - The image URL to process
+ * @param width - Optional target width for optimization
+ * @param height - Optional target height for optimization
+ * @param quality - Optional image quality setting (default is 80)
+ * @returns The original image URL, or the placeholder URL if applicable
+ */
 export function optimizeImageUrl(
   url: string,
   width?: number,

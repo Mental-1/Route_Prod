@@ -17,6 +17,16 @@ interface ImageCarouselProps {
   title: string;
 }
 
+/**
+ * Displays a carousel of images with optional video playback and navigation controls.
+ *
+ * Renders a main display area showing either an image or a video, with navigation arrows for cycling through slides and a thumbnail strip for direct selection. If a video is provided, it appears as the last slide and includes play/pause and mute/unmute controls. The component manages playback state, mute state, and slide navigation internally.
+ *
+ * @param images - Array of image URLs to display in the carousel
+ * @param video - Optional video URL to include as the last slide
+ * @param title - Title used for image alt text
+ * @returns The rendered image and video carousel component
+ */
 export function ImageCarousel({ images, video, title }: ImageCarouselProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);

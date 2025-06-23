@@ -14,6 +14,11 @@ import { forgotPasswordSchema, type ForgotPasswordInput } from "@/lib/validation
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 
+/**
+ * Renders a password reset request page where users can submit their email to receive a password reset link.
+ *
+ * Displays a form with email validation, handles submission to Supabase authentication, and provides feedback for loading, success, and error states.
+ */
 export default function ForgotPasswordPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [message, setMessage] = useState("")

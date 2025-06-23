@@ -1,6 +1,11 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { getSupabaseRouteHandler } from "@/utils/supabase/server";
 
+/**
+ * Handles PayPal payment capture and updates the transaction status upon success.
+ *
+ * Authenticates the user, obtains a PayPal access token, and attempts to capture the specified PayPal order. If the capture is successful, updates the corresponding transaction record to "completed" and notifies the user of the successful payment. Returns a JSON response indicating the result.
+ */
 export async function POST(request: NextRequest) {
   try {
     const { orderId } = await request.json();
