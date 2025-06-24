@@ -582,7 +582,7 @@ function MediaUploadStep({
         maxImages={10}
         maxVideos={2}
         value={formData.mediaUrls || []}
-        onChange={(urls) => updateFormData({ mediaUrls: urls })}
+        onChangeAction={(urls) => updateFormData({ mediaUrls: urls })}
         uploadType="listing"
       />
     </div>

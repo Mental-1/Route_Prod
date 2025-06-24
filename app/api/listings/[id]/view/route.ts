@@ -5,7 +5,8 @@ type IncrementListingViewsResult = {
   views: number;
 };
 type IncrementListingViewsArg = {
-  listing_id: string;
+  Args: { listing_id: string };
+  Returns: undefined;
 };
 
 /**
@@ -21,12 +22,10 @@ export async function POST(
     const supabase = await getSupabaseRouteHandler();
 
     // Increment view count using RPC function
-    const { data, error } = await supabase.rpc<
-      IncrementListingViewsResult,
-      IncrementListingViewsArg
-    >("increment_listing_views", {
-      listing_id: params.id,
-    });
+    const { data, error } = await supabase.rpc(
+      "increment_listing_views",
+      { listing_uuid: params.id }
+    );
 
     if (error) {
       return NextResponse.json({ error: "Database Error" }, { status: 500 });

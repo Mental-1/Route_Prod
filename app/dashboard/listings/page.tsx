@@ -72,7 +72,7 @@ export default function UserListingsPage() {
       } = await supabase.auth.getUser();
 
       if (!user) {
-        router.push("/auth/signin");
+        router.push("/auth");
         return;
       }
 

@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import dynamic from "next/dynamic";
 import { CategoriesSkeleton } from "@/components/categories-skeleton";
+import { getRecentListings, DisplayListingItem } from "@/lib/data";
 
 const CategoriesSection = dynamic(
   () => import("../components/categories-section"),
@@ -22,32 +23,14 @@ const CategoriesSection = dynamic(
   },
 );
 
-//TODO:
-//  Hardcoded categories will implement dynamic fetching from the backend
-const recentListings = [
-  {
-    id: 1,
-    title: "iPhone 13 Pro Max",
-    price: 1099,
-    location: "San Francisco",
-    rating: 4.8,
-  },
-  {
-    id: 2,
-    title: "MacBook Pro 16",
-    price: 2399,
-    location: "New York",
-    rating: 4.9,
-  },
-];
-
 /**
  * Renders the marketplace homepage with hero, categories, recent listings, and call-to-action sections.
  *
  * Displays a search bar, dynamically loaded categories, a grid of recent listings, and a prompt to post a new ad.
  */
-export default function HomePage() {
+export default async function HomePage() {
   const [searchQuery, setSearchQuery] = useState("");
+  const recentListings = await getRecentListings();
 
   return (
     <div className="min-h-screen bg-background">
@@ -111,7 +94,7 @@ export default function HomePage() {
                         {listing.title}
                       </h3>
                       <p className="text-lg font-bold text-green-600 mb-1">
-                        ${listing.price}
+                        ${listing.price ?? "N/A"}
                       </p>
                       <div className="flex items-center gap-2 mb-1">
                         <Badge variant="outline" className="text-xs">

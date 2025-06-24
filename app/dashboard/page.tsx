@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { createBrowserClient } from "@/utils/supabase/supabase-browser"
 import Link from "next/link"
 import { Check, Clock, DollarSign, Eye, Plus, Star } from "lucide-react"
+import { syncSupabaseSession } from "@/utils/supabase/sync-session"
 
 /**
  * Renders the user dashboard page, displaying authenticated user information, profile statistics, recent activity, and quick navigation actions.
@@ -18,8 +19,8 @@ export default function DashboardPage() {
   const router = useRouter()
   const supabase = createBrowserClient()
   const [user, setUser] = useState<any>(null)
-  const [profile, setProfile] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [profile, setProfile] = useState<any>(null)
 
   // Mock data for listings
   const activeListings = [
@@ -127,20 +128,21 @@ export default function DashboardPage() {
   ]
 
   useEffect(() => {
-    async function getUser() {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
-
+    async function init() {
+      await syncSupabaseSession()
+      const { data: { session } } = await supabase.auth.getSession()
       if (!session) {
-        router.push("/auth/signin")
+        router.push("/auth")
         return
       }
-
       setUser(session.user)
 
-      // Get user profile
-      const { data: profile } = await supabase.from("profiles").select("*").eq("id", session.user.id).single()
+      // Fetch user profile after session is available
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", session.user.id)
+        .single()
 
       setProfile(
         profile || {
@@ -149,13 +151,12 @@ export default function DashboardPage() {
           created_at: new Date().toISOString(),
           rating: 4.8,
           reviews_count: 47,
-        },
+        }
       )
 
       setLoading(false)
     }
-
-    getUser()
+    init()
   }, [router, supabase])
 
   if (loading) {
@@ -226,8 +227,7 @@ export default function DashboardPage() {
 
               <div className="grid grid-cols-3 gap-4 text-center mb-6">
                 <div>
-
-// TODO: Write function to get the number of items sold, active listings, and saved items
+                  {/* TODO: Write function to get the number of items sold, active listings, and saved items */}
                   <p className="text-2xl font-bold text-primary">23</p>
                   <p className="text-xs text-muted-foreground">Items Sold</p>
                 </div>
@@ -307,8 +307,8 @@ export default function DashboardPage() {
                     Transactions
                   </Link>
                 </Button>
-                //TODO: Get the number of unread messages from the database, render them in the dashboard.
-                
+                {/* TODO: Get the number of unread messages from the database, render them in the dashboard. */}
+
                 <Button asChild variant="outline" className="w-full justify-start">
                   <Link href="/dashboard/messages">
                     <svg

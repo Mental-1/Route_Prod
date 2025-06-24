@@ -63,29 +63,35 @@ export default function Navigation() {
     },
   ];
 
-  const SearchBar = () => (
-    <div
-      className={cn(
-        "flex w-full items-center space-x-2",
-        isMobile && !isSearchOpen ? "hidden" : "flex",
-      )}
-    >
-      <Input
-        type="search"
-        placeholder="Search listings..."
-        className="flex-1"
-      />
-      {isMobile && (
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setIsSearchOpen(false)}
-        >
-          <X className="h-5 w-5" />
-        </Button>
-      )}
-    </div>
-  );
+  const SearchBar = () => {
+    const [searchTerm, setSearchTerm] = useState("");
+    const handleSearch = (e: React.FormEvent) => {
+      e.preventDefault();
+      if (searchTerm.trim()) {
+        router.push(`/listings?search=${encodeURIComponent(searchTerm)}`);
+      }
+    };
+    return (
+      <form onSubmit={handleSearch}>
+        <Input
+          type="search"
+          placeholder="Search listings..."
+          className="flex-1"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+        {isMobile && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsSearchOpen(false)}
+          >
+            <X className="h-5 w-5" />
+          </Button>
+        )}
+      </form>
+    );
+  };
 
   const UserMenu = () => {
     if (!user) {
@@ -107,7 +113,8 @@ export default function Navigation() {
               />
               <AvatarFallback>
                 {profile?.full_name?.substring(0, 2).toUpperCase() ||
-                  user.email?.substring(0, 2).toUpperCase()}
+                  user.email?.substring(0, 2).toUpperCase() ||
+                  "U"}
               </AvatarFallback>
             </Avatar>
           </Button>
@@ -141,7 +148,16 @@ export default function Navigation() {
             <span>Post Ad</span>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => signOut()}>
+          <DropdownMenuItem
+            onClick={async () => {
+              try {
+                await signOut();
+              } catch (error) {
+                console.error("Sign out failed:", error);
+              }
+            }}
+          >
+            {" "}
             <LogOut className="mr-2 h-4 w-4" />
             <span>Log out</span>
           </DropdownMenuItem>
@@ -190,6 +206,7 @@ export default function Navigation() {
             variant="ghost"
             size="icon"
             onClick={() => setIsSearchOpen(true)}
+            aria-label="Open Search"
           >
             <Search className="h-5 w-5" />
           </Button>
@@ -222,17 +239,13 @@ export default function Navigation() {
                 ))}
                 {user ? (
                   <>
-                    <Link
-                      href="/account"
-                      className={cn(
-                        "text-sm font-medium transition-colors hover:text-primary",
-                        pathname === "/account"
-                          ? "text-primary"
-                          : "text-muted-foreground",
-                      )}
+                    <Button
+                      variant="ghost"
+                      className="justify-start"
+                      onClick={() => router.push("/account")}
                     >
                       Account
-                    </Link>
+                    </Button>
                     <Button
                       className="mt-4"
                       onClick={() => router.push("/post-ad")}
@@ -242,7 +255,13 @@ export default function Navigation() {
                     <Button
                       variant="outline"
                       className="mt-2"
-                      onClick={() => signOut()}
+                      onClick={async () => {
+                        try {
+                          await signOut();
+                        } catch (error) {
+                          console.error("Sign out failed:", error);
+                        }
+                      }}
                     >
                       Sign Out
                     </Button>

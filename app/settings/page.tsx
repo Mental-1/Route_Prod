@@ -24,6 +24,7 @@ import { createBrowserClient } from "@/utils/supabase/supabase-browser";
 import { toast } from "@/components/ui/use-toast";
 import { Toaster } from "@/components/ui/toaster";
 import { Bell, Shield, Globe, Download, Trash2 } from "lucide-react";
+import { syncSupabaseSession } from "@/utils/supabase/sync-session";
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -55,13 +56,14 @@ export default function SettingsPage() {
   });
 
   useEffect(() => {
-    async function getUser() {
+    async function init() {
+      await syncSupabaseSession();
       const {
         data: { session },
       } = await supabase.auth.getSession();
 
       if (!session) {
-        router.push("/auth/signin");
+        router.push("/auth");
         return;
       }
 
@@ -69,7 +71,7 @@ export default function SettingsPage() {
       setLoading(false);
     }
 
-    getUser();
+    init();
   }, [router, supabase]);
 
   const handleSaveSettings = async () => {

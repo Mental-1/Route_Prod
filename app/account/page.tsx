@@ -27,6 +27,7 @@ import {
   Mail,
   User,
 } from "lucide-react";
+import { syncSupabaseSession } from "@/utils/supabase/sync-session";
 
 // Type definitions
 interface FormData {
@@ -90,12 +91,13 @@ export default function AccountPage() {
 
   useEffect(() => {
     async function getUser() {
+      await syncSupabaseSession();
       const {
         data: { session },
       } = await supabase.auth.getSession();
 
       if (!session) {
-        router.push("/auth/signin");
+        router.push("/auth");
         return;
       }
 
@@ -115,7 +117,7 @@ export default function AccountPage() {
           username: profile.username ?? "",
           email: profile.email ?? "",
           bio: profile.bio ?? "",
-          phone_number: profile.phone_number ?? "",
+          phone_number: profile.phone ?? "",
           location: profile.location ?? "",
           website: profile.website ?? "",
           created_at: profile.created_at ?? "",

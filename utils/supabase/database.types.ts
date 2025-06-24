@@ -264,6 +264,7 @@ export type Database = {
           images: string[] | null
           latitude: number | null
           location: string | null
+          location_geometry: unknown | null
           longitude: number | null
           payment_status: string | null
           plan: string | null
@@ -291,6 +292,7 @@ export type Database = {
           images?: string[] | null
           latitude?: number | null
           location?: string | null
+          location_geometry?: unknown | null
           longitude?: number | null
           payment_status?: string | null
           plan?: string | null
@@ -318,6 +320,7 @@ export type Database = {
           images?: string[] | null
           latitude?: number | null
           location?: string | null
+          location_geometry?: unknown | null
           longitude?: number | null
           payment_status?: string | null
           plan?: string | null
@@ -420,7 +423,7 @@ export type Database = {
           title: string
           type: string
           updated_at: string | null
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string | null
@@ -430,7 +433,7 @@ export type Database = {
           title: string
           type: string
           updated_at?: string | null
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string | null
@@ -440,7 +443,7 @@ export type Database = {
           title?: string
           type?: string
           updated_at?: string | null
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -796,6 +799,41 @@ export type Database = {
         Args: { listing_uuid: string; duration_days?: number }
         Returns: boolean
       }
+      get_listings_within_radius: {
+        Args: {
+          user_latitude: number
+          user_longitude: number
+          radius_km: number
+        }
+        Returns: {
+          category_id: number | null
+          condition: string | null
+          created_at: string | null
+          description: string
+          expiry_date: string | null
+          featured: boolean | null
+          featured_tier: string | null
+          featured_until: string | null
+          id: string
+          images: string[] | null
+          latitude: number | null
+          location: string | null
+          location_geometry: unknown | null
+          longitude: number | null
+          payment_status: string | null
+          plan: string | null
+          plan_id: string | null
+          plan_name: string | null
+          price: number | null
+          search_vector: unknown | null
+          status: string | null
+          subcategory_id: number | null
+          title: string
+          updated_at: string | null
+          user_id: string | null
+          views: number | null
+        }[]
+      }
       get_or_create_conversation: {
         Args: {
           p_listing_id: string
@@ -810,8 +848,10 @@ export type Database = {
         Returns: undefined
       }
       increment_listing_views: {
-        Args: { listing_id: string }
-        Returns: undefined
+        Args: { listing_uuid: string }
+        Returns: {
+          views: number
+        }[]
       }
       mark_all_notifications_as_read: {
         Args: { user_uuid?: string }

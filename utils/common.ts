@@ -94,7 +94,8 @@ export function filterNullValues<T>(array: (T | null | undefined)[]): T[] {
  * @returns True if the email is valid, otherwise false
  */
 export function validateEmail(email: string): boolean {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const emailRegex =
+    /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
   return emailRegex.test(email);
 }
 
@@ -145,7 +146,7 @@ export function formatFileSize(bytes: number): string {
   const k = 1024;
   const sizes = ["Bytes", "KB", "MB", "GB"];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+  return `${Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
 }
 
 /**
@@ -157,7 +158,7 @@ export function formatFileSize(bytes: number): string {
  */
 export function truncateText(text: string, maxLength: number): string {
   if (text.length <= maxLength) return text;
-  return text.substring(0, maxLength) + "...";
+  return `${text.substring(0, maxLength)}...`;
 }
 
 /**
@@ -237,7 +238,7 @@ export function formatLocation(city?: string, country?: string): string {
  */
 export function formatPrice(
   price: number | null | undefined,
-  currency: string = "KES",
+  currency: "KES",
 ): string {
   if (price === null || price === undefined) return "Price not specified";
 
@@ -410,7 +411,7 @@ export function uniqueBy<T>(
  */
 export function generateImageUrl(
   path: string | null | undefined,
-  fallback: string = "/placeholder.svg",
+  fallback: "/placeholder.svg",
 ): string {
   if (!path) return fallback;
   if (path.startsWith("http")) return path;

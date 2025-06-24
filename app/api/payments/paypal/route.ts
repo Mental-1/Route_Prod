@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/utils/supabase/server";
+import { getSupabaseRouteHandler } from "@/utils/supabase/server";
 import { paypalPaymentSchema } from "@/lib/validations";
 
 /**
@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const validatedData = paypalPaymentSchema.parse(body);
 
-    const supabase = await createServerSupabaseClient();
+    const supabase = await getSupabaseRouteHandler();
     const {
       data: { user },
       error: authError,

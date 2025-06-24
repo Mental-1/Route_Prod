@@ -21,6 +21,7 @@ export interface SpinnerProps
     VariantProps<typeof spinnerVariants> {
   loading?: boolean;
   asChild?: boolean;
+  children?: React.ReactNode;
 }
 
 const Spinner = React.forwardRef<HTMLSpanElement, SpinnerProps>(
@@ -55,7 +56,7 @@ const Spinner = React.forwardRef<HTMLSpanElement, SpinnerProps>(
           >
             <span
               className={cn("block w-full h-[30%] rounded-full", bgColorClass)}
-            ></span>
+            />
           </span>
         ))}
       </Comp>
