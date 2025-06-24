@@ -26,7 +26,8 @@
       "@/app/*": ["./app/*"],
       "@/types/*": ["./types/*"],
       "@/utils/*": ["./utils/*"],
-      "@/styles/*": ["./styles/*"]
+      "@/styles/*": ["./styles/*"],
+      "react": ["./node_modules/@types/react"]
     },
     "target": "ESNext",
     "allowSyntheticDefaultImports": true,
@@ -58,7 +59,7 @@
     "noImplicitAny": true,
     "noImplicitThis": true,
     "alwaysStrict": true,
-    "types": ["node", "jest", "@types/leaflet"]
+    "types": ["node", "jest", "@types/leaflet", "react", "react-dom"]
   },
   "include": [
     "next-env.d.ts",

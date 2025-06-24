@@ -1,7 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { getSupabaseRouteHandler } from "@/utils/supabase/server";
 import crypto from "crypto";
-import { trace } from "next/dist/trace";
 
 /**
  * Handles Paystack webhook POST requests to process payment events.
@@ -55,17 +54,8 @@ export async function POST(request: NextRequest) {
           .single();
 
         if (transaction) {
-          if (transaction.user_id === null) {
-            console.error(
-              "Cannot create notification: transaction.user_id is null.",
-            );
-            return NextResponse.json(
-              { error: "Transaction user ID is missing for notification" },
-              { status: 400 },
-            );
-          }
           await supabase.from("notifications").insert({
-            user_id: transaction.user_id as string,
+            user_id: transaction.user_id,
             title: "Payment Successful",
             message: `Your payment of ₦${amount / 100} has been processed successfully.`,
             type: "payment",

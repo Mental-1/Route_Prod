@@ -58,7 +58,9 @@ export function AdDetailsForm({
     error: categoriesError,
   } = useCategories();
   const { data: subcategories = [], isLoading: subcategoriesLoading } =
-    useSubcategories(formData.category || null);
+    useSubcategories(
+      formData.category ? Number(formData.category) || null : null,
+    );
 
   const handleChange = (field: keyof AdDetailsFormData, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));

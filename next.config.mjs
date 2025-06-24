@@ -1,3 +1,16 @@
+import { fileURLToPath } from "url";
+import { dirname } from "path";
+import withBundleAnalyzer from "@next/bundle-analyzer";
+
+/** Handle __filename and __dirname in ESM */
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+/** Bundle Analyzer wrapper */
+const withAnalyzer = withBundleAnalyzer({
+  enabled: process.env.ANALYZE === "true",
+});
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   eslint: {
@@ -61,6 +74,20 @@ const nextConfig = {
       },
     ];
   },
+
+  webpack(config, { isServer }) {
+    // Webpack cache optimization
+    config.cache = {
+      type: "filesystem",
+      compression: false,
+      allowCollectingMemory: true,
+      buildDependencies: {
+        config: [`${__dirname}/next.config.mjs`],
+      },
+    };
+
+    return config;
+  },
 };
 
-export default nextConfig;
+export default withAnalyzer(nextConfig);

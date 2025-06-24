@@ -78,7 +78,7 @@ export default async function HomePage() {
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {recentListings.map((listing) => (
+            {recentListings.map((listing: DisplayListingItem) => (
               <Link key={listing.id} href={`/listings/${listing.id}`}>
                 <Card className="hover:shadow-md transition-shadow cursor-pointer overflow-hidden border-0">
                   <CardContent className="p-0">

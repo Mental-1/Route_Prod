@@ -124,15 +124,7 @@ export function FilterSidebar({
       rating: rating > 0 ? rating.toString() : undefined,
     };
 
-    onFilterChange: (filters: {
-        category?: string;
-        minPrice?: string;
-        maxPrice?: string;
-        location?: string;
-        distance?: string;
-        condition?: string[];
-        rating?: string;
-      }) => void;
+    onFilterChange(filters);
 
     // Update URL with filters
     const params = new URLSearchParams(searchParams.toString());
@@ -232,7 +224,8 @@ export function FilterSidebar({
                   onKeyDown={(e) => {
                     if (e.key === "Enter" || e.key === " ") {
                       e.preventDefault();
-                      setSelectedCategory(category.id.toString());                    }
+                      setSelectedCategory(category.id.toString());
+                    }
                   }}
                 >
                   {category.icon} {category.name}
