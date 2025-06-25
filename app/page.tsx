@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Search, MapPin, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -28,10 +28,19 @@ const CategoriesSection = dynamic(
  *
  * Displays a search bar, dynamically loaded categories, a grid of recent listings, and a prompt to post a new ad.
  */
-export default async function HomePage() {
+export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState("");
-  const recentListings = await getRecentListings();
+  const [recentListings, setRecentListings] = useState<DisplayListingItem[]>([]);
 
+
+  useEffect(() => {
+    async function fetchRecentListings() {
+      const listings = await getRecentListings();
+      setRecentListings(listings);
+  }
+  fetchRecentListings();
+  }, []);
+  
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
@@ -84,7 +93,11 @@ export default async function HomePage() {
                   <CardContent className="p-0">
                     <div className="aspect-square bg-muted">
                       <img
-                        src={listing.image || "/placeholder.svg"}
+                        src={
+                          Array.isArray(listing.images)
+                            ? listing.images[0] || "/placeholder.svg"
+                            : listing.images || "/placeholder.svg"
+                        }
                         alt={listing.title}
                         className="w-full h-full object-cover"
                       />
