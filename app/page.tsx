@@ -133,7 +133,7 @@ export default function HomePage() {
                           {listing.title}
                         </h3>
                         <p className="text-lg font-bold text-green-600 mb-1">
-                          ${listing.price ?? "N/A"}
+                          Ksh {listing.price ?? "N/A"}
                         </p>
                         <div className="flex items-center gap-2 mb-1">
                           <Badge variant="outline" className="text-xs">
@@ -146,8 +146,8 @@ export default function HomePage() {
                             {listing.distance}
                           </div>
                           <div className="flex items-center gap-1">
-                            <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                            {listing.rating}
+                            <div className="h-3 w-3 text-white-400" />
+                            {listing.views}
                           </div>
                         </div>
                       </div>
