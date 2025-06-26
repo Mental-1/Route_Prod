@@ -32,7 +32,7 @@ const NotificationSchema = z.object({
   type: z.enum(["message", "listing", "account", "marketing"]),
   title: z.string(),
   message: z.string(),
-  data: z.any(),
+  data: z.record(z.string(), z.unknown()).nullable(),
   read: z.boolean().nullable().default(false),
   created_at: z.string().default(new Date().toISOString()),
 });
@@ -74,7 +74,11 @@ export function NotificationDropdown({
       const typedData = NotificationSchema.array().parse(data || []);
       setNotifications(typedData);
     } catch (error) {
-      console.error("Error fetching notifications:", error);
+      if (error instanceof z.ZodError) {
+        console.error("Notification data validation failed:", error.errors);
+      } else {
+        console.error("Error fetching notifications:", error);
+      }
       toast({
         title: "Error",
         description: "Failed to load notifications",

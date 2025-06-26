@@ -1,5 +1,5 @@
-import { fileURLToPath } from "url";
-import { dirname } from "path";
+import { fileURLToPath } from "node:url";
+import { dirname } from "node:path";
 import withBundleAnalyzer from "@next/bundle-analyzer";
 
 /** Handle __filename and __dirname in ESM */

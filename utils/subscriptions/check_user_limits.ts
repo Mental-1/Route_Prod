@@ -55,3 +55,37 @@ export async function checkUserPlanLimit(userId: string) {
     activeListings: activeListings || 0,
   };
 }
+// //TODO: {*/
+// // + // Alternative: Single query with JOIN
+// + const { data: planData, error: planError } = await supabase
+// +   .from("user_subscriptions")
+// +   .select(`
+// +     plan_id,
+// +     plans!inner(max_listings)
+// +   `)
+// +   .eq("user_id", userId)
+// +   .eq("status", "active")
+// +   .single();
+// //
+// - const { data: latestListing, error: listingError } = await supabase
+// -   .from("listings")
+// -   .select("plan_id")
+// -   .eq("user_id", userId)
+// -   .order("created_at", { ascending: false })
+// -   .limit(1)
+// -   .single();
+// -
+// - if (listingError || !latestListing?.plan_id) {
+// -   throw new AppError("Could not determine active plan", 400, "NO_PLAN_FOUND");
+// - }
+// + const { data: userSubscription, error: subscriptionError } = await supabase
+// +   .from("user_subscriptions")
+// +   .select("plan_id")
+// +   .eq("user_id", userId)
+// +   .eq("status", "active")
+// +   .single();
+// +
+// + if (subscriptionError || !userSubscription?.plan_id) {
+// +   throw new AppError("Could not determine active plan", 400, "NO_PLAN_FOUND");
+// + }
+//  /*}

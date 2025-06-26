@@ -62,13 +62,17 @@ export default function ListingsPage() {
   const [showBackToTop, setShowBackToTop] = useState(false);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadingRef = useRef<HTMLDivElement>(null);
+  const [categoryError, setCategoryError] = useState<string | null>(null);
 
   // Fetch categories from API
   useEffect(() => {
     fetch("/api/categories")
       .then((res) => res.json())
       .then((data) => setCategories(data || []))
-      .catch(() => setCategories([]));
+      .catch((error) => {
+        setCategoryError("Failed to load categories");
+        setCategories([]);
+      });
   }, []);
 
   // Fetch subcategories from API
@@ -76,7 +80,10 @@ export default function ListingsPage() {
     fetch("/api/subcategories")
       .then((res) => res.json())
       .then((data) => setSubcategories(data || []))
-      .catch(() => setSubcategories([]));
+      .catch((error) => {
+        setCategoryError("Failed to load categories");
+        setCategories([]);
+      });
   }, []);
 
   // Fetch listings from API
@@ -85,8 +92,10 @@ export default function ListingsPage() {
     fetchListings({
       page: 1,
       filters: {
-        categories: selectedCategories.map(Number),
-        subcategories: selectedSubcategories.map(Number),
+        categories: selectedCategories.map(Number).filter((n) => !isNaN(n)),
+        subcategories: selectedSubcategories
+          .map(Number)
+          .filter((n) => !isNaN(n)),
         conditions: selectedConditions,
         priceRange: {
           min: priceRange[0],
@@ -121,8 +130,10 @@ export default function ListingsPage() {
     const moreListings = await fetchListings({
       page: nextPage,
       filters: {
-        categories: selectedCategories.map(Number),
-        subcategories: selectedSubcategories.map(Number),
+        categories: selectedCategories.map(Number).filter((n) => !isNaN(n)),
+        subcategories: selectedSubcategories
+          .map(Number)
+          .filter((n) => !isNaN(n)),
         conditions: selectedConditions,
         priceRange: {
           min: priceRange[0],
@@ -277,7 +288,7 @@ export default function ListingsPage() {
                       .filter(
                         (sub) =>
                           sub.parent_category_id ===
-                          Number(selectedCategories[0]),
+                          parseInt(selectedCategories[0], 10),
                       )
                       .map((subcategory) => (
                         <div
@@ -452,7 +463,7 @@ export default function ListingsPage() {
                               .filter(
                                 (sub) =>
                                   sub.parent_category_id ===
-                                  Number(selectedCategories[0]),
+                                  parseInt(selectedCategories[0], 10),
                               )
                               .map((subcategory) => (
                                 <div
@@ -655,7 +666,11 @@ export default function ListingsPage() {
                     <CardContent className="p-0">
                       <div className="aspect-square bg-muted">
                         <img
-                          src={listing.images?.[0] || "/placeholder.svg"}
+                          src={
+                            (listing.images && listing.images.length > 0
+                              ? listing.images[0]
+                              : null) || "/placeholder.svg"
+                          }
                           alt={listing.title}
                           className="w-full h-full object-cover"
                         />
@@ -700,7 +715,11 @@ export default function ListingsPage() {
                       <div className="flex">
                         <div className="w-40 h-40 bg-muted">
                           <img
-                            src={listing.images?.[0] || "/placeholder.svg"}
+                            src={
+                              (listing.images && listing.images.length > 0
+                                ? listing.images[0]
+                                : null) || "/placeholder.svg"
+                            }
                             alt={listing.title}
                             className="w-full h-full object-cover"
                           />

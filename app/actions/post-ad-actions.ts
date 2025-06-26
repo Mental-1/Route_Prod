@@ -114,7 +114,11 @@ export async function createListingAction(
   try {
     const headersList = await headers();
     const userAgent = headersList.get("user-agent") || "";
-    const ip = headersList.get("x-forwarded-for")?.split(",")[0] || "unknown";
+    const ip =
+      headersList.get("x-real-ip") ||
+      headersList.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      headersList.get("x-client-ip") ||
+      "unknown";
 
     const rateLimitResult = createListingLimiter.check(ip);
     if (!rateLimitResult.allowed) {
@@ -171,11 +175,13 @@ export async function createListingAction(
 
     const processedImages = await processImages(formData.mediaUrls, user.id);
 
+    const DEFAULT_PLAN = "free";
+    const DEFAULT_LISTING_DURATION_DAYS = 30;
     const supabase = await getSupabaseServer();
 
-    const plan = "free";
+    const plan = DEFAULT_PLAN;
     const expiry_date = new Date(
-      Date.now() + 30 * 24 * 60 * 60 * 1000,
+      Date.now() + DEFAULT_LISTING_DURATION_DAYS * 24 * 60 * 60 * 1000,
     ).toISOString();
 
     const listingData: ListingCreateData = {

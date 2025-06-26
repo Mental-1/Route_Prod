@@ -98,11 +98,12 @@ export function AuthForm() {
         if (res.ok) {
           router.push("/");
         } else {
-          throw new Error("Session sync failed");
+          const errorData = await res.text();
+          throw new Error(`Session sync failed: ${errorData}`);
         }
+      } else {
+        throw new Error("No session returned from sign-in");
       }
-
-      router.push("/");
     } catch (error: any) {
       setError(error.message || "An error occurred during sign in");
     } finally {
