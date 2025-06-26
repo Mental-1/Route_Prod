@@ -21,10 +21,9 @@ export interface ListingsItem {
   condition: string | null;
   location: string | null;
   views: number | null;
-  category_id: number | null;// Assuming category_id is a number using the same type as in the database
+  category_id: number | null; // Assuming category_id is a number using the same type as in the database
   subcategory_id: number | null; // Assuming subcategory_id is a number using the same type as in the database
   createdAt: string | null; // Assuming created_at is a string in ISO format
-
 }
 
 export async function getRecentListings(): Promise<DisplayListingItem[]> {
@@ -54,8 +53,7 @@ export async function getRecentListings(): Promise<DisplayListingItem[]> {
     price: listing.price,
     location: listing.location,
     rating: listing.views,
-    images:
-      listing.images && listing.images.length > 0 ? listing.images : null,
+    images: listing.images && listing.images.length > 0 ? listing.images : null,
     condition: listing.condition,
   }));
 
@@ -73,7 +71,7 @@ export async function fetchListings({
   pageSize?: number;
   filters?: {
     categories?: number[];
-    subcategories?: number[]; 
+    subcategories?: number[];
     conditions?: string[];
     priceRange?: { min: number; max: number };
   };
@@ -84,7 +82,9 @@ export async function fetchListings({
 
   let query = supabase
     .from("listings")
-    .select("id, title, description, price , images, condition, location, views, category_id, subcategory_id, created_at")
+    .select(
+      "id, title, description, price , images, condition, location, views, category_id, subcategory_id, created_at",
+    )
     .order(sortBy, { ascending: sortOrder === "asc" })
     .range((page - 1) * pageSize, page * pageSize - 1);
 
@@ -104,7 +104,7 @@ export async function fetchListings({
   }
   const { data, error } = await query;
 
-  if (!data || error) {
+  if (error) {
     console.error("Error fetching listings:", error?.message);
     Toast({
       title: "Error fetching listings... Please refresh the page.",

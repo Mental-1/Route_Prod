@@ -30,17 +30,18 @@ const CategoriesSection = dynamic(
  */
 export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [recentListings, setRecentListings] = useState<DisplayListingItem[]>([]);
-
+  const [recentListings, setRecentListings] = useState<DisplayListingItem[]>(
+    [],
+  );
 
   useEffect(() => {
     async function fetchRecentListings() {
       const listings = await getRecentListings();
       setRecentListings(listings);
-  }
-  fetchRecentListings();
+    }
+    fetchRecentListings();
   }, []);
-  
+
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
@@ -51,7 +52,8 @@ export default function HomePage() {
               Find Everything You Need
             </h1>
             <p className="text-lg md:text-xl mb-6 text-blue-100">
-              Buy, sell, and discover amazing deals in your neighborhood
+              Buy, sell, and discover amazing deals in your neighborhood and get
+              directed to the spot.
             </p>
 
             {/* Search Bar */}

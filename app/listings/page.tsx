@@ -47,11 +47,15 @@ export default function ListingsPage() {
   const [selectedConditions, setSelectedConditions] = useState<string[]>([]);
   const [maxDistance, setMaxDistance] = useState([10]);
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
-  const [selectedSubcategories, setSelectedSubcategories] = useState<string[]>([]);
+  const [selectedSubcategories, setSelectedSubcategories] = useState<string[]>(
+    [],
+  );
 
   // Listings and categories state
   const [listings, setListings] = useState<ListingsItem[]>([]);
-  const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
+  const [categories, setCategories] = useState<{ id: number; name: string }[]>(
+    [],
+  );
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(1);
@@ -101,7 +105,13 @@ export default function ListingsPage() {
         console.error("Error fetching listings:", error);
         setLoading(false);
       });
-  }, [selectedCategories, selectedSubcategories, selectedConditions, priceRange, sortBy]);
+  }, [
+    selectedCategories,
+    selectedSubcategories,
+    selectedConditions,
+    priceRange,
+    sortBy,
+  ]);
 
   // Infinite scroll logic
   const loadMoreListings = useCallback(async () => {
@@ -125,7 +135,16 @@ export default function ListingsPage() {
     setHasMore(moreListings.length > 0);
     setPage(nextPage);
     setLoading(false);
-  }, [loading, hasMore, page, selectedCategories, selectedSubcategories, selectedConditions, priceRange, sortBy]);
+  }, [
+    loading,
+    hasMore,
+    page,
+    selectedCategories,
+    selectedSubcategories,
+    selectedConditions,
+    priceRange,
+    sortBy,
+  ]);
 
   // Intersection observer for infinite scroll
   useEffect(() => {
@@ -204,7 +223,9 @@ export default function ListingsPage() {
     if (checked) {
       setSelectedSubcategories((prev) => [...prev, subcategoryId]);
     } else {
-      setSelectedSubcategories((prev) => prev.filter((id) => id !== subcategoryId));
+      setSelectedSubcategories((prev) =>
+        prev.filter((id) => id !== subcategoryId),
+      );
     }
   };
 
@@ -253,14 +274,26 @@ export default function ListingsPage() {
                   <h3 className="font-medium mb-2">Subcategories</h3>
                   <div className="space-y-2">
                     {subcategories
-                      .filter((sub) => sub.parent_category_id === Number(selectedCategories[0]))
+                      .filter(
+                        (sub) =>
+                          sub.parent_category_id ===
+                          Number(selectedCategories[0]),
+                      )
                       .map((subcategory) => (
-                        <div key={subcategory.id} className="flex items-center space-x-2">
+                        <div
+                          key={subcategory.id}
+                          className="flex items-center space-x-2"
+                        >
                           <Checkbox
                             id={`subcategory-${subcategory.id}`}
-                            checked={selectedSubcategories.includes(subcategory.id.toString())}
+                            checked={selectedSubcategories.includes(
+                              subcategory.id.toString(),
+                            )}
                             onCheckedChange={(checked) =>
-                              handleSubcategoryChange(subcategory.id.toString(), checked as boolean)
+                              handleSubcategoryChange(
+                                subcategory.id.toString(),
+                                checked as boolean,
+                              )
                             }
                           />
                           <label
@@ -286,8 +319,8 @@ export default function ListingsPage() {
                     onValueChange={setPriceRange}
                   />
                   <div className="flex items-center justify-between">
-                    <span className="text-sm">${priceRange[0]}</span>
-                    <span className="text-sm">${priceRange[1]}</span>
+                    <span className="text-sm">Ksh {priceRange[0]}</span>
+                    <span className="text-sm">Ksh {priceRange[1]}</span>
                   </div>
                 </div>
               </div>
@@ -416,14 +449,26 @@ export default function ListingsPage() {
                         <AccordionContent>
                           <div className="space-y-2">
                             {subcategories
-                              .filter((sub) => sub.parent_category_id === Number(selectedCategories[0]))
+                              .filter(
+                                (sub) =>
+                                  sub.parent_category_id ===
+                                  Number(selectedCategories[0]),
+                              )
                               .map((subcategory) => (
-                                <div key={subcategory.id} className="flex items-center space-x-2">
+                                <div
+                                  key={subcategory.id}
+                                  className="flex items-center space-x-2"
+                                >
                                   <Checkbox
                                     id={`mobile-subcategory-${subcategory.id}`}
-                                    checked={selectedSubcategories.includes(subcategory.id.toString())}
+                                    checked={selectedSubcategories.includes(
+                                      subcategory.id.toString(),
+                                    )}
                                     onCheckedChange={(checked) =>
-                                      handleSubcategoryChange(subcategory.id.toString(), checked as boolean)
+                                      handleSubcategoryChange(
+                                        subcategory.id.toString(),
+                                        checked as boolean,
+                                      )
                                     }
                                   />
                                   <label
@@ -451,8 +496,8 @@ export default function ListingsPage() {
                             onValueChange={setPriceRange}
                           />
                           <div className="flex items-center justify-between">
-                            <span className="text-sm">${priceRange[0]}</span>
-                            <span className="text-sm">${priceRange[1]}</span>
+                            <span className="text-sm">Ksh {priceRange[0]}</span>
+                            <span className="text-sm">Ksh {priceRange[1]}</span>
                           </div>
                         </div>
                       </AccordionContent>
