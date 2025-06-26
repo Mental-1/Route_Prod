@@ -88,10 +88,10 @@ export function filterNullValues<T>(array: (T | null | undefined)[]): T[] {
 }
 
 /**
- * Checks if the input string is a valid email address.
+ * Validates whether a string is a properly formatted email address.
  *
- * @param email - The email address to validate
- * @returns True if the email is valid, otherwise false
+ * @param email - The email address to check
+ * @returns True if the input is a valid email address; otherwise, false
  */
 export function validateEmail(email: string): boolean {
   const emailRegex =
@@ -136,10 +136,10 @@ export function validateFileSize(file: File, maxSizeInMB: number): boolean {
 }
 
 /**
- * Converts a byte value into a human-readable file size string with appropriate units (Bytes, KB, MB, GB).
+ * Formats a byte value as a human-readable file size string with units (Bytes, KB, MB, or GB).
  *
- * @param bytes - The file size in bytes
- * @returns The formatted file size string with units
+ * @param bytes - The number of bytes to format
+ * @returns The formatted file size string with the appropriate unit
  */
 export function formatFileSize(bytes: number): string {
   if (bytes === 0) return "0 Bytes";
@@ -228,13 +228,12 @@ export function formatLocation(city?: string, country?: string): string {
 }
 
 /**
- * Formats a number as a localized currency string.
+ * Formats a number as a Kenyan Shilling (KES) currency string.
  *
- * Returns "Price not specified" if the input price is null or undefined. Uses "KES" as the default currency.
+ * Returns "Price not specified" if the price is null or undefined.
  *
  * @param price - The numeric value to format as currency
- * @param currency - The ISO currency code to use (default is "KES")
- * @returns The formatted currency string or a default message if price is not provided
+ * @returns The formatted KES currency string or a default message if price is not provided
  */
 export function formatPrice(
   price: number | null | undefined,
@@ -401,13 +400,11 @@ export function uniqueBy<T>(
 }
 
 /**
- * Returns a valid image URL, using a fallback placeholder if the input is missing or invalid.
+ * Resolves an image URL, returning the fallback if the input path is missing or empty.
  *
- * If the input path is null, undefined, or empty, the fallback URL is returned. If the path starts with "http", it is returned as is.
+ * If the provided path is null, undefined, or an empty string, the fallback URL is returned. If the path begins with "http", it is returned unchanged; otherwise, the original path is returned.
  *
- * @param path - The image path or URL to validate
- * @param fallback - The fallback URL to use if the path is missing or invalid (defaults to "/placeholder.svg")
- * @returns The resolved image URL or the fallback URL
+ * @returns The resolved image URL or the fallback if the input is missing or invalid.
  */
 export function generateImageUrl(
   path: string | null | undefined,

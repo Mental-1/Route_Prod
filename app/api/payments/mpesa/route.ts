@@ -2,6 +2,13 @@ import { type NextRequest, NextResponse } from "next/server";
 import { getSupabaseServer } from "@/utils/supabase/server";
 import { mpesaPaymentSchema } from "@/lib/validations";
 
+/**
+ * Handles M-Pesa payment initiation via a POST request.
+ *
+ * Validates the request body, authenticates the user, obtains an M-Pesa access token, and initiates an STK Push payment request. On success, records the transaction in the database and returns payment initiation details. Returns appropriate error responses for authentication, validation, or payment initiation failures.
+ *
+ * @returns A JSON response indicating success with payment and transaction details, or an error message with the appropriate HTTP status code.
+ */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();

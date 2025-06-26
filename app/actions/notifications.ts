@@ -104,14 +104,14 @@ export async function markAllNotificationsAsRead(userId: string) {
 }
 
 /**
- * Sends an expiry warning notification for a listing that is nearing expiration.
+ * Notifies a user that a listing is nearing expiration via in-app notification and, if enabled, email.
  *
- * Creates an in-app notification for the user and, if the user has enabled email notifications and an email address is available, sends an email alert about the upcoming listing expiration.
+ * Creates an in-app notification for the user about the upcoming listing expiration. If the user has enabled email notifications and an email address is available, also sends an email alert with renewal instructions.
  *
  * @param userId - The ID of the user to notify
- * @param listingId - The ID of the listing that is expiring
+ * @param listingId - The ID of the expiring listing
  * @param listingTitle - The title of the expiring listing
- * @param daysRemaining - The number of days remaining before the listing expires
+ * @param daysRemaining - The number of days left before the listing expires
  * @returns An object indicating success
  */
 export async function sendExpiryNotification(

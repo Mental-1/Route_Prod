@@ -2,9 +2,9 @@ import { NextResponse } from "next/server";
 import { getSupabaseRouteHandler } from "@/utils/supabase/server";
 
 /**
- * Handles GET requests to retrieve listing data.
+ * Retrieves listing data, either a single listing by ID or a paginated list of listings.
  *
- * If an `id` query parameter is provided, returns a single listing by ID or a 404 error if not found. Without an `id`, returns a paginated list of listings with total count and pagination metadata. Each listing includes additional mocked fields for distance, rating, and reviews.
+ * If an `id` query parameter is provided, returns the corresponding listing with additional mocked fields (`distance`, `rating`, `reviews`). If not found, responds with 404. Without an `id`, returns a paginated list of listings ordered by creation date, including total count, pagination metadata, and the same mocked fields for each listing.
  *
  * @returns A JSON response containing either a single formatted listing or a paginated list of listings with metadata.
  */
@@ -93,9 +93,9 @@ export async function GET(request: Request) {
   }
 }
 /**
- * Handles creation of a new listing.
+ * Creates a new listing associated with the authenticated user.
  *
- * Authenticates the user, parses and sanitizes the request body, and inserts a new listing into the database. Returns the created listing data on success, or an error response if authentication fails or an internal error occurs.
+ * Authenticates the user, validates and sanitizes the request body, and inserts a new listing into the database. Returns the created listing data with a 201 status on success, or an error response if authentication fails or an internal error occurs.
  */
 export async function POST(request: Request) {
   const supabase = await getSupabaseRouteHandler();

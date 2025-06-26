@@ -2,11 +2,11 @@ import { type NextRequest, NextResponse } from "next/server";
 import { getSupabaseRouteHandler } from "@/utils/supabase/server";
 
 /**
- * Handles GET requests to retrieve a single active listing by its ID, including related category, subcategory, and seller information.
+ * Retrieves a single active listing by its ID, including related category, subcategory, and seller details.
  *
  * @param request - The incoming HTTP request
- * @param params - An object containing the listing ID as `id`
- * @returns A JSON response with the listing data if found, or an error message with the appropriate HTTP status code
+ * @param context - Contains route parameters, including the listing ID as `id`
+ * @returns A JSON response with the listing data if found, or an error message with a 404 or 500 status code
  */
 export async function GET(
   request: NextRequest,

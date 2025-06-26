@@ -20,7 +20,7 @@ interface UseFileUploadOptions {
 /**
  * React hook for uploading and deleting files with progress tracking and user notifications.
  *
- * Provides functions to upload a single file, upload multiple files sequentially, and delete a file by URL. Tracks upload progress and uploading state, and displays toast notifications for success or failure.
+ * Exposes functions to upload a single file, upload multiple files in parallel batches, and delete a file by URL. Tracks upload progress and uploading state, and displays toast notifications for success or failure.
  *
  * @param options - Configuration for file upload, including upload type, maximum files, maximum size, and allowed MIME types.
  * @returns An object containing `uploadFile`, `uploadFiles`, and `deleteFile` functions, along with `uploading` and `uploadProgress` state values.

@@ -14,6 +14,13 @@ const sessionCache = createCache({
   maxSize: 100,
 });
 
+/**
+ * Handles GET requests to retrieve the current Supabase user session with request validation, rate limiting, and caching.
+ *
+ * Validates the request method and headers, enforces rate limiting based on client IP, and serves a cached session if available. If no cached session exists, fetches the session from Supabase, caches it, and returns it in the response. Returns appropriate error responses for invalid requests, rate limit violations, or session retrieval failures.
+ *
+ * @returns A JSON response containing the user session or an error message.
+ */
 export async function GET(request: Request) {
   const validation = await validateRequest(request, {
     method: "GET",
