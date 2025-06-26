@@ -26,6 +26,13 @@ export interface ListingsItem {
   createdAt: string | null; // Assuming created_at is a string in ISO format
 }
 
+/**
+ * Retrieves up to eight of the most recent listings created within the last four days.
+ *
+ * Fetches listing data from the backend, transforms it into display-friendly objects, and returns an array of `DisplayListingItem`. If an error occurs during fetching, returns an empty array.
+ *
+ * @returns An array of recent listings formatted for display.
+ */
 export async function getRecentListings(): Promise<DisplayListingItem[]> {
   const supabase = createBrowserClient();
 
@@ -58,6 +65,18 @@ export async function getRecentListings(): Promise<DisplayListingItem[]> {
   return transformedListings;
 }
 
+/**
+ * Fetches a paginated list of listings from the database with optional filtering and sorting.
+ *
+ * Applies filters for categories, subcategories, conditions, and price range if provided. Results are sorted and paginated according to the specified parameters.
+ *
+ * @param page - The page number to retrieve (default is 1)
+ * @param pageSize - The number of listings per page (default is 10)
+ * @param filters - Optional filters for categories, subcategories, conditions, and price range
+ * @param sortBy - The field to sort by (default is "created_at")
+ * @param sortOrder - The sort order, either "asc" or "desc" (default is "desc")
+ * @returns An array of listings matching the specified criteria
+ */
 export async function fetchListings({
   page = 1,
   pageSize = 10,

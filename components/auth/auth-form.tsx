@@ -40,9 +40,9 @@ const signUpSchema = z.object({
 });
 
 /**
- * Renders an authentication form with sign-in and sign-up modes, including input validation and integration with Supabase authentication.
+ * Displays an authentication form supporting both sign-in and sign-up modes with client-side validation and Supabase integration.
  *
- * Provides email/password sign-in and sign-up, collects user details for registration, and displays error or informational messages. Supports toggling password visibility and switching between authentication modes.
+ * Allows users to sign in with email and password or register a new account by providing email, username, full name, phone number, and password. Handles input validation, error and informational messaging, password visibility toggling, and mode switching. On successful authentication, synchronizes the session and redirects the user as appropriate.
  */
 export function AuthForm() {
   const router = useRouter();

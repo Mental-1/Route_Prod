@@ -44,6 +44,14 @@ interface NotificationDropdownProps {
   setUnreadCountAction: (count: number) => void;
 }
 
+/**
+ * Displays a dropdown menu for user notifications with options to view, mark as read, and delete notifications.
+ *
+ * Fetches notifications from the backend when opened, validates them, and manages their read and deletion state. Provides visual cues for unread notifications and allows marking all or individual notifications as read. Notifies users of errors or successful actions via toast messages.
+ *
+ * @param unreadCount - The current number of unread notifications to display in the badge.
+ * @param setUnreadCountAction - Callback to update the unread notification count externally.
+ */
 export function NotificationDropdown({
   unreadCount,
   setUnreadCountAction,

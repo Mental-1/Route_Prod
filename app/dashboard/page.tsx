@@ -11,9 +11,9 @@ import { Check, Clock, DollarSign, Eye, Plus, Star } from "lucide-react"
 import { syncSupabaseSession } from "@/utils/supabase/sync-session"
 
 /**
- * Renders the user dashboard page, displaying authenticated user information, profile statistics, recent activity, and quick navigation actions.
+ * Displays the authenticated user's dashboard with profile information, statistics, recent activity, and navigation actions.
  *
- * Redirects unauthenticated users to the sign-in page. Fetches and displays user profile data, mock statistics, and recent activities. Provides navigation to account management, listings, transactions, messages, and settings.
+ * Redirects unauthenticated users to the sign-in page. Fetches and presents user profile data, mock statistics, and recent activities. Provides quick access to account management, listings, transactions, messages, and settings.
  */
 export default function DashboardPage() {
   const router = useRouter()
@@ -128,6 +128,11 @@ export default function DashboardPage() {
   ]
 
   useEffect(() => {
+    /**
+     * Initializes the dashboard by synchronizing the Supabase session, verifying authentication, and loading the user's profile data.
+     *
+     * Redirects unauthenticated users to the sign-in page. If no profile is found in the database, sets a default profile using session metadata.
+     */
     async function init() {
       await syncSupabaseSession()
       const { data: { session } } = await supabase.auth.getSession()

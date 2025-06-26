@@ -24,9 +24,9 @@ const CategoriesSection = dynamic(
 );
 
 /**
- * Renders the marketplace homepage with hero, categories, recent listings, and call-to-action sections.
+ * Displays the main marketplace homepage with sections for search, categories, recent listings, and a call-to-action to post an ad.
  *
- * Displays a search bar, dynamically loaded categories, a grid of recent listings, and a prompt to post a new ad.
+ * Fetches and renders recent listings dynamically, and provides navigation to browse or post items.
  */
 export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -37,6 +37,9 @@ export default function HomePage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    /**
+     * Fetches recent marketplace listings and updates the component state with the results.
+     */
     async function fetchRecentListings() {
       try {
         setLoading(true);

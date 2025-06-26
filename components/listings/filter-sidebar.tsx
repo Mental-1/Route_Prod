@@ -35,15 +35,15 @@ interface FilterSidebarProps {
 }
 
 /**
- * Renders a sidebar component for filtering listings by category, price range, location, distance, item condition, and seller rating.
+ * Displays a sidebar with interactive controls for filtering listings by category, price, location, distance, item condition, and seller rating.
  *
- * Provides interactive controls for each filter type, displays active filters, and allows users to apply or reset filters. Synchronizes filter state with URL query parameters and invokes a callback with the current filter values when filters are applied or reset.
+ * Synchronizes filter state with URL query parameters and invokes a callback with the current filter values when filters are applied or reset. Shows active filters and provides options to apply or reset all filters.
  *
- * @param categories - Array of category objects to display as filter options
+ * @param categories - List of category objects to display as filter options
  * @param initialFilters - Optional initial filter values for pre-populating the filter controls
- * @param onFilterChange - Callback invoked with the current filters whenever filters are applied or reset
+ * @param onFilterChange - Callback invoked with the current filters when filters are applied or reset
  * @param className - Optional CSS class for custom styling
- * @returns A React component rendering the filter sidebar UI
+ * @returns The filter sidebar React component
  */
 export function FilterSidebar({
   categories,

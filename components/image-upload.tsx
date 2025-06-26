@@ -17,6 +17,13 @@ interface ImageUploadProps {
   uploadType?: "listing" | "profile";
 }
 
+/**
+ * React component for uploading, previewing, and managing images and videos with drag-and-drop and file input support.
+ *
+ * Allows users to upload multiple images and videos up to configurable limits, displays upload progress, and provides previews with individual and bulk deletion options. Invokes a callback with the updated list of file URLs after uploads or deletions.
+ *
+ * @param onChangeAction - Callback invoked with the updated array of uploaded file URLs after any change.
+ */
 export function ImageUpload({
   maxImages = 10,
   maxVideos = 2,
