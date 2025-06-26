@@ -49,7 +49,6 @@ export async function getRecentListings(): Promise<DisplayListingItem[]> {
   if (error) {
     console.error("Error fetching recent listings:", error.message);
     throw new Error("Failed to fetch recent listings");
-    return [];
   }
 
   const transformedListings: DisplayListingItem[] = data.map((listing) => ({
