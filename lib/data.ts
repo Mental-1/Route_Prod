@@ -6,7 +6,7 @@ export interface DisplayListingItem {
   title: string;
   price: number | null;
   location: string | null;
-  rating: number | null;
+  views: number | null;
   images: string[] | null;
   condition: string | null;
   distance?: string;
@@ -26,6 +26,13 @@ export interface ListingsItem {
   createdAt: string | null; // Assuming created_at is a string in ISO format
 }
 
+/**
+ * Retrieves up to eight of the most recent listings created within the last four days.
+ *
+ * Fetches listing data from the backend, transforms it into display-friendly objects, and returns an array of `DisplayListingItem`. If an error occurs during fetching, returns an empty array.
+ *
+ * @returns An array of recent listings formatted for display.
+ */
 export async function getRecentListings(): Promise<DisplayListingItem[]> {
   const supabase = createBrowserClient();
 
@@ -41,10 +48,7 @@ export async function getRecentListings(): Promise<DisplayListingItem[]> {
 
   if (error) {
     console.error("Error fetching recent listings:", error.message);
-    Toast({
-      title: "Error fetching recent listings... Please refresh the page.",
-    });
-    return [];
+    throw new Error("Failed to fetch recent listings");
   }
 
   const transformedListings: DisplayListingItem[] = data.map((listing) => ({
@@ -52,7 +56,7 @@ export async function getRecentListings(): Promise<DisplayListingItem[]> {
     title: listing.title,
     price: listing.price,
     location: listing.location,
-    rating: listing.views,
+    views: listing.views,
     images: listing.images && listing.images.length > 0 ? listing.images : null,
     condition: listing.condition,
   }));
@@ -60,6 +64,18 @@ export async function getRecentListings(): Promise<DisplayListingItem[]> {
   return transformedListings;
 }
 
+/**
+ * Fetches a paginated list of listings from the database with optional filtering and sorting.
+ *
+ * Applies filters for categories, subcategories, conditions, and price range if provided. Results are sorted and paginated according to the specified parameters.
+ *
+ * @param page - The page number to retrieve (default is 1)
+ * @param pageSize - The number of listings per page (default is 10)
+ * @param filters - Optional filters for categories, subcategories, conditions, and price range
+ * @param sortBy - The field to sort by (default is "created_at")
+ * @param sortOrder - The sort order, either "asc" or "desc" (default is "desc")
+ * @returns An array of listings matching the specified criteria
+ */
 export async function fetchListings({
   page = 1,
   pageSize = 10,
@@ -83,13 +99,18 @@ export async function fetchListings({
   let query = supabase
     .from("listings")
     .select(
-      "id, title, description, price , images, condition, location, views, category_id, subcategory_id, created_at",
+      "id, title, description, price, images, condition, location, views, category_id, subcategory_id, created_at",
     )
     .order(sortBy, { ascending: sortOrder === "asc" })
     .range((page - 1) * pageSize, page * pageSize - 1);
 
   if (filters.categories && filters.categories.length > 0) {
-    query = query.in("category_id", filters.categories.map(Number));
+    const validCategories = filters.categories
+      .map(Number)
+      .filter((n) => !isNaN(n) && n > 0);
+    if (validCategories.length > 0) {
+      query = query.in("category_id", validCategories);
+    }
   }
   if (filters.subcategories && filters.subcategories.length > 0) {
     query = query.in("subcategory_id", filters.subcategories.map(Number));
@@ -106,9 +127,7 @@ export async function fetchListings({
 
   if (error) {
     console.error("Error fetching listings:", error?.message);
-    Toast({
-      title: "Error fetching listings... Please refresh the page.",
-    });
+    throw new Error("Failed to fetch listings");
     return [];
   }
 

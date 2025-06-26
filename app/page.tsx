@@ -24,20 +24,35 @@ const CategoriesSection = dynamic(
 );
 
 /**
- * Renders the marketplace homepage with hero, categories, recent listings, and call-to-action sections.
+ * Displays the main marketplace homepage with sections for search, categories, recent listings, and a call-to-action to post an ad.
  *
- * Displays a search bar, dynamically loaded categories, a grid of recent listings, and a prompt to post a new ad.
+ * Fetches and renders recent listings dynamically, and provides navigation to browse or post items.
  */
 export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [recentListings, setRecentListings] = useState<DisplayListingItem[]>(
     [],
   );
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    /**
+     * Fetches recent marketplace listings and updates the component state with the results.
+     */
     async function fetchRecentListings() {
-      const listings = await getRecentListings();
-      setRecentListings(listings);
+      try {
+        setLoading(true);
+        setError(null);
+
+        const listings = await getRecentListings();
+        setRecentListings(listings);
+      } catch (error) {
+        setError("Failed to fetch recent listings");
+        console.error("Error fetching recent listings", error);
+      } finally {
+        setLoading(false);
+      }
     }
     fetchRecentListings();
   }, []);
@@ -45,7 +60,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-blue-600 to-blue-800 text-white py-12">
+      <section className="bg-gradient-to-br from-green-600 to-green-800 text-white py-12">
         <div className="container px-4">
           <div className="max-w-3xl mx-auto text-center">
             <h1 className="text-3xl md:text-5xl font-bold mb-4">
@@ -89,54 +104,64 @@ export default function HomePage() {
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {recentListings.map((listing: DisplayListingItem) => (
-              <Link key={listing.id} href={`/listings/${listing.id}`}>
-                <Card className="hover:shadow-md transition-shadow cursor-pointer overflow-hidden border-0">
-                  <CardContent className="p-0">
-                    <div className="aspect-square bg-muted">
-                      <img
-                        src={
-                          Array.isArray(listing.images)
-                            ? listing.images[0] || "/placeholder.svg"
-                            : listing.images || "/placeholder.svg"
-                        }
-                        alt={listing.title}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <div className="p-3">
-                      <h3 className="font-medium text-base mb-1 truncate">
-                        {listing.title}
-                      </h3>
-                      <p className="text-lg font-bold text-green-600 mb-1">
-                        ${listing.price ?? "N/A"}
-                      </p>
-                      <div className="flex items-center gap-2 mb-1">
-                        <Badge variant="outline" className="text-xs">
-                          {listing.condition}
-                        </Badge>
+            {loading ? (
+              <div className="col-span-full text-center py-8">
+                Loading recent listings...
+              </div>
+            ) : error ? (
+              <div className="col-span-full text-center py-8 text-red-600">
+                {error}
+              </div>
+            ) : (
+              recentListings.map((listing: DisplayListingItem) => (
+                <Link key={listing.id} href={`/listings/${listing.id}`}>
+                  <Card className="hover:shadow-md transition-shadow cursor-pointer overflow-hidden border-0">
+                    <CardContent className="p-0">
+                      <div className="aspect-square bg-muted">
+                        <img
+                          src={
+                            Array.isArray(listing.images)
+                              ? listing.images[0] || "/placeholder.svg"
+                              : listing.images || "/placeholder.svg"
+                          }
+                          alt={listing.title}
+                          className="w-full h-full object-cover"
+                        />
                       </div>
-                      <div className="flex items-center justify-between text-xs text-muted-foreground">
-                        <div className="flex items-center gap-1">
-                          <MapPin className="h-3 w-3" />
-                          {listing.distance}
+                      <div className="p-3">
+                        <h3 className="font-medium text-base mb-1 truncate">
+                          {listing.title}
+                        </h3>
+                        <p className="text-lg font-bold text-green-600 mb-1">
+                          Ksh {listing.price ?? "N/A"}
+                        </p>
+                        <div className="flex items-center gap-2 mb-1">
+                          <Badge variant="outline" className="text-xs">
+                            {listing.condition}
+                          </Badge>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                          {listing.rating}
+                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                          <div className="flex items-center gap-1">
+                            <MapPin className="h-3 w-3" />
+                            {listing.distance}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <div className="h-3 w-3 text-white" />
+                            {listing.views}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            ))}
+                    </CardContent>
+                  </Card>
+                </Link>
+              ))
+            )}
           </div>
         </div>
       </section>
 
       {/* CTA Section */}
-      <section className="py-10 bg-blue-600 text-white">
+      <section className="py-10 bg-green-600 text-white">
         <div className="container px-4 text-center">
           <h2 className="text-2xl font-bold mb-3">Ready to Start Selling?</h2>
           <p className="text-lg mb-6 text-blue-100">

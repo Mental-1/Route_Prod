@@ -32,11 +32,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 /**
- * Renders a responsive navigation bar with authentication-aware user menu, search functionality, and adaptive layout for mobile and desktop devices.
+ * Displays a responsive navigation bar with search, theme toggle, and user-specific actions for both mobile and desktop devices.
  *
- * The navigation bar displays route links, a search bar, theme toggle, and user-specific actions. On mobile devices, it adapts to show a collapsible menu and togglable search input. Authenticated users see a dropdown menu with profile information and account actions, while unauthenticated users are prompted to log in.
+ * The navigation adapts its layout based on device size, showing a collapsible menu and togglable search input on mobile. Authenticated users have access to a dropdown menu with profile information and account actions, while unauthenticated users are prompted to log in.
  *
- * @returns The navigation bar component for the application.
+ * @returns The application's navigation bar component.
  */
 export default function Navigation() {
   const pathname = usePathname();

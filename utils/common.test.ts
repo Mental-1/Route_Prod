@@ -105,7 +105,6 @@ describe("Type Checking Utilities", () => {
     });
     it("should return false for non-numbers", () => {
       expect(commonUtils.isNumber("123")).toBe(false);
-      expect(commonUtils.isNumber(NaN)).toBe(false);
       expect(commonUtils.isNumber(Number.NaN)).toBe(false);
       expect(commonUtils.isNumber(Number.POSITIVE_INFINITY)).toBe(false);
     });

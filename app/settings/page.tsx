@@ -26,6 +26,11 @@ import { Toaster } from "@/components/ui/toaster";
 import { Bell, Shield, Globe, Download, Trash2 } from "lucide-react";
 import { syncSupabaseSession } from "@/utils/supabase/sync-session";
 
+/**
+ * Renders the user settings page, allowing authenticated users to manage notification, privacy, preference, and data management options.
+ *
+ * Redirects unauthenticated users to the authentication page. Provides UI controls for toggling notification types, adjusting privacy settings, selecting language, currency, and timezone preferences, and managing account data including export and deletion actions.
+ */
 export default function SettingsPage() {
   const router = useRouter();
   const supabase = useMemo(() => createBrowserClient(), []);

@@ -5,6 +5,12 @@ interface CacheConfig {
   maxSize: number;
 }
 
+/**
+ * Creates an in-memory cache with configurable time-to-live and maximum size using an LRU eviction policy.
+ *
+ * @param config - Configuration object specifying the cache's TTL and maximum size
+ * @returns An object with methods to get, set, check, delete, and clear cache entries
+ */
 export function createCache(config: CacheConfig) {
   const cache = new LRUCache({
     max: config.maxSize,

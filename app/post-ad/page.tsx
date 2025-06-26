@@ -512,6 +512,11 @@ function AdDetailsStep({
   );
 }
 
+/**
+ * Renders the media upload step for an ad posting form, enforcing media limits based on the selected payment tier.
+ *
+ * Displays current plan details, allowed image and video counts, and warnings if uploaded media exceeds plan limits. Allows users to upload images and videos, updating the form data with selected media URLs.
+ */
 function MediaUploadStep({
   formData,
   updateFormData,

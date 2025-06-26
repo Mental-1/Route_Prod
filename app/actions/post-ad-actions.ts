@@ -40,6 +40,12 @@ const createListingSchema = z.object({
 
 type CreateListingInput = z.infer<typeof createListingSchema>;
 
+/**
+ * Retrieves the currently authenticated user and their profile from the database.
+ *
+ * @returns An object containing the authenticated user and their profile.
+ * @throws AppError if no user is authenticated.
+ */
 async function getUserContext() {
   const supabase = await getSupabaseServer();
   const {
@@ -60,6 +66,14 @@ async function getUserContext() {
   return { user, profile };
 }
 
+/**
+ * Validates that the specified category exists and, if provided, that the subcategory exists and belongs to the category.
+ *
+ * @param categoryId - The ID of the category to validate
+ * @param subcategoryId - Optional ID of the subcategory to validate
+ * @returns An object containing the validated category and, if applicable, subcategory
+ * @throws AppError if the category or subcategory is invalid
+ */
 async function validateCategories(categoryId: number, subcategoryId?: number) {
   const supabase = await getSupabaseServer();
 
@@ -90,6 +104,14 @@ async function validateCategories(categoryId: number, subcategoryId?: number) {
   return { category, subcategory };
 }
 
+/**
+ * Validates a list of image URLs for a listing, ensuring at least one and no more than ten images are provided and that each image URL contains the user's ID to verify ownership.
+ *
+ * @param imageUrls - Array of image URLs to validate
+ * @param userId - The ID of the user submitting the images
+ * @returns The validated array of image URLs
+ * @throws AppError if no images are provided, more than ten images are submitted, or any image URL does not contain the user's ID
+ */
 async function processImages(imageUrls: string[], userId: string) {
   if (!imageUrls?.length) {
     throw new AppError("At least one image is required", 400, "NO_IMAGES");
@@ -108,13 +130,25 @@ async function processImages(imageUrls: string[], userId: string) {
   return imageUrls;
 }
 
+/**
+ * Creates a new listing with validated input, user authentication, rate limiting, and auditing.
+ *
+ * Validates the provided listing data, enforces user plan and rate limits, processes images, and inserts the listing into the database. Updates the user's profile listing count, logs audit events, generates a slug, and triggers cache revalidation for relevant pages.
+ *
+ * @param formData - The listing details and associated image URLs to be created.
+ * @returns An object indicating success or failure, with the new listing's ID and slug on success.
+ */
 export async function createListingAction(
   formData: AdDetailsFormData & { mediaUrls: string[] },
 ): Promise<ActionResponse<{ id: string; slug: string }>> {
   try {
     const headersList = await headers();
     const userAgent = headersList.get("user-agent") || "";
-    const ip = headersList.get("x-forwarded-for")?.split(",")[0] || "unknown";
+    const ip =
+      headersList.get("x-real-ip") ||
+      headersList.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      headersList.get("x-client-ip") ||
+      "unknown";
 
     const rateLimitResult = createListingLimiter.check(ip);
     if (!rateLimitResult.allowed) {
@@ -171,11 +205,13 @@ export async function createListingAction(
 
     const processedImages = await processImages(formData.mediaUrls, user.id);
 
+    const DEFAULT_PLAN = "free";
+    const DEFAULT_LISTING_DURATION_DAYS = 30;
     const supabase = await getSupabaseServer();
 
-    const plan = "free";
+    const plan = DEFAULT_PLAN;
     const expiry_date = new Date(
-      Date.now() + 30 * 24 * 60 * 60 * 1000,
+      Date.now() + DEFAULT_LISTING_DURATION_DAYS * 24 * 60 * 60 * 1000,
     ).toISOString();
 
     const listingData: ListingCreateData = {

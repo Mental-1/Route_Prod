@@ -3,18 +3,19 @@ import { getSupabaseServer } from "@/utils/supabase/server";
 import { createRateLimiter } from "@/utils/rate-limiting";
 import { createCache } from "@/utils/caching";
 import { validateRequest } from "@/lib/request-validation";
+import { NextRequest } from "next/server";
 
 const sessionRateLimiter = createRateLimiter({
-  uniqueTokenPerPeriod: 50,
-  period: 60000,
+  maxRequests: 50,
+  windowMs: 60000,
 });
 
 const sessionCache = createCache({
-  ttl: 10000, 
+  ttl: 10000,
   maxSize: 100,
 });
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   const validation = await validateRequest(request, {
     method: "GET",
     allowedHeaders: ["authorization", "content-type"],
@@ -27,20 +28,31 @@ export async function GET(request: Request) {
     );
   }
 
-  const ip = request.headers.get("x-forwarded-for") ?? "127.0.0.1";
-  if (sessionRateLimiter.isRateLimited(ip)) {
-    return NextResponse.json(
-      { error: "Too many requests" },
-      { status: 429 },
-    );
+  const ip =
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    request.headers.get("x-real-ip") ||
+    request.headers.get("cf-connecting-ip") ||
+    "127.0.0.1";
+
+  if (!sessionRateLimiter.check(ip)) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
+  const supabase = await getSupabaseServer();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ session: null });
   }
 
-  const cachedSession = sessionCache.get("session");
+  const cacheKey = `session-${user.id}`;
+
+  const cachedSession = sessionCache.get(cacheKey);
   if (cachedSession) {
     return NextResponse.json({ session: cachedSession });
   }
 
-  const supabase = await getSupabaseServer();
   const {
     data: { session },
     error,
@@ -48,11 +60,14 @@ export async function GET(request: Request) {
 
   if (error) {
     console.error("Failed to get session from Supabase:", error);
-    return NextResponse.json({ error: "Failed to get session" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to get session" },
+      { status: 500 },
+    );
   }
 
   if (session) {
-    sessionCache.set("session", session);
+    sessionCache.set(cacheKey, session);
   }
 
   return NextResponse.json({ session });

@@ -79,7 +79,7 @@ export function getClientIdentifier(request: NextRequest): string {
   const realIp = request.headers.get("x-real-ip");
   if (realIp) return realIp.trim();
 
-  return realIp ?? "unknown";
+  return "unknown";
 }
 // Rate limiters for different actions
 export const createListingLimiter = createRateLimiter({
