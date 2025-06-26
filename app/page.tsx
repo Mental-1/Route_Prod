@@ -146,7 +146,7 @@ export default function HomePage() {
                             {listing.distance}
                           </div>
                           <div className="flex items-center gap-1">
-                            <div className="h-3 w-3 text-white-400" />
+                            <div className="h-3 w-3 text-white" />
                             {listing.views}
                           </div>
                         </div>
