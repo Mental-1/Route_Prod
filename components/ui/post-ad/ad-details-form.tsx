@@ -15,10 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  useCategories,
-  useSubcategories,
-} from "@/app/post-ad/hooks/useCategories";
+import { useCategories, useSubcategories } from "@/app/post-ad/hooks/useCategories";
 import { AdDetailsFormData } from "@/lib/types/form-types";
 import type { Database } from "@/utils/supabase/database.types";
 
@@ -51,14 +48,18 @@ export function AdDetailsForm({
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Use the existing hooks for dynamic data fetching
+  // Prefetch categories and subcategories on mount
   const {
     data: categories = [],
     isLoading: categoriesLoading,
     error: categoriesError,
   } = useCategories();
-  const { data: subcategories = [], isLoading: subcategoriesLoading } =
-    useSubcategories(formData.category || null);
+
+  // Fetch subcategories for the selected category
+  const {
+    data: subcategories = [],
+    isLoading: subcategoriesLoading,
+  } = useSubcategories(formData.category ? Number(formData.category) : null);
 
   const handleChange = (field: keyof AdDetailsFormData, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -227,8 +228,8 @@ export function AdDetailsForm({
                   subcategoriesLoading
                     ? "Loading..."
                     : subcategories.length === 0
-                      ? "No subcategories available"
-                      : "Select a subcategory"
+                    ? "No subcategories available"
+                    : "Select a subcategory"
                 }
               />
             </SelectTrigger>
@@ -278,7 +279,6 @@ export function AdDetailsForm({
             <SelectContent>
               <SelectItem value="new">New</SelectItem>
               <SelectItem value="used">Used</SelectItem>
-              <SelectItem value="like_new">Like New</SelectItem>
               <SelectItem value="refurbished">Refurbished</SelectItem>
             </SelectContent>
           </Select>

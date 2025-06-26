@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Filter, Grid, List, MapPin, Star, ChevronUp } from "lucide-react";
+import { Filter, Grid, List, MapPin, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -27,66 +27,14 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Checkbox } from "@/components/ui/checkbox";
+import { fetchListings, ListingsItem } from "@/lib/data";
 
-// TODO: Replace with actual API call to fetch listings
-const initialListings = [
-  {
-    id: 1,
-    title: "MacBook Air M1",
-    description: "13-inch, 256GB SSD, 8GB RAM",
-    price: 850,
-    originalPrice: 999,
-    image: "/placeholder.svg?height=200&width=200",
-    condition: "Excellent",
-    distance: "1.8 km away",
-    rating: 4.8,
-    reviews: 23,
-    categoryId: 4,
-  },
-];
+type Subcategory = {
+  id: number;
+  name: string;
+  parent_category_id: number;
+};
 
-// Categories
-const categories = [
-  { id: 1, name: "Automobiles" },
-  { id: 2, name: "Property" },
-  { id: 3, name: "Phones & Tablets" },
-  { id: 4, name: "Electronics" },
-  { id: 5, name: "House Appliances" },
-  { id: 6, name: "Furniture" },
-  { id: 7, name: "Health" },
-  { id: 8, name: "Beauty" },
-  { id: 9, name: "Fashion" },
-  { id: 10, name: "Sports" },
-  { id: 11, name: "Books" },
-  { id: 12, name: "Music" },
-  { id: 13, name: "Games" },
-  { id: 14, name: "Toys" },
-  { id: 15, name: "Baby Items" },
-  { id: 16, name: "Pets" },
-  { id: 17, name: "Garden" },
-  { id: 18, name: "Tools" },
-  { id: 19, name: "Art" },
-  { id: 20, name: "Jewelry" },
-  { id: 21, name: "Food" },
-  { id: 22, name: "Services" },
-  { id: 23, name: "Jobs" },
-];
-
-// Subcategories for Electronics (example)
-const subcategories = [
-  { id: 1, name: "Laptops", categoryId: 4 },
-  { id: 2, name: "Smartphones", categoryId: 3 },
-  { id: 3, name: "Tablets", categoryId: 3 },
-  { id: 4, name: "TVs", categoryId: 4 },
-  { id: 5, name: "Audio", categoryId: 4 },
-  { id: 6, name: "Cameras", categoryId: 4 },
-];
-
-/**
- * Renders the listings page with filtering, sorting, view toggling, and infinite scrolling.
- *
- * Displays a list of items for sale, allowing users to filter by category, price, condition, and distance, sort results, and switch between grid and list views. Supports infinite scroll to load more listings and includes a back-to-top button for improved navigation.
- */
 export default function ListingsPage() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [priceRange, setPriceRange] = useState([0, 5000]);
@@ -94,12 +42,20 @@ export default function ListingsPage() {
   const [sortBy, setSortBy] = useState("relevance");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
-  // Add state for filters
+  // Filters
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedConditions, setSelectedConditions] = useState<string[]>([]);
   const [maxDistance, setMaxDistance] = useState([10]);
+  const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
+  const [selectedSubcategories, setSelectedSubcategories] = useState<string[]>(
+    [],
+  );
 
-  const [listings, setListings] = useState(initialListings);
+  // Listings and categories state
+  const [listings, setListings] = useState<ListingsItem[]>([]);
+  const [categories, setCategories] = useState<{ id: number; name: string }[]>(
+    [],
+  );
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(1);
@@ -107,31 +63,92 @@ export default function ListingsPage() {
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadingRef = useRef<HTMLDivElement>(null);
 
+  // Fetch categories from API
+  useEffect(() => {
+    fetch("/api/categories")
+      .then((res) => res.json())
+      .then((data) => setCategories(data || []))
+      .catch(() => setCategories([]));
+  }, []);
+
+  // Fetch subcategories from API
+  useEffect(() => {
+    fetch("/api/subcategories")
+      .then((res) => res.json())
+      .then((data) => setSubcategories(data || []))
+      .catch(() => setSubcategories([]));
+  }, []);
+
+  // Fetch listings from API
+  useEffect(() => {
+    setLoading(true);
+    fetchListings({
+      page: 1,
+      filters: {
+        categories: selectedCategories.map(Number),
+        subcategories: selectedSubcategories.map(Number),
+        conditions: selectedConditions,
+        priceRange: {
+          min: priceRange[0],
+          max: priceRange[1],
+        },
+      },
+      sortBy,
+    })
+      .then((data) => {
+        setListings(data);
+        setHasMore(data.length > 10);
+        setPage(1);
+        setLoading(false);
+      })
+      .catch((error) => {
+        console.error("Error fetching listings:", error);
+        setLoading(false);
+      });
+  }, [
+    selectedCategories,
+    selectedSubcategories,
+    selectedConditions,
+    priceRange,
+    sortBy,
+  ]);
+
   // Infinite scroll logic
   const loadMoreListings = useCallback(async () => {
     if (loading || !hasMore) return;
-
     setLoading(true);
-
-    //TODO: Simulate API call - replace with actual API to fetch listings
-
-    setTimeout(() => {
-      const newListings = [...initialListings];
-      if (listings.length + newListings.length >= 24) {
-        // Limit for demo
-        setHasMore(false);
-      } else {
-        setListings((prev) => [...prev, ...newListings.slice(0, 8)]);
-        setPage((prev) => prev + 1);
-      }
-      setLoading(false);
-    }, 1000);
-  }, [loading, hasMore, listings]);
+    const nextPage = page + 1;
+    const moreListings = await fetchListings({
+      page: nextPage,
+      filters: {
+        categories: selectedCategories.map(Number),
+        subcategories: selectedSubcategories.map(Number),
+        conditions: selectedConditions,
+        priceRange: {
+          min: priceRange[0],
+          max: priceRange[1],
+        },
+      },
+      sortBy,
+    });
+    setListings((prev) => [...prev, ...moreListings]);
+    setHasMore(moreListings.length > 0);
+    setPage(nextPage);
+    setLoading(false);
+  }, [
+    loading,
+    hasMore,
+    page,
+    selectedCategories,
+    selectedSubcategories,
+    selectedConditions,
+    priceRange,
+    sortBy,
+  ]);
 
   // Intersection observer for infinite scroll
   useEffect(() => {
     if (observerRef.current) observerRef.current.disconnect();
-
     observerRef.current = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && hasMore && !loading) {
@@ -140,11 +157,9 @@ export default function ListingsPage() {
       },
       { threshold: 0.1 },
     );
-
     if (loadingRef.current) {
       observerRef.current.observe(loadingRef.current);
     }
-
     return () => {
       if (observerRef.current) observerRef.current.disconnect();
     };
@@ -154,10 +169,9 @@ export default function ListingsPage() {
   useEffect(() => {
     const handleScroll = () => {
       const scrolled = window.scrollY;
-      const threshold = window.innerHeight * 2; // Show after 2 screen heights
+      const threshold = window.innerHeight * 2;
       setShowBackToTop(scrolled > threshold);
     };
-
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
@@ -166,33 +180,31 @@ export default function ListingsPage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // Add filter functions
+  // Filtering logic
   const filteredListings = listings.filter((listing) => {
-    // Price filter
-    if (listing.price < priceRange[0] || listing.price > priceRange[1]) {
+    if (
+      listing.price === null ||
+      listing.price < priceRange[0] ||
+      listing.price > priceRange[1]
+    ) {
       return false;
     }
-
-    // Category filter
     if (
       selectedCategories.length > 0 &&
-      !selectedCategories.includes(listing.categoryId?.toString())
+      !selectedCategories.includes(listing.category_id?.toString() || "")
     ) {
       return false;
     }
-
-    // Condition filter
     if (
       selectedConditions.length > 0 &&
-      !selectedConditions.includes(listing.condition.toLowerCase())
+      !selectedConditions.includes((listing.condition || "").toLowerCase())
     ) {
       return false;
     }
-
     return true;
   });
 
-  // Update the checkbox handlers to use the new state
+  // Checkbox handlers
   const handleCategoryChange = (categoryId: string, checked: boolean) => {
     if (checked) {
       setSelectedCategories((prev) => [...prev, categoryId]);
@@ -200,12 +212,20 @@ export default function ListingsPage() {
       setSelectedCategories((prev) => prev.filter((id) => id !== categoryId));
     }
   };
-
   const handleConditionChange = (condition: string, checked: boolean) => {
     if (checked) {
       setSelectedConditions((prev) => [...prev, condition]);
     } else {
       setSelectedConditions((prev) => prev.filter((c) => c !== condition));
+    }
+  };
+  const handleSubcategoryChange = (subcategoryId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedSubcategories((prev) => [...prev, subcategoryId]);
+    } else {
+      setSelectedSubcategories((prev) =>
+        prev.filter((id) => id !== subcategoryId),
+      );
     }
   };
 
@@ -249,21 +269,33 @@ export default function ListingsPage() {
                 </div>
               </div>
 
-              {selectedCategory && (
+              {selectedCategories.length === 1 && (
                 <div>
                   <h3 className="font-medium mb-2">Subcategories</h3>
                   <div className="space-y-2">
                     {subcategories
                       .filter(
                         (sub) =>
-                          sub.categoryId === Number.parseInt(selectedCategory),
+                          sub.parent_category_id ===
+                          Number(selectedCategories[0]),
                       )
                       .map((subcategory) => (
                         <div
                           key={subcategory.id}
                           className="flex items-center space-x-2"
                         >
-                          <Checkbox id={`subcategory-${subcategory.id}`} />
+                          <Checkbox
+                            id={`subcategory-${subcategory.id}`}
+                            checked={selectedSubcategories.includes(
+                              subcategory.id.toString(),
+                            )}
+                            onCheckedChange={(checked) =>
+                              handleSubcategoryChange(
+                                subcategory.id.toString(),
+                                checked as boolean,
+                              )
+                            }
+                          />
                           <label
                             htmlFor={`subcategory-${subcategory.id}`}
                             className="text-sm cursor-pointer"
@@ -287,8 +319,8 @@ export default function ListingsPage() {
                     onValueChange={setPriceRange}
                   />
                   <div className="flex items-center justify-between">
-                    <span className="text-sm">${priceRange[0]}</span>
-                    <span className="text-sm">${priceRange[1]}</span>
+                    <span className="text-sm">Ksh {priceRange[0]}</span>
+                    <span className="text-sm">Ksh {priceRange[1]}</span>
                   </div>
                 </div>
               </div>
@@ -411,7 +443,7 @@ export default function ListingsPage() {
                       </AccordionContent>
                     </AccordionItem>
 
-                    {selectedCategory && (
+                    {selectedCategories.length === 1 && (
                       <AccordionItem value="subcategories">
                         <AccordionTrigger>Subcategories</AccordionTrigger>
                         <AccordionContent>
@@ -419,8 +451,8 @@ export default function ListingsPage() {
                             {subcategories
                               .filter(
                                 (sub) =>
-                                  sub.categoryId ===
-                                  Number.parseInt(selectedCategory),
+                                  sub.parent_category_id ===
+                                  Number(selectedCategories[0]),
                               )
                               .map((subcategory) => (
                                 <div
@@ -429,6 +461,15 @@ export default function ListingsPage() {
                                 >
                                   <Checkbox
                                     id={`mobile-subcategory-${subcategory.id}`}
+                                    checked={selectedSubcategories.includes(
+                                      subcategory.id.toString(),
+                                    )}
+                                    onCheckedChange={(checked) =>
+                                      handleSubcategoryChange(
+                                        subcategory.id.toString(),
+                                        checked as boolean,
+                                      )
+                                    }
                                   />
                                   <label
                                     htmlFor={`mobile-subcategory-${subcategory.id}`}
@@ -455,8 +496,8 @@ export default function ListingsPage() {
                             onValueChange={setPriceRange}
                           />
                           <div className="flex items-center justify-between">
-                            <span className="text-sm">${priceRange[0]}</span>
-                            <span className="text-sm">${priceRange[1]}</span>
+                            <span className="text-sm">Ksh {priceRange[0]}</span>
+                            <span className="text-sm">Ksh {priceRange[1]}</span>
                           </div>
                         </div>
                       </AccordionContent>
@@ -614,7 +655,7 @@ export default function ListingsPage() {
                     <CardContent className="p-0">
                       <div className="aspect-square bg-muted">
                         <img
-                          src={listing.image || "/placeholder.svg"}
+                          src={listing.images?.[0] || "/placeholder.svg"}
                           alt={listing.title}
                           className="w-full h-full object-cover"
                         />
@@ -624,12 +665,7 @@ export default function ListingsPage() {
                           {listing.title}
                         </h3>
                         <p className="text-lg font-bold text-green-600 mb-1">
-                          ${listing.price}
-                          {listing.originalPrice && (
-                            <span className="text-sm line-through text-muted-foreground ml-2">
-                              ${listing.originalPrice}
-                            </span>
-                          )}
+                          Ksh{listing.price}
                         </p>
                         <p className="text-xs text-muted-foreground mb-2 line-clamp-2">
                           {listing.description}
@@ -642,11 +678,7 @@ export default function ListingsPage() {
                         <div className="flex items-center justify-between text-xs text-muted-foreground">
                           <div className="flex items-center gap-1">
                             <MapPin className="h-3 w-3" />
-                            {listing.distance}
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                            {listing.rating} ({listing.reviews})
+                            {listing.location}
                           </div>
                         </div>
                       </div>
@@ -668,7 +700,7 @@ export default function ListingsPage() {
                       <div className="flex">
                         <div className="w-40 h-40 bg-muted">
                           <img
-                            src={listing.image || "/placeholder.svg"}
+                            src={listing.images?.[0] || "/placeholder.svg"}
                             alt={listing.title}
                             className="w-full h-full object-cover"
                           />
@@ -678,12 +710,7 @@ export default function ListingsPage() {
                             {listing.title}
                           </h3>
                           <p className="text-xl font-bold text-green-600 mb-2">
-                            ${listing.price}
-                            {listing.originalPrice && (
-                              <span className="text-sm line-through text-muted-foreground ml-2">
-                                ${listing.originalPrice}
-                              </span>
-                            )}
+                            Ksh{listing.price}
                           </p>
                           <p className="text-sm text-muted-foreground mb-3">
                             {listing.description}
@@ -694,11 +721,7 @@ export default function ListingsPage() {
                           <div className="flex items-center justify-between text-sm text-muted-foreground">
                             <div className="flex items-center gap-1">
                               <MapPin className="h-4 w-4" />
-                              {listing.distance}
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                              {listing.rating} ({listing.reviews})
+                              {listing.location}
                             </div>
                           </div>
                         </div>

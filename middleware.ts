@@ -23,12 +23,6 @@ export async function middleware(request: NextRequest) {
           return request.cookies.getAll();
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => {
-            request.cookies.set(name, value);
-          });
-          response = NextResponse.next({
-            request,
-          });
           cookiesToSet.forEach(({ name, value, options }) => {
             response.cookies.set(name, value, options);
           });
@@ -44,11 +38,11 @@ export async function middleware(request: NextRequest) {
 
   // Protect authenticated routes
   const protectedRoutes = [
-    "/app/dashboard",
-    "/app/account",
+    "/dashboard",
+    "/account",
     // '/post',
     "/messages",
-    "/app/settings",
+    "/settings",
   ];
 
   const isProtectedRoute = protectedRoutes.some((route) =>
@@ -57,7 +51,7 @@ export async function middleware(request: NextRequest) {
 
   // Redirect to auth if accessing protected route without authentication
   if (isProtectedRoute && !user) {
-    const redirectUrl = new URL("/auth?tab=sign-up", request.url);
+    const redirectUrl = new URL("/auth", request.url);
     redirectUrl.searchParams.set("redirectTo", request.nextUrl.pathname);
     return NextResponse.redirect(redirectUrl);
   }
@@ -69,7 +63,7 @@ export async function middleware(request: NextRequest) {
       request.nextUrl.pathname === "/login" ||
       request.nextUrl.pathname === "/signup")
   ) {
-    return NextResponse.redirect(new URL("/app/dashboard", request.url));
+    return NextResponse.redirect(new URL("/", request.url));
   }
 
   return response;

@@ -1,0 +1,248 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+
+import { z } from "zod";
+import { getSupabaseServer } from "@/utils/supabase/server";
+import { createSanitizedString } from "@/lib/input-sanitization";
+
+import { handleActionError, AppError } from "@/utils/errorhandler";
+import { createAuditLogger } from "@/utils/audit-logger";
+import { createListingLimiter } from "@/utils/rate-limiting";
+import { checkUserPlanLimit } from "@/utils/subscriptions/check_user_limits";
+
+import type {
+  AdDetailsFormData,
+  ActionResponse,
+  ListingCreateData,
+} from "@/lib/types/form-types";
+
+const createListingSchema = z.object({
+  title: createSanitizedString({ min: 5, max: 100 }),
+  description: createSanitizedString({ min: 20, max: 2000 }),
+  price: z.string().transform((val) => {
+    const num = parseFloat(val);
+    if (isNaN(num) || num < 0) throw new Error("Invalid price");
+    return num;
+  }),
+  category: z.number().min(1),
+  subcategory: z.number().optional(),
+  condition: z.enum(["new", "used", "like_new", "refurbished"]),
+  location: createSanitizedString({ min: 2, max: 100 }),
+  latitude: z.number().min(-90).max(90).optional(),
+  longitude: z.number().min(-180).max(180).optional(),
+  negotiable: z.boolean().default(false),
+  phone: createSanitizedString({ required: false, max: 20 }).optional(),
+  email: z.string().email().optional(),
+});
+
+type CreateListingInput = z.infer<typeof createListingSchema>;
+
+async function getUserContext() {
+  const supabase = await getSupabaseServer();
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
+
+  if (error || !user) {
+    throw new AppError("Authentication required", 401, "AUTH_REQUIRED");
+  }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", user.id)
+    .single();
+
+  return { user, profile };
+}
+
+async function validateCategories(categoryId: number, subcategoryId?: number) {
+  const supabase = await getSupabaseServer();
+
+  const { data: category } = await supabase
+    .from("categories")
+    .select("*")
+    .eq("id", categoryId)
+    .single();
+
+  if (!category)
+    throw new AppError("Invalid category", 400, "INVALID_CATEGORY");
+
+  let subcategory = null;
+  if (subcategoryId) {
+    const { data: subcat } = await supabase
+      .from("subcategories")
+      .select("*")
+      .eq("id", subcategoryId)
+      .eq("parent_category_id", categoryId)
+      .single();
+
+    if (!subcat) {
+      throw new AppError("Invalid subcategory", 400, "INVALID_SUBCATEGORY");
+    }
+    subcategory = subcat;
+  }
+
+  return { category, subcategory };
+}
+
+async function processImages(imageUrls: string[], userId: string) {
+  if (!imageUrls?.length) {
+    throw new AppError("At least one image is required", 400, "NO_IMAGES");
+  }
+
+  if (imageUrls.length > 10) {
+    throw new AppError("Max 10 images allowed", 400, "TOO_MANY_IMAGES");
+  }
+
+  for (const url of imageUrls) {
+    if (!url.includes(userId)) {
+      throw new AppError("Invalid image detected", 400, "INVALID_IMAGE");
+    }
+  }
+
+  return imageUrls;
+}
+
+export async function createListingAction(
+  formData: AdDetailsFormData & { mediaUrls: string[] },
+): Promise<ActionResponse<{ id: string; slug: string }>> {
+  try {
+    const headersList = await headers();
+    const userAgent = headersList.get("user-agent") || "";
+    const ip = headersList.get("x-forwarded-for")?.split(",")[0] || "unknown";
+
+    const rateLimitResult = createListingLimiter.check(ip);
+    if (!rateLimitResult.allowed) {
+      throw new AppError(
+        "Too many attempts. Please wait.",
+        429,
+        "RATE_LIMIT_EXCEEDED",
+      );
+    }
+
+    const { user, profile } = await getUserContext();
+
+    const auditLogger = createAuditLogger({
+      user_id: user.id,
+      ip_address: ip,
+      user_agent: userAgent,
+    });
+
+    await checkUserPlanLimit(user.id);
+
+    const validationData = {
+      ...formData,
+      phone: profile?.phone || undefined,
+      email: user.email || undefined,
+    };
+
+    const validationResult = createListingSchema.safeParse(validationData);
+    if (!validationResult.success) {
+      const errors: Record<string, string> = {};
+      validationResult.error.issues.forEach((issue) => {
+        const path = issue.path.join(".");
+        errors[path] = issue.message;
+      });
+
+      await auditLogger.log({
+        action: "create_listing_validation_failed",
+        resource_type: "listing",
+        metadata: { errors },
+      });
+
+      return {
+        success: false,
+        errors,
+        message: "Please correct the errors and try again",
+      };
+    }
+
+    const validatedData = validationResult.data;
+
+    const { category, subcategory } = await validateCategories(
+      validatedData.category,
+      validatedData.subcategory,
+    );
+
+    const processedImages = await processImages(formData.mediaUrls, user.id);
+
+    const supabase = await getSupabaseServer();
+
+    const plan = "free";
+    const expiry_date = new Date(
+      Date.now() + 30 * 24 * 60 * 60 * 1000,
+    ).toISOString();
+
+    const listingData: ListingCreateData = {
+      title: validatedData.title,
+      description: validatedData.description,
+      price: validatedData.price,
+      category_id: category.id,
+      subcategory_id: subcategory?.id,
+      condition: validatedData.condition,
+      location: validatedData.location,
+      latitude: validatedData.latitude,
+      longitude: validatedData.longitude,
+      negotiable: validatedData.negotiable,
+      images: processedImages,
+      user_id: user.id,
+      status: "active",
+      payment_status: "free",
+      plan: plan,
+      views: 0,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      expiry_date,
+    };
+
+    const { data: listing, error } = await supabase
+      .from("listings")
+      .insert(listingData)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    await supabase
+      .from("profiles")
+      .update({
+        listing_count: (profile?.listing_count || 0) + 1,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", user.id);
+
+    await auditLogger.log({
+      action: "create_listing_success",
+      resource_type: "listing",
+      resource_id: listing.id,
+      new_values: listingData,
+    });
+
+    const slug = `${validatedData.title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")}-${listing.id.slice(-8)}`;
+
+    revalidatePath("/");
+    revalidatePath("/listings");
+    revalidatePath(`/listings/${listing.id}`);
+    revalidatePath("/dashboard");
+
+    return {
+      success: true,
+      data: { id: listing.id, slug },
+      message: "Listing created successfully!",
+    };
+  } catch (error) {
+    return handleActionError(error, {
+      action: "create_listing",
+      userId: "user.id",
+      ip: "unknown",
+    });
+  }
+}

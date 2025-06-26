@@ -25,16 +25,19 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { createBrowserClient } from "@/utils/supabase/supabase-browser";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
+import { z } from "zod";
 
-interface Notification {
-  id: string;
-  type: "listing" | "account" | "marketing" | "message";
-  title: string;
-  message: string;
-  data: any;
-  read: boolean;
-  created_at: string;
-}
+const NotificationSchema = z.object({
+  id: z.string(),
+  type: z.enum(["message", "listing", "account", "marketing"]),
+  title: z.string(),
+  message: z.string(),
+  data: z.any(),
+  read: z.boolean().nullable().default(false),
+  created_at: z.string().default(new Date().toISOString()),
+});
+
+type Notification = z.infer<typeof NotificationSchema>;
 
 interface NotificationDropdownProps {
   unreadCount: number;
@@ -68,7 +71,8 @@ export function NotificationDropdown({
 
       if (error) throw error;
 
-      setNotifications(data || []);
+      const typedData = NotificationSchema.array().parse(data || []);
+      setNotifications(typedData);
     } catch (error) {
       console.error("Error fetching notifications:", error);
       toast({

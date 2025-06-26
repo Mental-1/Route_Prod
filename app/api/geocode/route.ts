@@ -81,7 +81,10 @@ export async function POST(request: NextRequest) {
       state,
       country,
       postal_code: postalCode,
-      geometry: `POINT(${longitude} ${latitude})`,
+      geometry: {
+        type: "Point",
+        coordinates: [longitude, latitude],
+      },
     });
 
     return NextResponse.json({

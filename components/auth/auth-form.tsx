@@ -79,15 +79,30 @@ export function AuthForm() {
         setLoading(false);
         return;
       }
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) throw error;
 
+      if (data.session) {
+        const res = await fetch("/auth/callback", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(data.session),
+        });
+
+        if (res.ok) {
+          router.push("/");
+        } else {
+          throw new Error("Session sync failed");
+        }
+      }
+
       router.push("/");
-      router.refresh();
     } catch (error: any) {
       setError(error.message || "An error occurred during sign in");
     } finally {

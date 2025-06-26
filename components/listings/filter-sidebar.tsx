@@ -16,7 +16,6 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import type { Database } from "@/utils/supabase/database.types";
-import { getSupabaseClient } from "@/utils/supabase/client";
 
 type Category = Database["public"]["Tables"]["categories"]["Row"];
 
@@ -54,7 +53,6 @@ export function FilterSidebar({
 }: FilterSidebarProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const supabase = getSupabaseClient();
 
   // Filter states
   const [selectedCategory, setSelectedCategory] = useState<string>(
@@ -166,7 +164,6 @@ export function FilterSidebar({
           const { latitude, longitude } = position.coords;
 
           // In a real app, we would use a geocoding service to get the address
-          // For now, we'll just use the coordinates
           setLocation(`${latitude.toFixed(6)}, ${longitude.toFixed(6)}`);
         },
         (error) => {
@@ -205,7 +202,8 @@ export function FilterSidebar({
           <AccordionTrigger>Category</AccordionTrigger>
           <AccordionContent>
             <div className="space-y-2">
-              <div
+              <button
+                type="button"
                 className={`px-2 py-1 rounded cursor-pointer ${selectedCategory === "all" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
                 onClick={() => setSelectedCategory("all")}
                 onKeyDown={(e) => {
@@ -214,27 +212,24 @@ export function FilterSidebar({
                     setSelectedCategory("all");
                   }
                 }}
-                role="button"
-                tabIndex={0}
               >
                 All Categories
-              </div>
+              </button>
               {categories.map((category) => (
-                <div
+                <button
+                  type="button"
                   key={category.id}
                   className={`px-2 py-1 rounded cursor-pointer ${selectedCategory === category.id.toString() ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
                   onClick={() => setSelectedCategory(category.id.toString())}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" || e.key === " ") {
                       e.preventDefault();
-                      setSelectedCategory("all");
+                      setSelectedCategory(category.id.toString());
                     }
                   }}
-                  role="button"
-                  tabIndex={0}
                 >
                   {category.icon} {category.name}
-                </div>
+                </button>
               ))}
             </div>
           </AccordionContent>

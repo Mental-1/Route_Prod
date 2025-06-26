@@ -159,7 +159,7 @@ export const resolvers = {
       const supabase = await getSupabaseServer();
 
       await supabase.rpc("increment_listing_views", {
-        listing_id: listingId,
+        listing_uuid: listingId,
       });
 
       return true;

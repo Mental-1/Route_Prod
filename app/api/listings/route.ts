@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { getSupabaseRouteHandler } from "@/utils/supabase/server";
-import { title } from "node:process";
 
 /**
  * Handles GET requests to retrieve listing data.
@@ -14,8 +13,8 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
 
   const id = searchParams.get("id");
-  const page = parseInt(searchParams.get("page") || "1", 10);
-  const limit = parseInt(searchParams.get("limit") || "8", 10);
+  const page = Number.parseInt(searchParams.get("page") || "1", 10);
+  const limit = Number.parseInt(searchParams.get("limit") || "8", 10);
 
   try {
     if (id) {
@@ -112,6 +111,12 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
+    const ALLOWED_STATUSES = [
+      "active",
+      "inactive",
+      "pending",
+      "expired",
+    ] as const;
     const listingData = {
       ...body,
       user_id: user.id,
@@ -121,8 +126,8 @@ export async function POST(request: Request) {
       price: Number(body.price) || 0,
       location: body.location || "Unknown Location",
       category: body.category || "Other",
-      status: String(body.status) || "Active",
-      images: String(body.images) || [],
+      status: ALLOWED_STATUSES.includes(body.status) ? body.status : "active",
+      images: Array.isArray(body.images) ? body.images : [],
       tags: body.tags || [],
       contact_info: body.contact_info || "No contact information provided",
       updated_at: new Date().toISOString(),

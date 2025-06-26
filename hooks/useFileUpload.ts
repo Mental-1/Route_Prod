@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 
 interface UploadResult {
@@ -29,6 +29,16 @@ export function useFileUpload(options: UseFileUploadOptions) {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const { toast } = useToast();
+  const timeoutRef = useRef<NodeJS.Timeout>();
+
+  // Cleanup effect for the timeout
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
 
   const uploadFile = async (file: File): Promise<UploadResult | null> => {
     try {
@@ -69,23 +79,34 @@ export function useFileUpload(options: UseFileUploadOptions) {
       return null;
     } finally {
       setUploading(false);
-      setTimeout(() => setUploadProgress(0), 1000);
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+      timeoutRef.current = setTimeout(() => setUploadProgress(0), 1000);
     }
   };
 
   const uploadFiles = async (files: File[]): Promise<UploadResult[]> => {
-    const results: UploadResult[] = [];
+    const MAX_CONCURRENT_UPLOADS = 3;
+    const results: (UploadResult | null)[] = [];
+    const chunks: File[][] = [];
 
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      const result = await uploadFile(file);
-      if (result) {
-        results.push(result);
-      }
-      setUploadProgress(((i + 1) / files.length) * 100);
+    for (let i = 0; i < files.length; i += MAX_CONCURRENT_UPLOADS) {
+      chunks.push(files.slice(i, i + MAX_CONCURRENT_UPLOADS));
     }
 
-    return results;
+    for (const chunk of chunks) {
+      // Upload each chunk in parallel
+      const chunkResults = await Promise.all(
+        chunk.map((file) => uploadFile(file)),
+      );
+      results.push(...chunkResults);
+      const completedFiles = results.length;
+      setUploadProgress((completedFiles / files.length) * 100);
+    }
+
+    // Filter out null results from failed uploads and return successful ones
+    return results.filter((result): result is UploadResult => result !== null);
   };
 
   const deleteFile = async (url: string): Promise<boolean> => {

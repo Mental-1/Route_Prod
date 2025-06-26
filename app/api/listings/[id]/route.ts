@@ -10,9 +10,10 @@ import { getSupabaseRouteHandler } from "@/utils/supabase/server";
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  context: { params: { id: string } },
 ) {
   try {
+    const { id } = context.params;
     const supabase = await getSupabaseRouteHandler();
 
     const { data: listing, error } = await supabase
@@ -25,7 +26,7 @@ export async function GET(
         seller:profiles(id, full_name, user_name, avatar_url)
       `,
       )
-      .eq("id", params.id)
+      .eq("id", id)
       .eq("status", "active")
       .single();
 

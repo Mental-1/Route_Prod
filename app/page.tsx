@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Search, MapPin, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import dynamic from "next/dynamic";
 import { CategoriesSkeleton } from "@/components/categories-skeleton";
+import { getRecentListings, DisplayListingItem } from "@/lib/data";
 
 const CategoriesSection = dynamic(
   () => import("../components/categories-section"),
@@ -22,25 +23,6 @@ const CategoriesSection = dynamic(
   },
 );
 
-//TODO:
-//  Hardcoded categories will implement dynamic fetching from the backend
-const recentListings = [
-  {
-    id: 1,
-    title: "iPhone 13 Pro Max",
-    price: 1099,
-    location: "San Francisco",
-    rating: 4.8,
-  },
-  {
-    id: 2,
-    title: "MacBook Pro 16",
-    price: 2399,
-    location: "New York",
-    rating: 4.9,
-  },
-];
-
 /**
  * Renders the marketplace homepage with hero, categories, recent listings, and call-to-action sections.
  *
@@ -48,6 +30,17 @@ const recentListings = [
  */
 export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [recentListings, setRecentListings] = useState<DisplayListingItem[]>(
+    [],
+  );
+
+  useEffect(() => {
+    async function fetchRecentListings() {
+      const listings = await getRecentListings();
+      setRecentListings(listings);
+    }
+    fetchRecentListings();
+  }, []);
 
   return (
     <div className="min-h-screen bg-background">
@@ -59,7 +52,8 @@ export default function HomePage() {
               Find Everything You Need
             </h1>
             <p className="text-lg md:text-xl mb-6 text-blue-100">
-              Buy, sell, and discover amazing deals in your neighborhood
+              Buy, sell, and discover amazing deals in your neighborhood and get
+              directed to the spot.
             </p>
 
             {/* Search Bar */}
@@ -95,13 +89,17 @@ export default function HomePage() {
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {recentListings.map((listing) => (
+            {recentListings.map((listing: DisplayListingItem) => (
               <Link key={listing.id} href={`/listings/${listing.id}`}>
                 <Card className="hover:shadow-md transition-shadow cursor-pointer overflow-hidden border-0">
                   <CardContent className="p-0">
                     <div className="aspect-square bg-muted">
                       <img
-                        src={listing.image || "/placeholder.svg"}
+                        src={
+                          Array.isArray(listing.images)
+                            ? listing.images[0] || "/placeholder.svg"
+                            : listing.images || "/placeholder.svg"
+                        }
                         alt={listing.title}
                         className="w-full h-full object-cover"
                       />
@@ -111,7 +109,7 @@ export default function HomePage() {
                         {listing.title}
                       </h3>
                       <p className="text-lg font-bold text-green-600 mb-1">
-                        ${listing.price}
+                        ${listing.price ?? "N/A"}
                       </p>
                       <div className="flex items-center gap-2 mb-1">
                         <Badge variant="outline" className="text-xs">

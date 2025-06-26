@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "lib": ["dom", "dom.iterable", "es6"],
+    "lib": ["dom", "dom.iterable", "ESNext"],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -26,9 +26,10 @@
       "@/app/*": ["./app/*"],
       "@/types/*": ["./types/*"],
       "@/utils/*": ["./utils/*"],
-      "@/styles/*": ["./styles/*"]
+      "@/styles/*": ["./styles/*"],
+      "react": ["./node_modules/@types/react"]
     },
-    "target": "es5",
+    "target": "ESNext",
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
     "noFallthroughCasesInSwitch": true,
@@ -58,7 +59,7 @@
     "noImplicitAny": true,
     "noImplicitThis": true,
     "alwaysStrict": true,
-    "types": ["node", "jest", "@types/leaflet"]
+    "types": ["node", "jest", "@types/leaflet", "react", "react-dom"]
   },
   "include": [
     "next-env.d.ts",

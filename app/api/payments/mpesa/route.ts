@@ -2,11 +2,6 @@ import { type NextRequest, NextResponse } from "next/server";
 import { getSupabaseServer } from "@/utils/supabase/server";
 import { mpesaPaymentSchema } from "@/lib/validations";
 
-/**
- * Handles M-Pesa payment initiation via a POST request.
- *
- * Validates the incoming request body, authenticates the user, obtains an M-Pesa access token, and initiates an STK Push payment request to the Safaricom API. On successful initiation, records the transaction in the database and returns relevant transaction details. Returns appropriate error responses for authentication, validation, or payment initiation failures.
- */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -42,9 +37,29 @@ export async function POST(request: NextRequest) {
       },
     );
 
-    const authData = await authResponse.json();
+    // Check if the auth response is ok
+    if (!authResponse.ok) {
+      console.error("M-Pesa auth response not OK:", {
+        status: authResponse.status,
+        statusText: authResponse.statusText,
+      });
+      const authResponseText = await authResponse.text();
+      console.error("Auth response body:", authResponseText);
+      throw new Error(
+        `M-Pesa authentication failed: ${authResponse.statusText}`,
+      );
+    }
+
+    let authData;
+    try {
+      authData = await authResponse.json();
+    } catch (error) {
+      console.error("Failed to parse auth response:", error);
+      throw new Error("Invalid authentication response from M-Pesa");
+    }
 
     if (!authData.access_token) {
+      console.error("Auth response missing access token:", authData);
       throw new Error("Failed to get M-Pesa access token");
     }
 
@@ -73,7 +88,29 @@ export async function POST(request: NextRequest) {
       },
     );
 
-    const stkData = await stkResponse.json();
+    // Check if the STK response is ok
+    if (!stkResponse.ok) {
+      console.error("M-Pesa STK response not OK:", {
+        status: stkResponse.status,
+        statusText: stkResponse.statusText,
+      });
+      const stkResponseText = await stkResponse.text();
+      console.error("STK response body:", stkResponseText);
+      throw new Error(`M-Pesa STK push failed: ${stkResponse.statusText}`);
+    }
+
+    let stkData;
+    try {
+      stkData = await stkResponse.json();
+    } catch (error) {
+      console.error("Failed to parse STK response:", error);
+      throw new Error("Invalid STK push response from M-Pesa");
+    }
+
+    if (!stkData.ResponseCode) {
+      console.error("STK response missing ResponseCode:", stkData);
+      throw new Error("Invalid STK push response format");
+    }
 
     if (stkData.ResponseCode !== "0") {
       throw new Error(stkData.ResponseDescription || "M-Pesa payment failed");
