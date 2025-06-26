@@ -48,9 +48,9 @@ interface Listing {
 }
 
 /**
- * Displays and manages the current user's listings, allowing viewing, editing, deleting, and featuring of items.
+ * Renders a page for authenticated users to view, manage, and interact with their listings.
  *
- * Provides an interface for users to view their posted listings, edit them within a limited time window, delete listings with confirmation, and feature listings if eligible based on their subscription plan. Handles authentication, data fetching, and user feedback through toast notifications.
+ * Allows users to see their posted items, edit listings within a 45-minute window, delete listings with confirmation, and feature eligible listings based on their subscription plan. Handles authentication, data retrieval, and user feedback through notifications. Redirects unauthenticated users to the authentication page.
  */
 export default function UserListingsPage() {
   const router = useRouter();

@@ -3,6 +3,14 @@
 import { getSupabaseServer } from "@/utils/supabase/server";
 import { AppError } from "@/utils/errorhandler";
 
+/**
+ * Checks whether a user has exceeded the allowed number of active listings based on their subscription plan.
+ *
+ * Throws an error if the user has reached or surpassed their plan's active listing limit, or if plan information cannot be determined.
+ *
+ * @param userId - The unique identifier of the user to check
+ * @returns An object containing the maximum allowed listings (`maxListings`) and the current count of active listings (`activeListings`)
+ */
 export async function checkUserPlanLimit(userId: string) {
   const supabase = await getSupabaseServer();
 

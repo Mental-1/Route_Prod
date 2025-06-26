@@ -35,6 +35,11 @@ type Subcategory = {
   parent_category_id: number;
 };
 
+/**
+ * Renders the listings page with filtering, sorting, infinite scrolling, and responsive view modes.
+ *
+ * Displays a list of items fetched from APIs, allowing users to filter by category, subcategory, price range, condition, and distance. Supports grid and list layouts, sorting options, and infinite scroll loading. Includes a responsive filter sidebar for desktop and a sheet-based filter UI for mobile devices.
+ */
 export default function ListingsPage() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [priceRange, setPriceRange] = useState([0, 5000]);

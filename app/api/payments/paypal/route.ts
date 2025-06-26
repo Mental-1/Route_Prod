@@ -3,9 +3,9 @@ import { getSupabaseRouteHandler } from "@/utils/supabase/server";
 import { paypalPaymentSchema } from "@/lib/validations";
 
 /**
- * Handles PayPal payment creation and transaction recording for authenticated users.
+ * Processes a PayPal payment request for an authenticated user, creating a PayPal order and recording the transaction.
  *
- * Validates the incoming request body, obtains a PayPal access token, creates a PayPal order, and records the transaction in the database. Returns a JSON response with the PayPal order ID, approval URL, and transaction details on success. Responds with appropriate error messages and status codes on failure.
+ * Validates the request body, obtains a PayPal access token, creates a PayPal order, and saves the transaction to the database. Returns a JSON response with the PayPal order ID, approval URL, and transaction details if successful. Responds with appropriate error messages and status codes if authentication fails or an error occurs during processing.
  */
 export async function POST(request: NextRequest) {
   try {

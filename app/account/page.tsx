@@ -68,9 +68,9 @@ interface AuthUser {
 }
 
 /**
- * Renders the user account page, allowing authenticated users to view and update their profile, manage account security, and review verification status.
+ * Displays the authenticated user's account page, providing profile overview, editable personal information, account security settings, and verification status.
  *
- * Redirects unauthenticated users to the sign-in page. Displays profile information, editable personal details, and account security options. Handles profile data fetching and updates using Supabase.
+ * Redirects unauthenticated users to the authentication page. Fetches and updates user profile data using Supabase. Allows users to view and edit their profile details, manage security options, and review verification steps.
  */
 export default function AccountPage() {
   const router = useRouter();
@@ -90,6 +90,11 @@ export default function AccountPage() {
   });
 
   useEffect(() => {
+    /**
+     * Retrieves the current authenticated user's session and profile data, updating local state accordingly.
+     *
+     * If no authenticated session exists, redirects the user to the authentication page. If a user profile is found in the database, populates state with the profile data; otherwise, initializes state with a default profile based on user metadata.
+     */
     async function getUser() {
       await syncSupabaseSession();
       const {

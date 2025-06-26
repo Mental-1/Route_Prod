@@ -37,9 +37,9 @@ export async function getSupabaseServer() {
 }
 
 /**
- * Creates a Supabase client for use in Next.js route handlers and server actions with read and write access.
+ * Creates a Supabase client for Next.js route handlers and server actions with full cookie read/write access.
  *
- * The client is configured to manage cookies using the Next.js cookies API, enabling session persistence and authentication in server-side contexts.
+ * The client manages authentication and session cookies using the Next.js cookies API, supporting persistent user sessions in server-side contexts.
  *
  * @returns A Supabase client instance typed with the application's database schema.
  */
@@ -64,12 +64,12 @@ export async function getSupabaseRouteHandler() {
 }
 
 /**
- * Creates a Supabase client for use in Next.js middleware, handling cookies via request and response headers.
+ * Creates a Supabase client for Next.js middleware, managing cookies through HTTP request and response headers.
  *
- * Parses cookies from the incoming request and provides a response object with any new cookies set in the `Set-Cookie` header.
+ * Parses cookies from the incoming request and enables setting new cookies by appending `Set-Cookie` headers to the response.
  *
- * @param request - The incoming HTTP request object containing cookies in its headers.
- * @returns An object containing the Supabase client and a response with updated cookie headers.
+ * @param request - The incoming HTTP request containing cookies in its headers.
+ * @returns An object with the configured Supabase client and a response object with updated cookie headers.
  */
 export function getSupabaseMiddleware(request: Request) {
   const response = new Response();

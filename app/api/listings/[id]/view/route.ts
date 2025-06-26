@@ -10,9 +10,13 @@ type IncrementListingViewsArg = {
 };
 
 /**
- * Handles a POST request to increment the view count for a listing by its ID.
+ * Handles a POST request to increment the view count of a listing by its ID.
  *
- * Increments the view count of the specified listing using a Supabase RPC call and returns the updated view count in the response. Returns appropriate error responses if the listing is not found or if a database or server error occurs.
+ * Increments the view count for the specified listing using a Supabase remote procedure call. Returns the updated view count on success, or an error response if the listing is not found or a server/database error occurs.
+ *
+ * @param request - The incoming HTTP request
+ * @param params - An object containing the listing ID as `id`
+ * @returns A JSON response with the updated view count or an error message
  */
 export async function POST(
   request: NextRequest,
