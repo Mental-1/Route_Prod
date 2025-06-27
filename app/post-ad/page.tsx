@@ -318,7 +318,7 @@ export default function PostAdPage() {
                   <div
                     className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
                       currentStep >= index
-                        ? "bg-blue-600 text-white"
+                        ? "bg-green-600 text-white"
                         : "bg-muted text-muted-foreground"
                     }`}
                   >
@@ -620,7 +620,7 @@ function PaymentTierStep({
               <div className="text-center">
                 <h3 className="text-lg font-semibold">{tier.name}</h3>
                 <div className="text-2xl font-bold text-blue-600 my-2">
-                  Ksh{tier.price}
+                  Ksh {tier.price}
                   {tier.price > 0 && (
                     <span className="text-sm text-muted-foreground">
                       /month
@@ -831,7 +831,7 @@ function PreviewStep({
                 {formData.title || "Ad Title"}
               </h3>
               <p className="text-2xl font-bold text-green-600">
-                Ksh{formData.price || "0"}
+                Ksh {formData.price || "0"}
               </p>
               {formData.negotiable && (
                 <span className="text-sm text-muted-foreground">

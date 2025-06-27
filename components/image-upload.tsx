@@ -143,7 +143,7 @@ export function ImageUpload({
         {uploading ? (
           <>
             <div className="h-10 w-10 mb-2 flex items-center justify-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-400 aria-label='Uploading files...'"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-400 aria-label='Uploading files'" />
             </div>
             <p className="text-sm font-medium mb-1">Uploading files...</p>
             <Progress value={uploadProgress} className="w-full max-w-xs" />

@@ -293,7 +293,7 @@ export default function ListingsPage() {
                       .filter(
                         (sub) =>
                           sub.parent_category_id ===
-                          parseInt(selectedCategories[0], 10),
+                          Number.parseInt(selectedCategories[0], 10),
                       )
                       .map((subcategory) => (
                         <div
@@ -468,7 +468,7 @@ export default function ListingsPage() {
                               .filter(
                                 (sub) =>
                                   sub.parent_category_id ===
-                                  parseInt(selectedCategories[0], 10),
+                                  Number.parseInt(selectedCategories[0], 10),
                               )
                               .map((subcategory) => (
                                 <div
