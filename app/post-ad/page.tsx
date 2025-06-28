@@ -20,6 +20,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { ImageUpload } from "@/components/image-upload";
 import { toast } from "@/components/ui/use-toast";
 import { parse } from "zod/v4/core";
+import { Dialog, DialogContent, DialogTitle, DialogFooter } from "@/components/ui/dialog"; // Add Dialog imports if not already present
 
 import type { Database } from "@/utils/supabase/database.types";
 type Category = Database["public"]["Tables"]["categories"]["Row"];
@@ -90,13 +91,17 @@ export default function PostAdPage() {
     price: "",
     negotiable: false,
     condition: "new",
-    location: "",
+    location: [] as number[], // [latitude, longitude]
     mediaUrls: [] as string[],
     paymentTier: "free",
     paymentMethod: "",
     phoneNumber: "",
     email: "",
   });
+
+  // Add dialog state and manual location state
+  const [locationDialogOpen, setLocationDialogOpen] = useState(false);
+  const [manualLocation, setManualLocation] = useState("");
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -265,6 +270,28 @@ export default function PostAdPage() {
     setFormData((prev) => ({ ...prev, ...data }));
   };
 
+  // Detect location function with high accuracy
+  const detectLocation = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setFormData((prev) => ({
+            ...prev,
+            location: [position.coords.latitude, position.coords.longitude],
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          }));
+          setLocationDialogOpen(false);
+        },
+        (error) => {
+          console.error("Error getting location:", error);
+        },
+        { enableHighAccuracy: true }
+      );
+    }
+  };
+
+  // Update renderStepContent to pass location dialog props to AdDetailsStep
   const renderStepContent = () => {
     switch (currentStep) {
       case 0:
@@ -274,6 +301,11 @@ export default function PostAdPage() {
             updateFormData={updateFormData}
             categories={categories}
             subcategories={subcategories}
+            locationDialogOpen={locationDialogOpen}
+            setLocationDialogOpen={setLocationDialogOpen}
+            manualLocation={manualLocation}
+            setManualLocation={setManualLocation}
+            detectLocation={detectLocation}
           />
         );
       case 1:
@@ -376,11 +408,21 @@ function AdDetailsStep({
   updateFormData,
   categories,
   subcategories,
+  locationDialogOpen,
+  setLocationDialogOpen,
+  manualLocation,
+  setManualLocation,
+  detectLocation,
 }: {
   formData: any;
   updateFormData: (data: any) => void;
   categories: any[];
   subcategories: any[];
+  locationDialogOpen: boolean;
+  setLocationDialogOpen: (open: boolean) => void;
+  manualLocation: string;
+  setManualLocation: (val: string) => void;
+  detectLocation: () => void;
 }) {
   const availableSubcategories = formData.category
     ? subcategories.filter(
@@ -480,7 +522,6 @@ function AdDetailsStep({
               <SelectContent>
                 <SelectItem value="new">New</SelectItem>
                 <SelectItem value="used">Used</SelectItem>
-                <SelectItem value="like_new">Like New</SelectItem>
                 <SelectItem value="refurbished">Refurbished</SelectItem>
               </SelectContent>
             </Select>
@@ -489,12 +530,20 @@ function AdDetailsStep({
 
         <div>
           <Label htmlFor="location">Location</Label>
-          <Input
-            id="location"
-            placeholder="Enter location"
-            value={formData.location}
-            onChange={(e) => updateFormData({ location: e.target.value })}
-          />
+          <div className="flex gap-2">
+            <Input
+              id="location"
+              placeholder="Choose location"
+              readOnly
+              value={
+                Array.isArray(formData.location)
+                  ? `Lat: ${formData.location[0]}, Lng: ${formData.location[1]}`
+                  : formData.location || ""
+              }
+              onClick={() => setLocationDialogOpen(true)}
+              style={{ cursor: "pointer", background: "#15181e" }}
+            />
+          </div>
         </div>
 
         <div className="flex items-center space-x-2">
@@ -508,6 +557,52 @@ function AdDetailsStep({
           <Label htmlFor="negotiable">Price is negotiable</Label>
         </div>
       </div>
+
+      {/* Location Dialog */}
+      <Dialog open={locationDialogOpen} onOpenChange={setLocationDialogOpen}>
+        <DialogContent>
+          <DialogTitle>Set Location</DialogTitle>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="manual-location">Enter location manually</Label>
+              <Input
+                id="manual-location"
+                placeholder="Enter location"
+                value={manualLocation}
+                onChange={(e) => setManualLocation(e.target.value)}
+              />
+              <Button
+                className="mt-2"
+                onClick={() => {
+                  updateFormData({ location: manualLocation });
+                  setLocationDialogOpen(false);
+                }}
+                disabled={!manualLocation.trim()}
+              >
+                Use this location
+              </Button>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="secondary"
+                onClick={detectLocation}
+                type="button"
+              >
+                Detect Location Automatically
+              </Button>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="ghost"
+              onClick={() => setLocationDialogOpen(false)}
+              type="button"
+            >
+              Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -692,7 +787,7 @@ function PaymentMethodStep({
       <div className="bg-muted p-4 rounded-lg">
         <p className="font-medium">{selectedTier.name} Plan</p>
         <p className="text-2xl font-bold text-blue-600">
-          Ksh{selectedTier.price}
+          Ksh {selectedTier.price}
         </p>
       </div>
 
@@ -819,10 +914,14 @@ function PreviewStep({
     (cat) => cat.id === formData.category,
   );
 
+  // Helper for location display
+  const displayLocation = Array.isArray(formData.location)
+    ? `Lat: ${formData.location[0]}, Lng: ${formData.location[1]}`
+    : formData.location || "Not specified";
+
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-semibold">Preview Your Ad</h2>
-
       <Card>
         <CardContent className="p-6">
           <div className="space-y-4">
@@ -872,7 +971,7 @@ function PreviewStep({
               </div>
               <div>
                 <span className="font-medium">Location:</span>{" "}
-                {formData.location || "Not specified"}
+                {displayLocation}
               </div>
               <div>
                 <span className="font-medium">Plan:</span> {selectedTier.name}
