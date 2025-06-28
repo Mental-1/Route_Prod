@@ -26,7 +26,7 @@ export interface AdDetailsFormData {
   price: string;
   negotiable: boolean;
   condition: "new" | "used" | "like_new" | "refurbished" | "";
-  location: string;
+  location: string | number[];
   latitude?: number;
   longitude?: number;
 }
