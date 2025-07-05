@@ -19,8 +19,13 @@ import {
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { ImageUpload } from "@/components/image-upload";
 import { toast } from "@/components/ui/use-toast";
-import { parse } from "zod/v4/core";
-import { Dialog, DialogContent, DialogTitle, DialogFooter } from "@/components/ui/dialog"; // Add Dialog imports if not already present
+
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 import type { Database } from "@/utils/supabase/database.types";
 type Category = Database["public"]["Tables"]["categories"]["Row"];
@@ -91,7 +96,7 @@ export default function PostAdPage() {
     price: "",
     negotiable: false,
     condition: "new",
-    location: [] as number[], // [latitude, longitude]
+    location: [] as number[],
     mediaUrls: [] as string[],
     paymentTier: "free",
     paymentMethod: "",
@@ -286,7 +291,7 @@ export default function PostAdPage() {
         (error) => {
           console.error("Error getting location:", error);
         },
-        { enableHighAccuracy: true }
+        { enableHighAccuracy: true },
       );
     }
   };
@@ -350,7 +355,7 @@ export default function PostAdPage() {
                   <div
                     className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
                       currentStep >= index
-                        ? "bg-green-600 text-white"
+                        ? "bg-blue-600 text-white"
                         : "bg-muted text-muted-foreground"
                     }`}
                   >
@@ -363,7 +368,7 @@ export default function PostAdPage() {
             <div className="relative mt-2">
               <div className="absolute top-0 left-0 h-1 bg-muted w-full"></div>
               <div
-                className="absolute top-0 left-0 h-1 bg-green-600 transition-all"
+                className="absolute top-0 left-0 h-1 bg-blue-600 transition-all"
                 style={{
                   width: `${(currentStep / (steps.length - 1)) * 100}%`,
                 }}
@@ -424,11 +429,7 @@ function AdDetailsStep({
   setManualLocation: (val: string) => void;
   detectLocation: () => void;
 }) {
-  const availableSubcategories = formData.category
-    ? subcategories.filter(
-        (sub) => sub.category_id.toString() === formData.category,
-      )
-    : [];
+  const availableSubcategories = formData.category ? subcategories : [];
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-semibold">Ad Details</h2>
@@ -648,6 +649,36 @@ function MediaUploadStep({
   const imageWarning = imageUrls.length > limits.images;
   const videoWarning = videoUrls.length > limits.videos;
 
+  const handleFileChange = async (urls: string[]) => {
+    const newVideos = urls.filter(
+      (url) =>
+        !formData.mediaUrls.includes(url) &&
+        ["mp4", "webm", "mov"].includes(
+          url.split(".").pop()?.toLowerCase() || "",
+        ),
+    );
+
+    for (const videoUrl of newVideos) {
+      const video = document.createElement("video");
+      video.src = videoUrl;
+      video.onloadedmetadata = () => {
+        if (video.duration > 30) {
+          toast({
+            title: "Video Too Long",
+            description: "Videos must be less than 30 seconds.",
+            variant: "destructive",
+          });
+          const updatedUrls = formData.mediaUrls.filter(
+            (url: string) => url !== videoUrl,
+          );
+          updateFormData({ mediaUrls: updatedUrls });
+        }
+      };
+    }
+
+    updateFormData({ mediaUrls: urls });
+  };
+
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-semibold">Media Upload</h2>
@@ -659,7 +690,7 @@ function MediaUploadStep({
           {limits.videos > 0 ? ` and ${limits.videos} videos` : " (no videos)"}
           <br />• Only the allowed number will be published with your listing
           <br />• Images: JPEG, PNG, WebP (max 10MB each)
-          <br />• Videos: MP4, WebM, MOV (max 50MB each)
+          <br />• Videos: MP4, WebM, MOV (max 50MB each, 30 seconds max)
         </p>
       </div>
 
@@ -682,7 +713,7 @@ function MediaUploadStep({
         maxImages={10}
         maxVideos={2}
         value={formData.mediaUrls || []}
-        onChangeAction={(urls) => updateFormData({ mediaUrls: urls })}
+        onChangeAction={handleFileChange}
         uploadType="listing"
       />
     </div>
@@ -706,7 +737,7 @@ function PaymentTierStep({
             key={tier.id}
             className={`cursor-pointer transition-all ${
               formData.paymentTier === tier.id
-                ? "ring-2 ring-blue-500 bg-blue-50"
+                ? "ring-2 ring-blue-500"
                 : "hover:shadow-md"
             }`}
             onClick={() => updateFormData({ paymentTier: tier.id })}
@@ -786,7 +817,7 @@ function PaymentMethodStep({
 
       <div className="bg-muted p-4 rounded-lg">
         <p className="font-medium">{selectedTier.name} Plan</p>
-        <p className="text-2xl font-bold text-blue-600">
+        <p className="text-2xl font-bold text-green-600">
           Ksh {selectedTier.price}
         </p>
       </div>
@@ -805,9 +836,7 @@ function PaymentMethodStep({
             >
               <CardContent className="p-4">
                 <div className="flex items-center space-x-3">
-                  <div className="w-12 h-12 bg-green-600 rounded-lg flex items-center justify-center text-white font-bold">
-                    M
-                  </div>
+                  <img src="/mpesa_logo.png" alt="M-Pesa Logo" className="w-12 h-12 object-contain rounded-lg" />
                   <div>
                     <p className="font-medium">M-Pesa</p>
                     <p className="text-sm text-muted-foreground">
@@ -828,9 +857,7 @@ function PaymentMethodStep({
             >
               <CardContent className="p-4">
                 <div className="flex items-center space-x-3">
-                  <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">
-                    P
-                  </div>
+                  <img src="/PayStack_Logo.png" alt="Paystack Logo" className="w-12 h-12 object-contain rounded-lg" />
                   <div>
                     <p className="font-medium">Paystack</p>
                     <p className="text-sm text-muted-foreground">
@@ -851,13 +878,11 @@ function PaymentMethodStep({
             >
               <CardContent className="p-4">
                 <div className="flex items-center space-x-3">
-                  <div className="w-12 h-12 bg-yellow-500 rounded-lg flex items-center justify-center text-white font-bold">
-                    PP
-                  </div>
+                  <img src="/PayPal_Logo.png" alt="PayPal Logo" className="w-12 h-12 object-contain rounded-lg" />
                   <div>
                     <p className="font-medium">PayPal</p>
                     <p className="text-sm text-muted-foreground">
-                      Pay with PayPal balance or card
+                      Coming Soon ...
                     </p>
                   </div>
                 </div>
@@ -930,7 +955,7 @@ function PreviewStep({
                 {formData.title || "Ad Title"}
               </h3>
               <p className="text-2xl font-bold text-green-600">
-                Ksh {formData.price || "0"}
+                Ksh {selectedTier.price || "N/A"}
               </p>
               {formData.negotiable && (
                 <span className="text-sm text-muted-foreground">
@@ -970,8 +995,7 @@ function PreviewStep({
                 {formData.condition || "Not specified"}
               </div>
               <div>
-                <span className="font-medium">Location:</span>{" "}
-                {displayLocation}
+                <span className="font-medium">Location:</span> {displayLocation}
               </div>
               <div>
                 <span className="font-medium">Plan:</span> {selectedTier.name}

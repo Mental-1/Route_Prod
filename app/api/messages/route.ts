@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { getSupabaseRouteHandler } from "@/utils/supabase/server";
 import { MessageEncryption } from "@/lib/encryption";
 import { z } from "zod";
+import { cookies } from "next/headers";
 
 const sendMessageSchema = z.object({
   listingId: z.string().uuid(),
@@ -16,7 +17,7 @@ const sendMessageSchema = z.object({
  */
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await getSupabaseRouteHandler();
+    const supabase = await getSupabaseRouteHandler(cookies);
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -131,7 +132,7 @@ export async function POST(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await getSupabaseRouteHandler();
+    const supabase = await getSupabaseRouteHandler(cookies);
     const {
       data: { user },
     } = await supabase.auth.getUser();

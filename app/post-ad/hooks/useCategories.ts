@@ -1,11 +1,12 @@
 import type { Database } from "@/utils/supabase/database.types";
-import { createBrowserClient } from "@/utils/supabase/supabase-browser";
+import { getSupabaseClient } from "@/utils/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import { useQuery as useSupabaseQuery } from "@supabase-cache-helpers/postgrest-react-query";
 
 type Category = Database["public"]["Tables"]["categories"]["Row"];
 type SubCategory = Database["public"]["Tables"]["subcategories"]["Row"];
 export const useCategories = () => {
-  const supabase = createBrowserClient();
+  const supabase = getSupabaseClient();
 
   return useQuery({
     queryKey: ["categories"],
@@ -24,7 +25,7 @@ export const useCategories = () => {
 };
 
 export const useSubcategories = (categoryId: number | null) => {
-  const supabase = createBrowserClient();
+  const supabase = getSupabaseClient();
 
   return useQuery({
     queryKey: ["subcategories", categoryId],
@@ -40,16 +41,14 @@ export const useSubcategories = (categoryId: number | null) => {
       if (error) throw error;
       return data;
     },
-    enabled: !!categoryId, // Only run when categoryId exists
+    enabled: !!categoryId,
     staleTime: 10 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
   });
 };
 
-import { useQuery as useSupabaseQuery } from "@supabase-cache-helpers/postgrest-react-query";
-
 export const useCategoriesWithRealtime = () => {
-  const supabase = createBrowserClient();
+  const supabase = getSupabaseClient();
 
   return useSupabaseQuery(
     supabase.from("categories").select("*").order("name"),

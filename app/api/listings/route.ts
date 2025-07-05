@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSupabaseRouteHandler } from "@/utils/supabase/server";
+import { cookies } from "next/headers";
 
 /**
  * Retrieves listing data, either a single listing by ID or a paginated list of listings.
@@ -9,7 +10,7 @@ import { getSupabaseRouteHandler } from "@/utils/supabase/server";
  * @returns A JSON response containing either a single formatted listing or a paginated list of listings with metadata.
  */
 export async function GET(request: Request) {
-  const supabase = await getSupabaseRouteHandler();
+  const supabase = await getSupabaseRouteHandler(cookies);
   const { searchParams } = new URL(request.url);
 
   const id = searchParams.get("id");
@@ -98,7 +99,7 @@ export async function GET(request: Request) {
  * Authenticates the user, validates and sanitizes the request body, and inserts a new listing into the database. Returns the created listing data with a 201 status on success, or an error response if authentication fails or an internal error occurs.
  */
 export async function POST(request: Request) {
-  const supabase = await getSupabaseRouteHandler();
+  const supabase = await getSupabaseRouteHandler(cookies);
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -166,7 +167,7 @@ export async function POST(request: Request) {
  * Expects a JSON body containing the listing `id` and fields to update. Returns appropriate error responses for missing ID, unauthorized access, forbidden ownership, not found, or server errors. On success, returns the updated listing data.
  */
 export async function PUT(request: Request) {
-  const supabase = await getSupabaseRouteHandler();
+  const supabase = await getSupabaseRouteHandler(cookies);
 
   const {
     data: { user },
@@ -246,7 +247,7 @@ export async function PUT(request: Request) {
  * Requires the authenticated user to own the listing. Returns appropriate error responses for missing ID, unauthorized access, forbidden action, not found, or server errors. On success, returns a confirmation message with the deleted listing ID.
  */
 export async function DELETE(request: Request) {
-  const supabase = await getSupabaseRouteHandler();
+  const supabase = await getSupabaseRouteHandler(cookies);
   const { searchParams } = new URL(request.url);
 
   // Authentication check

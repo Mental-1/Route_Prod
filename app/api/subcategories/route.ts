@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSupabaseRouteHandler } from "@/utils/supabase/server";
+import { cookies } from "next/headers";
 
 /**
  * Handles GET requests to retrieve subcategories from the database, optionally filtered by a parent category ID.
@@ -14,7 +15,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const categoryId = searchParams.get("category_id");
 
-    const supabase = await getSupabaseRouteHandler();
+    const supabase = await getSupabaseRouteHandler(cookies);
 
     let query = supabase.from("subcategories").select("*").order("name");
 

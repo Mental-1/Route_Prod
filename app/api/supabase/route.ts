@@ -18,7 +18,25 @@ const sessionCache = createCache({
 export async function GET(request: NextRequest) {
   const validation = await validateRequest(request, {
     method: "GET",
-    allowedHeaders: ["authorization", "content-type"],
+    allowedHeaders: [
+      "authorization",
+      "content-type",
+      "cookie",
+      "dnt",
+      "referer",
+      "sec-ch-ua",
+      "sec-ch-ua-mobile",
+      "sec-ch-ua-platform",
+      "sec-fetch-dest",
+      "sec-fetch-mode",
+      "sec-fetch-site",
+      "sec-gpc",
+      "x-forwarded-for",
+      "x-forwarded-host",
+      "x-forwarded-port",
+      "x-forwarded-proto",
+      "x-request-id",
+    ],
   });
 
   if (!validation.isValid) {

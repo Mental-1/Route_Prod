@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { getSupabaseRouteHandler } from "@/utils/supabase/server";
+import { cookies } from "next/headers";
 
 /**
  * Retrieves a single active listing by its ID, including related category, subcategory, and seller details.
@@ -14,7 +15,7 @@ export async function GET(
 ) {
   try {
     const { id } = context.params;
-    const supabase = await getSupabaseRouteHandler();
+    const supabase = await getSupabaseRouteHandler(cookies);
 
     const { data: listing, error } = await supabase
       .from("listings")

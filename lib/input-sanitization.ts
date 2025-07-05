@@ -1,20 +1,20 @@
-import DOMPurify from "isomorphic-dompurify"
-import { z } from "zod"
+import DOMPurify from "isomorphic-dompurify";
+import { z } from "zod";
 
 // XSS Protection
 export function sanitizeHtml(input: string): string {
   return DOMPurify.sanitize(input, {
     ALLOWED_TAGS: [],
     ALLOWED_ATTR: [],
-  })
+  });
 }
 
 export function sanitizeInput(input: string): string {
   return input
-    .replace(/[<>]/g, "") // Remove potential HTML tags
-    .replace(/javascript:/gi, "") // Remove javascript: protocol
-    .replace(/on\w+=/gi, "") // Remove event handlers
-    .trim()
+    .replace(/[<>]/g, "")
+    .replace(/javascript:/gi, "")
+    .replace(/on\w+=/gi, "")
+    .trim();
 }
 
 // SQL Injection Protection (additional layer beyond parameterized queries)
@@ -24,42 +24,50 @@ export function validateSqlInput(input: string): boolean {
     /(\b(OR|AND)\s+\d+\s*=\s*\d+)/gi,
     /(--|\/\*|\*\/|;)/g,
     /(\b(CHAR|NCHAR|VARCHAR|NVARCHAR)\s*$$\s*\d+\s*$$)/gi,
-  ]
+  ];
 
-  return !sqlInjectionPatterns.some((pattern) => pattern.test(input))
+  return !sqlInjectionPatterns.some((pattern) => pattern.test(input));
 }
 
 // Enhanced Zod schemas with sanitization
 export const createSanitizedString = (options: {
-  min?: number
-  max?: number
-  required?: boolean
-  allowHtml?: boolean
+  min?: number;
+  max?: number;
+  required?: boolean;
+  allowHtml?: boolean;
 }) => {
-  let schema = z.string()
+  let schema = z.string();
 
   if (options.required !== false) {
-    schema = schema.min(1, "This field is required")
+    schema = schema.min(1, "This field is required");
   }
 
   if (options.min) {
-    schema = schema.min(options.min, `Must be at least ${options.min} characters`)
+    schema = schema.min(
+      options.min,
+      `Must be at least ${options.min} characters`,
+    );
   }
 
   if (options.max) {
-    schema = schema.max(options.max, `Must be no more than ${options.max} characters`)
+    schema = schema.max(
+      options.max,
+      `Must be no more than ${options.max} characters`,
+    );
   }
 
   return schema
     .transform((val) => {
       // Sanitize input
-      const sanitized = options.allowHtml ? DOMPurify.sanitize(val) : sanitizeInput(val)
-      return sanitized
+      const sanitized = options.allowHtml
+        ? DOMPurify.sanitize(val)
+        : sanitizeInput(val);
+      return sanitized;
     })
     .refine((val) => validateSqlInput(val), {
       message: "Invalid characters detected",
-    })
-}
+    });
+};
 
 export const createSanitizedEmail = () => {
   return z
@@ -68,8 +76,8 @@ export const createSanitizedEmail = () => {
     .transform((val) => sanitizeInput(val.toLowerCase()))
     .refine((val) => validateSqlInput(val), {
       message: "Invalid email format",
-    })
-}
+    });
+};
 
 export const createSanitizedUrl = () => {
   return z
@@ -78,14 +86,14 @@ export const createSanitizedUrl = () => {
     .transform((val) => {
       // Remove javascript: and other dangerous protocols
       if (val.match(/^(javascript|data|vbscript):/i)) {
-        return ""
+        return "";
       }
-      return sanitizeInput(val)
+      return sanitizeInput(val);
     })
     .refine((val) => val.startsWith("http://") || val.startsWith("https://"), {
       message: "URL must start with http:// or https://",
-    })
-}
+    });
+};
 
 // Phone number validation with sanitization
 export const createSanitizedPhone = () => {
@@ -94,8 +102,8 @@ export const createSanitizedPhone = () => {
     .transform((val) => val.replace(/[^\d+\-\s()]/g, "")) // Keep only digits, +, -, spaces, parentheses
     .refine((val) => /^[\d+\-\s()]{10,15}$/.test(val), {
       message: "Invalid phone number format",
-    })
-}
+    });
+};
 
 // Password validation with strength requirements
 export const createSecurePassword = () => {
@@ -114,5 +122,5 @@ export const createSecurePassword = () => {
     })
     .refine((val) => /[!@#$%^&*(),.?":{}|<>]/.test(val), {
       message: "Password must contain at least one special character",
-    })
-}
+    });
+};

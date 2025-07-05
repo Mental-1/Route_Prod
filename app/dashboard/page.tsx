@@ -1,14 +1,18 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { createBrowserClient } from "@/utils/supabase/supabase-browser"
-import Link from "next/link"
-import { Check, Clock, DollarSign, Eye, Plus, Star } from "lucide-react"
-import { syncSupabaseSession } from "@/utils/supabase/sync-session"
+import { useRouter } from "next/navigation";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import Link from "next/link";
+import { Check, Clock, DollarSign, Eye, Plus, Star } from "lucide-react";
+import { useAuth } from "@/contexts/auth-context";
 
 /**
  * Displays the authenticated user's dashboard with profile information, statistics, recent activity, and navigation actions.
@@ -16,13 +20,11 @@ import { syncSupabaseSession } from "@/utils/supabase/sync-session"
  * Redirects unauthenticated users to the sign-in page. Fetches and presents user profile data, mock statistics, and recent activities. Provides quick access to account management, listings, transactions, messages, and settings.
  */
 export default function DashboardPage() {
-  const router = useRouter()
-  const supabase = createBrowserClient()
-  const [user, setUser] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
-  const [profile, setProfile] = useState<any>(null)
+  const router = useRouter();
+  const { user, profile, isLoading } = useAuth();
 
-  // Mock data for listings
+  // Mock data for listings Use listings API to fetch profile tagged active, pending and expired listings.
+  // Transactions will also be fetched within the same request to reduce number of API calls.
   const activeListings = [
     {
       id: 1,
@@ -40,7 +42,7 @@ export default function DashboardPage() {
       views: 15,
       created_at: "2023-06-05",
     },
-  ]
+  ];
 
   const pendingListings = [
     {
@@ -50,7 +52,7 @@ export default function DashboardPage() {
       image: "/placeholder.svg?height=80&width=80",
       created_at: "2023-06-07",
     },
-  ]
+  ];
 
   const expiredListings = [
     {
@@ -62,7 +64,7 @@ export default function DashboardPage() {
       created_at: "2023-05-01",
       expired_at: "2023-06-01",
     },
-  ]
+  ];
 
   const transactions = [
     {
@@ -89,7 +91,7 @@ export default function DashboardPage() {
       date: "2023-06-01",
       status: "active",
     },
-  ]
+  ];
 
   const recentActivity = [
     {
@@ -125,46 +127,9 @@ export default function DashboardPage() {
       date: "1 day ago",
       icon: <Plus className="h-4 w-4 text-orange-500" />,
     },
-  ]
+  ];
 
-  useEffect(() => {
-    /**
-     * Initializes the dashboard by synchronizing the Supabase session, verifying authentication, and loading the user's profile data.
-     *
-     * Redirects unauthenticated users to the sign-in page. If no profile is found in the database, sets a default profile using session metadata.
-     */
-    async function init() {
-      await syncSupabaseSession()
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) {
-        router.push("/auth")
-        return
-      }
-      setUser(session.user)
-
-      // Fetch user profile after session is available
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", session.user.id)
-        .single()
-
-      setProfile(
-        profile || {
-          full_name: session.user.user_metadata?.full_name || "User",
-          username: session.user.user_metadata?.username || "user",
-          created_at: new Date().toISOString(),
-          rating: 4.8,
-          reviews_count: 47,
-        }
-      )
-
-      setLoading(false)
-    }
-    init()
-  }, [router, supabase])
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -172,7 +137,12 @@ export default function DashboardPage() {
           <p className="mt-4">Loading...</p>
         </div>
       </div>
-    )
+    );
+  }
+
+  if (!user) {
+    router.push("/auth");
+    return null;
   }
 
   return (
@@ -203,22 +173,37 @@ export default function DashboardPage() {
                 </Button>
               </div>
               <CardDescription>
-                Welcome back, {profile?.full_name || user?.user_metadata?.full_name || "User"}!
+                Welcome back,{" "}
+                {profile?.full_name || user?.user_metadata?.full_name || "User"}
+                !
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex flex-col items-center mb-6">
                 <Avatar className="h-24 w-24 mb-4">
                   <AvatarImage
-                    src={user?.user_metadata?.avatar_url || "/placeholder.svg?height=96&width=96"}
-                    alt={profile?.full_name}
+                    src={
+                      user?.user_metadata?.avatar_url ||
+                      "/placeholder.svg?height=96&width=96"
+                    }
+                    alt={
+                      profile?.full_name ||
+                      user?.user_metadata?.full_name ||
+                      "User"
+                    }
                   />
-                  <AvatarFallback>{profile?.full_name?.charAt(0) || user?.email?.charAt(0) || "U"}</AvatarFallback>
+                  <AvatarFallback>
+                    {profile?.full_name?.charAt(0) ||
+                      user?.email?.charAt(0) ||
+                      "U"}
+                  </AvatarFallback>
                 </Avatar>
                 <h3 className="text-xl font-semibold">{profile?.full_name}</h3>
                 <p className="text-sm text-muted-foreground">
                   Member since{" "}
-                  {new Date(profile?.created_at || user?.created_at).toLocaleDateString("en-US", {
+                  {new Date(
+                    profile?.created_at || user?.created_at,
+                  ).toLocaleDateString("en-US", {
                     month: "long",
                     year: "numeric",
                   })}
@@ -226,7 +211,9 @@ export default function DashboardPage() {
                 <div className="flex items-center mt-1">
                   <Star className="h-4 w-4 fill-yellow-400 text-yellow-400 mr-1" />
                   <span className="font-medium">{profile?.rating || 4.8}</span>
-                  <span className="text-muted-foreground text-sm ml-1">({profile?.reviews_count || 47} reviews)</span>
+                  <span className="text-muted-foreground text-sm ml-1">
+                    ({profile?.reviews_count || 47} reviews)
+                  </span>
                 </div>
               </div>
 
@@ -238,7 +225,9 @@ export default function DashboardPage() {
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-primary">8</p>
-                  <p className="text-xs text-muted-foreground">Active Listings</p>
+                  <p className="text-xs text-muted-foreground">
+                    Active Listings
+                  </p>
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-primary">15</p>
@@ -247,7 +236,11 @@ export default function DashboardPage() {
               </div>
 
               <div className="space-y-2">
-                <Button asChild variant="outline" className="w-full justify-start">
+                <Button
+                  asChild
+                  variant="outline"
+                  className="w-full justify-start"
+                >
                   <Link href="/account">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -267,7 +260,11 @@ export default function DashboardPage() {
                     My Account
                   </Link>
                 </Button>
-                <Button asChild variant="outline" className="w-full justify-start">
+                <Button
+                  asChild
+                  variant="outline"
+                  className="w-full justify-start"
+                >
                   <Link href="/dashboard/listings">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -289,7 +286,11 @@ export default function DashboardPage() {
                     My Listings
                   </Link>
                 </Button>
-                <Button asChild variant="outline" className="w-full justify-start">
+                <Button
+                  asChild
+                  variant="outline"
+                  className="w-full justify-start"
+                >
                   <Link href="/dashboard/transactions">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -314,7 +315,11 @@ export default function DashboardPage() {
                 </Button>
                 {/* TODO: Get the number of unread messages from the database, render them in the dashboard. */}
 
-                <Button asChild variant="outline" className="w-full justify-start">
+                <Button
+                  asChild
+                  variant="outline"
+                  className="w-full justify-start"
+                >
                   <Link href="/dashboard/messages">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -336,7 +341,11 @@ export default function DashboardPage() {
                     </span>
                   </Link>
                 </Button>
-                <Button asChild variant="outline" className="w-full justify-start">
+                <Button
+                  asChild
+                  variant="outline"
+                  className="w-full justify-start"
+                >
                   <Link href="/settings">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -367,19 +376,25 @@ export default function DashboardPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Total Earnings</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Total Earnings
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="flex items-center">
                   <DollarSign className="h-4 w-4 text-muted-foreground mr-2" />
                   <div className="text-2xl font-bold">$2,847</div>
-                  <span className="ml-2 text-xs text-green-500">+12% this month</span>
+                  <span className="ml-2 text-xs text-green-500">
+                    +12% this month
+                  </span>
                 </div>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Active Listings</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Active Listings
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="flex items-center">
@@ -401,7 +416,9 @@ export default function DashboardPage() {
                     <rect width="7" height="7" x="3" y="14" rx="1"></rect>
                   </svg>
                   <div className="text-2xl font-bold">8</div>
-                  <span className="ml-2 text-xs text-blue-500">2 new this week</span>
+                  <span className="ml-2 text-xs text-blue-500">
+                    2 new this week
+                  </span>
                 </div>
               </CardContent>
             </Card>
@@ -412,7 +429,9 @@ export default function DashboardPage() {
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <div>
                 <CardTitle>Recent Activity</CardTitle>
-                <CardDescription>Your latest activity on RouteMe</CardDescription>
+                <CardDescription>
+                  Your latest activity on RouteMe
+                </CardDescription>
               </div>
               <Button variant="ghost" size="sm">
                 View all
@@ -430,10 +449,18 @@ export default function DashboardPage() {
                     <div className="flex-1">
                       <div className="flex items-center justify-between">
                         <p className="font-medium">{activity.title}</p>
-                        <p className="text-xs text-muted-foreground">{activity.date}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {activity.date}
+                        </p>
                       </div>
-                      <p className="text-sm text-muted-foreground">{activity.description}</p>
-                      {activity.amount && <p className="text-sm font-medium text-green-600">+${activity.amount}</p>}
+                      <p className="text-sm text-muted-foreground">
+                        {activity.description}
+                      </p>
+                      {activity.amount && (
+                        <p className="text-sm font-medium text-green-600">
+                          +${activity.amount}
+                        </p>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -445,7 +472,9 @@ export default function DashboardPage() {
           <Card>
             <CardHeader>
               <CardTitle>Quick Actions</CardTitle>
-              <CardDescription>Manage your listings and account</CardDescription>
+              <CardDescription>
+                Manage your listings and account
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -522,5 +551,5 @@ export default function DashboardPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }

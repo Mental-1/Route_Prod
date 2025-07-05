@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { getSupabaseRouteHandler } from "@/utils/supabase/server";
 import { paypalPaymentSchema } from "@/lib/validations";
+import { cookies } from "next/headers";
 
 /**
  * Processes a PayPal payment request for an authenticated user, creating a PayPal order and recording the transaction.
@@ -12,7 +13,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const validatedData = paypalPaymentSchema.parse(body);
 
-    const supabase = await getSupabaseRouteHandler();
+    const supabase = await getSupabaseRouteHandler(cookies);
     const {
       data: { user },
       error: authError,

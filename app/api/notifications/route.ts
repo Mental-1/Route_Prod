@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { getSupabaseRouteHandler } from "@/utils/supabase/server";
 import { notificationSchema } from "@/lib/validations";
+import { cookies } from "next/headers";
 
 /**
  * Handles GET requests to retrieve paginated notifications for the authenticated user.
@@ -9,7 +10,7 @@ import { notificationSchema } from "@/lib/validations";
  */
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await getSupabaseRouteHandler();
+    const supabase = await getSupabaseRouteHandler(cookies);
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -74,7 +75,7 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await getSupabaseRouteHandler();
+    const supabase = await getSupabaseRouteHandler(cookies);
     const {
       data: { user },
     } = await supabase.auth.getUser();

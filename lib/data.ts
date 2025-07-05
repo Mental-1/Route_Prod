@@ -1,4 +1,4 @@
-import { createBrowserClient } from "@/utils/supabase/supabase-browser";
+import { getSupabaseClient } from "@/utils/supabase/client";
 import { Toast } from "@/components/ui/toast";
 
 export interface DisplayListingItem {
@@ -21,9 +21,9 @@ export interface ListingsItem {
   condition: string | null;
   location: string | null;
   views: number | null;
-  category_id: number | null; // Assuming category_id is a number using the same type as in the database
-  subcategory_id: number | null; // Assuming subcategory_id is a number using the same type as in the database
-  createdAt: string | null; // Assuming created_at is a string in ISO format
+  category_id: number | null;
+  subcategory_id: number | null;
+  createdAt: string | null;
 }
 
 /**
@@ -34,7 +34,7 @@ export interface ListingsItem {
  * @returns An array of recent listings formatted for display.
  */
 export async function getRecentListings(): Promise<DisplayListingItem[]> {
-  const supabase = createBrowserClient();
+  const supabase = getSupabaseClient();
 
   const fourDaysAgo = new Date();
   fourDaysAgo.setDate(fourDaysAgo.getDate() - 4);
@@ -94,7 +94,7 @@ export async function fetchListings({
   sortBy?: string;
   sortOrder?: "asc" | "desc";
 } = {}): Promise<ListingsItem[]> {
-  const supabase = createBrowserClient();
+  const supabase = getSupabaseClient();
 
   let query = supabase
     .from("listings")

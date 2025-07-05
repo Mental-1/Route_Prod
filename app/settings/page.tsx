@@ -1,147 +1,119 @@
-"use client";
+'use client';
 
-import { useEffect, useState, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { saveSettings, getSettings } from './actions/settings-actions';
+import { deleteAccount, exportUserData } from './actions/account-actions';
+import { getAvailableLanguages } from './actions/language-actions';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
-import { createBrowserClient } from "@/utils/supabase/supabase-browser";
-import { toast } from "@/components/ui/use-toast";
-import { Toaster } from "@/components/ui/toaster";
-import { Bell, Shield, Globe, Download, Trash2 } from "lucide-react";
-import { syncSupabaseSession } from "@/utils/supabase/sync-session";
+} from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
+import { toast } from '@/components/ui/use-toast';
+import { Toaster } from '@/components/ui/toaster';
+import { Bell, Shield, Globe, Download, Trash2 } from 'lucide-react';
+import { useAuth } from '@/contexts/auth-context';
 
-/**
- * Renders the user settings page, allowing authenticated users to manage notification, privacy, preference, and data management options.
- *
- * Redirects unauthenticated users to the authentication page. Provides UI controls for toggling notification types, adjusting privacy settings, selecting language, currency, and timezone preferences, and managing account data including export and deletion actions.
- */
 export default function SettingsPage() {
+  const { user, isLoading } = useAuth();
+  const [settings, setSettings] = useState<any>(null);
+  const [availableLanguages, setAvailableLanguages] = useState<
+    { code: string; name: string }[]
+  >([]);
   const router = useRouter();
-  const supabase = useMemo(() => createBrowserClient(), []);
-  const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [settings, setSettings] = useState({
-    notifications: {
-      email_notifications: true,
-      push_notifications: true,
-      sms_notifications: false,
-      marketing_emails: false,
-      new_messages: true,
-      listing_updates: true,
-      price_alerts: true,
-    },
-    privacy: {
-      profile_visibility: "public",
-      show_phone: false,
-      show_email: false,
-      show_last_seen: true,
-    },
-    preferences: {
-      language: "en",
-      currency: "USD",
-      timezone: "UTC",
-      theme: "system",
-    },
-  });
 
   useEffect(() => {
-    async function init() {
-      await syncSupabaseSession();
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      if (!session) {
-        router.push("/auth");
-        return;
+    const fetchInitialSettings = async () => {
+      if (user) {
+        const fetchedSettings = await getSettings();
+        if (fetchedSettings) {
+          setSettings(fetchedSettings);
+        }
+        const languages = await getAvailableLanguages();
+        setAvailableLanguages(languages);
       }
-
-      setUser(session.user);
-      setLoading(false);
-    }
-
-    init();
-  }, [router, supabase]);
+    };
+    fetchInitialSettings();
+  }, [user]);
 
   const handleSaveSettings = async () => {
-    try {
-      // TODO: Save settings to the database and update user object and logic.
+    if (!user) {
       toast({
-        title: "Success",
-        description: "Settings saved successfully",
+        title: 'Error',
+        description: 'You must be logged in to save settings.',
+        variant: 'destructive',
       });
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: "Failed to save settings",
-        variant: "destructive",
-      });
+      return;
     }
+    await saveSettings(settings);
   };
 
   const handleDeleteAccount = async () => {
     if (
       confirm(
-        "Are you sure you want to delete your account? This action cannot be undone.",
+        'Are you sure you want to delete your account? This action cannot be undone.',
       )
     ) {
-      try {
-        //TODO: Implement account deletion logic here
-        // Implement a soft delete by setting a flag in the database
-        await supabase;
+      if (!user) {
         toast({
-          title: "Account Deletion",
-          description:
-            "Account deletion request submitted. You will receive an email with further instructions.",
+          title: 'Error',
+          description: 'You must be logged in to delete your account.',
+          variant: 'destructive',
         });
-      } catch (error: any) {
-        toast({
-          title: "Error",
-          description: "Failed to delete account",
-          variant: "destructive",
-        });
+        return;
       }
+      await deleteAccount(user.id);
     }
   };
 
   const handleExportData = async () => {
-    try {
-      // TODO: Implement data export logic here for users.
+    if (!user) {
       toast({
-        title: "Data Export",
-        description: "Your data export will be emailed to you within 24 hours.",
+        title: 'Error',
+        description: 'You must be logged in to export data.',
+        variant: 'destructive',
       });
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: "Failed to export data",
-        variant: "destructive",
-      });
+      return;
     }
+    await exportUserData(user.id);
   };
 
-  if (loading) {
+  if (isLoading || !settings) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto"></div>
           <p className="mt-4">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <p>You must be logged in to view this page.</p>
+          <Button
+            className="p-3 text-white border border-primary mt-3"
+            onClick={() => router.push('/auth')}
+          >
+            Create an account or log in.
+          </Button>
         </div>
       </div>
     );
@@ -185,7 +157,7 @@ export default function SettingsPage() {
                   id="email-notifications"
                   checked={settings.notifications.email_notifications}
                   onCheckedChange={(checked) =>
-                    setSettings((prev) => ({
+                    setSettings((prev: any) => ({
                       ...prev,
                       notifications: {
                         ...prev.notifications,
@@ -207,7 +179,7 @@ export default function SettingsPage() {
                   id="push-notifications"
                   checked={settings.notifications.push_notifications}
                   onCheckedChange={(checked) =>
-                    setSettings((prev) => ({
+                    setSettings((prev: any) => ({
                       ...prev,
                       notifications: {
                         ...prev.notifications,
@@ -229,7 +201,7 @@ export default function SettingsPage() {
                   id="sms-notifications"
                   checked={settings.notifications.sms_notifications}
                   onCheckedChange={(checked) =>
-                    setSettings((prev) => ({
+                    setSettings((prev: any) => ({
                       ...prev,
                       notifications: {
                         ...prev.notifications,
@@ -253,7 +225,7 @@ export default function SettingsPage() {
                   id="new-messages"
                   checked={settings.notifications.new_messages}
                   onCheckedChange={(checked) =>
-                    setSettings((prev) => ({
+                    setSettings((prev: any) => ({
                       ...prev,
                       notifications: {
                         ...prev.notifications,
@@ -275,7 +247,7 @@ export default function SettingsPage() {
                   id="listing-updates"
                   checked={settings.notifications.listing_updates}
                   onCheckedChange={(checked) =>
-                    setSettings((prev) => ({
+                    setSettings((prev: any) => ({
                       ...prev,
                       notifications: {
                         ...prev.notifications,
@@ -297,7 +269,7 @@ export default function SettingsPage() {
                   id="marketing-emails"
                   checked={settings.notifications.marketing_emails}
                   onCheckedChange={(checked) =>
-                    setSettings((prev) => ({
+                    setSettings((prev: any) => ({
                       ...prev,
                       notifications: {
                         ...prev.notifications,
@@ -334,7 +306,7 @@ export default function SettingsPage() {
                 <Select
                   value={settings.privacy.profile_visibility}
                   onValueChange={(value) =>
-                    setSettings((prev) => ({
+                    setSettings((prev: any) => ({
                       ...prev,
                       privacy: { ...prev.privacy, profile_visibility: value },
                     }))
@@ -362,7 +334,7 @@ export default function SettingsPage() {
                   id="show-phone"
                   checked={settings.privacy.show_phone}
                   onCheckedChange={(checked) =>
-                    setSettings((prev) => ({
+                    setSettings((prev: any) => ({
                       ...prev,
                       privacy: { ...prev.privacy, show_phone: checked },
                     }))
@@ -381,7 +353,7 @@ export default function SettingsPage() {
                   id="show-email"
                   checked={settings.privacy.show_email}
                   onCheckedChange={(checked) =>
-                    setSettings((prev) => ({
+                    setSettings((prev: any) => ({
                       ...prev,
                       privacy: { ...prev.privacy, show_email: checked },
                     }))
@@ -400,7 +372,7 @@ export default function SettingsPage() {
                   id="show-last-seen"
                   checked={settings.privacy.show_last_seen}
                   onCheckedChange={(checked) =>
-                    setSettings((prev) => ({
+                    setSettings((prev: any) => ({
                       ...prev,
                       privacy: { ...prev.privacy, show_last_seen: checked },
                     }))
@@ -430,22 +402,21 @@ export default function SettingsPage() {
                   <Select
                     value={settings.preferences.language}
                     onValueChange={(value) =>
-                      setSettings((prev) => ({
+                      setSettings((prev: any) => ({
                         ...prev,
                         preferences: { ...prev.preferences, language: value },
                       }))
                     }
                   >
-                    //TODO: Implement language selection logic. We need to fetch
-                    available languages and implement the translation logic.
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="en">English</SelectItem>
-                      <SelectItem value="sw">Swahili</SelectItem>
-                      <SelectItem value="fr">French</SelectItem>
-                      <SelectItem value="ar">Arabic</SelectItem>
+                      {availableLanguages.map((lang) => (
+                        <SelectItem key={lang.code} value={lang.code}>
+                          {lang.name}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -455,7 +426,7 @@ export default function SettingsPage() {
                   <Select
                     value={settings.preferences.currency}
                     onValueChange={(value) =>
-                      setSettings((prev) => ({
+                      setSettings((prev: any) => ({
                         ...prev,
                         preferences: { ...prev.preferences, currency: value },
                       }))
@@ -478,7 +449,7 @@ export default function SettingsPage() {
                   <Select
                     value={settings.preferences.timezone}
                     onValueChange={(value) =>
-                      setSettings((prev) => ({
+                      setSettings((prev: any) => ({
                         ...prev,
                         preferences: { ...prev.preferences, timezone: value },
                       }))
@@ -521,9 +492,7 @@ export default function SettingsPage() {
                   <h4 className="font-medium">Export Your Data</h4>
                   <p className="text-sm text-muted-foreground">
                     Download a copy of your data
-                  </p>{" "}
-                  // Will need to export data from database in human readable
-                  format
+                  </p>
                 </div>
                 <Button variant="outline" onClick={handleExportData}>
                   <Download className="h-4 w-4 mr-2" />

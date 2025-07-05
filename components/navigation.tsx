@@ -42,7 +42,6 @@ export default function Navigation() {
   const pathname = usePathname();
   const router = useRouter();
   const isMobile = useIsMobile();
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const { user, profile, signOut } = useAuth();
 
   const routes = [
@@ -62,36 +61,6 @@ export default function Navigation() {
       active: pathname === "/map",
     },
   ];
-
-  const SearchBar = () => {
-    const [searchTerm, setSearchTerm] = useState("");
-    const handleSearch = (e: React.FormEvent) => {
-      e.preventDefault();
-      if (searchTerm.trim()) {
-        router.push(`/listings?search=${encodeURIComponent(searchTerm)}`);
-      }
-    };
-    return (
-      <form onSubmit={handleSearch}>
-        <Input
-          type="search"
-          placeholder="Search listings..."
-          className="flex-1"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-        {isMobile && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setIsSearchOpen(false)}
-          >
-            <X className="h-5 w-5" />
-          </Button>
-        )}
-      </form>
-    );
-  };
 
   const UserMenu = () => {
     if (!user) {
@@ -143,10 +112,6 @@ export default function Navigation() {
             <Settings className="mr-2 h-4 w-4" />
             <span>Settings</span>
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => router.push("/post-ad")}>
-            <Plus className="mr-2 h-4 w-4" />
-            <span>Post Ad</span>
-          </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
             onClick={async () => {
@@ -189,9 +154,7 @@ export default function Navigation() {
         </nav>
       </div>
       <div className="hidden md:flex items-center gap-4">
-        <div className="relative w-full max-w-sm">
-          <SearchBar />
-        </div>
+        <div className="relative w-full max-w-sm"></div>
         <ThemeToggle />
         {user ? (
           <Button variant="default" onClick={() => router.push("/post-ad")}>
@@ -201,16 +164,6 @@ export default function Navigation() {
         <UserMenu />
       </div>
       <div className="flex md:hidden items-center gap-4">
-        {!isSearchOpen && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setIsSearchOpen(true)}
-            aria-label="Open Search"
-          >
-            <Search className="h-5 w-5" />
-          </Button>
-        )}
         <ThemeToggle />
         <Sheet>
           <SheetTrigger asChild>
@@ -281,13 +234,7 @@ export default function Navigation() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      {isMobile && isSearchOpen ? (
-        <div className="container py-3">
-          <SearchBar />
-        </div>
-      ) : (
-        <DesktopNav />
-      )}
+      <DesktopNav />
     </header>
   );
 }

@@ -1,5 +1,5 @@
 import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
+import { cookies as nextCookies } from "next/headers";
 import type { Database } from "@/utils/supabase/database.types";
 import { serializeCookieHeader } from "@supabase/ssr";
 
@@ -11,7 +11,7 @@ import { serializeCookieHeader } from "@supabase/ssr";
  * @returns A Supabase client instance typed with the application database.
  */
 export async function getSupabaseServer() {
-  const cookieStore = await cookies();
+  const cookieStore = await nextCookies();
   return createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -43,8 +43,8 @@ export async function getSupabaseServer() {
  *
  * @returns A Supabase client instance typed with the application's database schema.
  */
-export async function getSupabaseRouteHandler() {
-  const cookieStore = await cookies();
+export async function getSupabaseRouteHandler(cookiesFn: typeof nextCookies) {
+  const cookieStore = await cookiesFn();
   return createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,

@@ -1,6 +1,7 @@
 import { del } from "@vercel/blob";
 import { type NextRequest, NextResponse } from "next/server";
 import { getSupabaseRouteHandler } from "@/utils/supabase/server";
+import { cookies } from "next/headers";
 
 /**
  * Handles DELETE requests to remove a user-owned file from storage.
@@ -12,7 +13,7 @@ import { getSupabaseRouteHandler } from "@/utils/supabase/server";
  */
 export async function DELETE(request: NextRequest) {
   try {
-    const supabase = await getSupabaseRouteHandler();
+    const supabase = await getSupabaseRouteHandler(cookies);
     const {
       data: { user },
       error: authError,

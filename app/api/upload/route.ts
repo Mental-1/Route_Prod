@@ -1,5 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { getSupabaseRouteHandler } from "@/utils/supabase/server";
+import sharp from "sharp";
+import { cookies } from "next/headers";
 
 /**
  * Handles authenticated file uploads via POST, storing files in Supabase Storage and returning their public URLs.
@@ -8,7 +10,7 @@ import { getSupabaseRouteHandler } from "@/utils/supabase/server";
  */
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await getSupabaseRouteHandler();
+    const supabase = await getSupabaseRouteHandler(cookies);
     const {
       data: { user },
       error: authError,
@@ -57,18 +59,34 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Image processing
+    let processedBuffer: Buffer;
+    let processedExtension = "webp";
+
+    if (file.type.startsWith("image/")) {
+      const imageBuffer = Buffer.from(await file.arrayBuffer());
+      processedBuffer = await sharp(imageBuffer)
+        .webp({ quality: 80 })
+        .toBuffer();
+    } else {
+      processedBuffer = Buffer.from(await file.arrayBuffer());
+      processedExtension = file.name.split(".").pop() || "";
+    }
+
     // Generate unique filename
     const timestamp = Date.now();
     const randomString = Math.random().toString(36).substring(2, 15);
-    const extension = file.name.split(".").pop();
-    const filename = `${type}/${user.id}/${timestamp}-${randomString}.${extension}`;
+    const filename = `${type}/${user.id}/${timestamp}-${randomString}.${processedExtension}`;
 
     const bucket = type === "profile" ? "profiles" : "listings";
-    const filePath = `${user.id}/${timestamp}${filename}-${randomString}.${extension}`;
+    const filePath = `${user.id}/${timestamp}${filename}-${randomString}.${processedExtension}`;
 
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from(bucket)
-      .upload(filePath, file, { contentType: file.type, upsert: false });
+      .upload(filePath, processedBuffer, {
+        contentType: `image/${processedExtension}`,
+        upsert: false,
+      });
 
     if (uploadError) {
       console.error("Upload error:", uploadError);
@@ -84,8 +102,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       url: publicUrl,
       filename: filePath,
-      size: file.size,
-      type: file.type,
+      size: processedBuffer.length,
+      type: `image/${processedExtension}`,
       bucket: bucket,
       user: user.id,
     });
@@ -94,4 +112,3 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Upload failed" }, { status: 500 });
   }
 }
-//TODO: Upload images to supabase storage instead of Vercel Blob

@@ -3,6 +3,7 @@
 import { getSupabaseRouteHandler } from "@/utils/supabase/server";
 import type { Database } from "@/utils/supabase/database.types";
 import { getSupabaseServiceRole } from "@/utils/supabase/server";
+import { cookies } from "next/headers";
 
 import nodemailer from "nodemailer";
 
@@ -39,7 +40,7 @@ export async function createNotification({
   type: NotificationType;
   listingId?: string | null;
 }) {
-  const supabase = await getSupabaseRouteHandler();
+  const supabase = await getSupabaseRouteHandler(cookies);
 
   const { error } = await supabase.from("notifications").insert({
     user_id: userId,
@@ -65,7 +66,7 @@ export async function createNotification({
  * @returns An object indicating success or failure, with an error message if applicable
  */
 export async function markNotificationAsRead(notificationId: string) {
-  const supabase = await getSupabaseRouteHandler();
+  const supabase = await getSupabaseRouteHandler(cookies);
 
   const { error } = await supabase
     .from("notifications")
@@ -87,7 +88,7 @@ export async function markNotificationAsRead(notificationId: string) {
  * @returns An object indicating success or containing an error message if the update fails
  */
 export async function markAllNotificationsAsRead(userId: string) {
-  const supabase = await getSupabaseRouteHandler();
+  const supabase = await getSupabaseRouteHandler(cookies);
 
   const { error } = await supabase
     .from("notifications")
@@ -130,7 +131,7 @@ export async function sendExpiryNotification(
   });
 
   // Get user email preferences
-  const supabase = await getSupabaseRouteHandler();
+  const supabase = await getSupabaseRouteHandler(cookies);
 
   const { data: profile, error: profileError } = await supabase
     .from("profiles")
@@ -183,7 +184,7 @@ export async function sendExpiryNotification(
  * @returns An object indicating success or containing error details if the operation fails
  */
 export async function markListingAsExpired(listingId: string) {
-  const supabase = await getSupabaseRouteHandler();
+  const supabase = await getSupabaseRouteHandler(cookies);
 
   // Get listing details
   const { data: listing } = await supabase

@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { getSupabaseRouteHandler } from "@/utils/supabase/server";
-
+import { cookies } from "next/headers";
 /**
  * Handles a GET request to process expired listings via a Supabase RPC, requiring authorization.
  *
@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const supabase = await getSupabaseRouteHandler();
+    const supabase = await getSupabaseRouteHandler(cookies);
 
     const { error } = await supabase.rpc("handle_expired_listings");
 
