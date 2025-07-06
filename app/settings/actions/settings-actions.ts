@@ -2,6 +2,11 @@
 
 import { toast } from "@/components/ui/use-toast";
 
+interface settingsUpdate {
+  key: string;
+  value: any;
+}
+
 export async function getSettings() {
   try {
     const response = await fetch("/api/settings");
@@ -20,7 +25,7 @@ export async function getSettings() {
   }
 }
 
-export async function saveSettings(settings: any) {
+export async function saveSettings(settings: settingsUpdate) {
   try {
     const response = await fetch("/api/settings", {
       method: "POST",
@@ -47,30 +52,30 @@ export async function saveSettings(settings: any) {
 }
 
 export async function updateSetting(setting: any) {
-    try {
-      const response = await fetch(`/api/settings`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(setting),
-      });
-  
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to update setting');
-      }
-  
-      toast({
-        title: 'Success',
-        description: 'Setting updated successfully.',
-      });
-    } catch (error) {
-      console.error('Failed to update setting:', error);
-      toast({
-        title: 'Error',
-        description: (error as Error).message,
-        variant: 'destructive',
-      });
+  try {
+    const response = await fetch(`/api/settings`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(setting),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Failed to update setting");
     }
+
+    toast({
+      title: "Success",
+      description: "Setting updated successfully.",
+    });
+  } catch (error) {
+    console.error("Failed to update setting:", error);
+    toast({
+      title: "Error",
+      description: (error as Error).message,
+      variant: "destructive",
+    });
   }
+}

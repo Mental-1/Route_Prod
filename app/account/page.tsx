@@ -59,9 +59,21 @@ export default function AccountPage() {
   useEffect(() => {
     const fetchAccountData = async () => {
       if (user) {
-        const accountData = await getAccount();
-        if (accountData) {
-          setFormData(accountData);
+        try {
+          const accountData = await getAccount();
+          if (accountData) {
+            setFormData(accountData);
+          }
+        } catch (error) {
+          console.error("Failed to fetch account data:", error);
+          setFormData({
+            full_name: "",
+            username: "",
+            bio: "",
+            phone_number: "",
+            location: "",
+            website: "",
+          });
         }
       }
     };

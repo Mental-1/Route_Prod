@@ -38,13 +38,21 @@ export default function SettingsPage() {
 
   useEffect(() => {
     const fetchInitialSettings = async () => {
-      if (user) {
+      try {
         const fetchedSettings = await getSettings();
         if (fetchedSettings) {
           setSettings(fetchedSettings);
         }
         const languages = await getAvailableLanguages();
         setAvailableLanguages(languages);
+      } catch (error) {
+        console.error("Failed to fetch initial settings:", error);
+        // Set default settings to ensure UI remains functional
+        setSettings({
+          notifications: {},
+          privacy: {},
+          preferences: {},
+        });
       }
     };
     fetchInitialSettings();

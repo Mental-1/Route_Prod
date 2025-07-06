@@ -120,7 +120,9 @@ export async function GET(request: NextRequest) {
             error: "Search failed",
             message: "Unable to complete search. Please try again.",
             details:
-              process.env.NODE_ENV === "production" ? error.message : undefined,
+              process.env.NODE_ENV === "development"
+                ? error.message
+                : undefined,
           },
           { status: 500 },
         );

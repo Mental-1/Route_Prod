@@ -81,8 +81,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setUser(session?.user ?? null);
+      await refreshProfile();
       router.refresh();
     });
 
@@ -113,17 +114,3 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 };
 
 export const useAuth = () => useContext(AuthContext);
-
-// Add Zod validation for profile if I want to enforce structure on profile data.
-export const profileSchema = z.object({
-  id: z.string(),
-  username: z.string().nullable(),
-  website: z.string().url().nullable(),
-  avatar_url: z.string().url().nullable(),
-  created_at: z.string().nullable(),
-  updated_at: z.string().nullable(),
-});
-
-export type ProfileSchema = z.infer<typeof profileSchema>;
-
-// Add type safety for user/profile and ensure all supabase calls are typed

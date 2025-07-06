@@ -81,7 +81,7 @@ export default function UserListingsPage() {
           category:categories(name)
         `,
         )
-        .eq("user_id", user?.id || "")
+        .eq("user_id", user!.id)
         .order("created_at", { ascending: false });
 
       if (error) {
@@ -123,7 +123,7 @@ export default function UserListingsPage() {
       const { data: plan } = await supabase
         .from("plans")
         .select("name")
-        .eq("user_id", user?.id || "")
+        .eq("user_id", user!.id)
         .order("created_at", { ascending: false })
         .limit(1)
         .single();

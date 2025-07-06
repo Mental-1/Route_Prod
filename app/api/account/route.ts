@@ -17,9 +17,7 @@ const accountSchema = z.object({
   website: z.string().url("Invalid URL").optional(),
 });
 
-async function getUserId() {
-  const supabase = await getSupabaseRouteHandler(cookies);
-
+async function getUserId(supabase: SupabaseClient<Database>) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -28,7 +26,8 @@ async function getUserId() {
 
 export async function GET(req: NextRequest) {
   const supabase = await getSupabaseRouteHandler(cookies);
-  const userId = await getUserId();
+
+  const userId = await getUserId(supabase);
 
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -57,7 +56,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const supabase = await getSupabaseRouteHandler(cookies);
-  const userId = await getUserId();
+  const userId = await getUserId(supabase);
 
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -69,14 +68,13 @@ export async function POST(req: NextRequest) {
 
     // Check if username is available
     if (validatedData.username) {
-      const { data: existingUser, error } = await supabase
+      const { data: existingUsers } = await supabase
         .from("profiles")
         .select("id")
         .eq("username", validatedData.username)
-        .neq("id", userId)
-        .single();
+        .neq("id", userId);
 
-      if (existingUser) {
+      if (existingUsers && existingUsers.length > 0) {
         return NextResponse.json(
           { error: "Username already taken" },
           { status: 409 },
@@ -112,7 +110,7 @@ export async function POST(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   const supabase = await getSupabaseRouteHandler(cookies);
-  const userId = await getUserId();
+  const userId = await getUserId(supabase);
 
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

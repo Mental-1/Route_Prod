@@ -69,14 +69,14 @@ export async function deleteAccount() {
   }
 }
 
-export async function updateAvatarUrl(avatarUrl: string) {
+export async function updateAvatarUrl(userId: string, avatarUrl: string) {
   try {
     const response = await fetch("/api/account/avatar", {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ avatarUrl }),
+      body: JSON.stringify({ userId, avatarUrl }),
     });
     if (!response.ok) {
       const errorData = await response.json();
