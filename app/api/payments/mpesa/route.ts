@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { getSupabaseServer } from "@/utils/supabase/server";
+import { getSupabaseRouteHandler } from "@/utils/supabase/server";
 import { mpesaPaymentSchema } from "@/lib/validations";
+import { cookies } from "next/headers";
 
 /**
  * Handles M-Pesa payment initiation via a POST request.
@@ -14,7 +15,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const validatedData = mpesaPaymentSchema.parse(body);
 
-    const supabase = await getSupabaseServer();
+    const supabase = await getSupabaseRouteHandler(cookies);
     const {
       data: { user },
       error: authError,
@@ -34,26 +35,41 @@ export async function POST(request: NextRequest) {
     ).toString("base64");
 
     // Get access token
-    const authResponse = await fetch(
-      "https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials",
-      {
+    const authUrl =
+      "https://api.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials";
+    const authHeader = `Basic ${Buffer.from(`${process.env.MPESA_CONSUMER_KEY}:${process.env.MPESA_CONSUMER_SECRET}`).toString("base64")}`;
+
+    console.log("Attempting to fetch M-Pesa access token...");
+    console.log("URL:", authUrl);
+    console.log(
+      "Authorization Header (masked):",
+      authHeader.substring(0, 20) + "...",
+    ); // Mask for security
+
+    let authResponse;
+    try {
+      authResponse = await fetch(authUrl, {
         method: "GET",
         headers: {
-          Authorization: `Basic ${Buffer.from(`${process.env.MPESA_CONSUMER_KEY}:${process.env.MPESA_CONSUMER_SECRET}`).toString("base64")}`,
+          Authorization: authHeader,
         },
-      },
-    );
+      });
+      console.log("M-Pesa access token fetch completed.");
+    } catch (error) {
+      console.error("Error during M-Pesa access token fetch:", error);
+      throw error; // Re-throw to be caught by the outer catch block
+    }
 
     // Check if the auth response is ok
     if (!authResponse.ok) {
+      const authResponseText = await authResponse.text();
       console.error("M-Pesa auth response not OK:", {
         status: authResponse.status,
         statusText: authResponse.statusText,
+        body: authResponseText,
       });
-      const authResponseText = await authResponse.text();
-      console.error("Auth response body:", authResponseText);
       throw new Error(
-        `M-Pesa authentication failed: ${authResponse.statusText}`,
+        `M-Pesa authentication failed: ${authResponse.statusText}. Details: ${authResponseText}`,
       );
     }
 
@@ -72,7 +88,7 @@ export async function POST(request: NextRequest) {
 
     // Initiate STK Push
     const stkResponse = await fetch(
-      "https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest",
+      "https://api.safaricom.co.ke/mpesa/stkpush/v1/processrequest",
       {
         method: "POST",
         headers: {

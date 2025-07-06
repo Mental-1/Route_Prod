@@ -1,5 +1,6 @@
 import { getSupabaseRouteHandler } from "@/utils/supabase/server";
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 
 /**
  * Receives a session object from the client and sets the authentication session on the server.
@@ -19,7 +20,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const supabase = await getSupabaseRouteHandler();
+    const supabase = await getSupabaseRouteHandler(cookies);
 
     await supabase.auth.setSession({
       access_token: session.access_token,

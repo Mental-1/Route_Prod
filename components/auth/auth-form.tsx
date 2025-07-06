@@ -111,6 +111,24 @@ export function AuthForm() {
     }
   };
 
+  const handleGoogleSignIn = async () => {
+    setError(null);
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+      if (error) throw error;
+    } catch (error: any) {
+      setError(error.message || "An error occurred during Google sign in");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -278,6 +296,30 @@ export function AuthForm() {
               </Button>
             </form>
           </TabsContent>
+
+          <div className="relative my-8">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">
+                Or continue with
+              </span>
+            </div>
+          </div>
+
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={handleGoogleSignIn}
+            disabled={loading}
+          >
+            {loading ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              "Google"
+            )}
+          </Button>
 
           <TabsContent value="sign-up">
             <form onSubmit={handleSignUp} className="space-y-4 mt-4">

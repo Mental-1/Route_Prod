@@ -43,9 +43,12 @@ export async function GET(request: Request) {
       const formattedListing = {
         ...data,
         id: Number(data.id),
-        distance: "1.8 km away", // Mocked, integrate with actual location logic
-        rating: 4.8,
-        reviews: 23,
+        location: {
+          lat: data.latitude,
+          lng: data.longitude,
+        },
+        rating: 0,
+        reviews: 0,
       };
 
       return NextResponse.json(formattedListing);
@@ -70,9 +73,12 @@ export async function GET(request: Request) {
         data?.map((listing) => ({
           ...listing,
           id: Number(listing.id),
-          distance: "1.8 km away",
-          rating: 4.8,
-          reviews: 23,
+          location: {
+            lat: listing.latitude,
+            lng: listing.longitude,
+          },
+          rating: 0,
+          reviews: 0,
         })) || [];
 
       const hasMore = count ? offset + formattedListings.length < count : false;

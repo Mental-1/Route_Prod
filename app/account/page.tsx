@@ -1,21 +1,21 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from "react";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { toast } from '@/components/ui/use-toast';
-import { Toaster } from '@/components/ui/toaster';
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { toast } from "@/components/ui/use-toast";
+import { Toaster } from "@/components/ui/toaster";
 import {
   Camera,
   Star,
@@ -25,14 +25,17 @@ import {
   Mail,
   User,
   Trash2,
-} from 'lucide-react';
-import Link from 'next/link';
-import { useAuth } from '@/contexts/auth-context';
+  Loader2,
+} from "lucide-react";
+import Link from "next/link";
+import { useAuth } from "@/contexts/auth-context";
 import {
   getAccount,
   updateAccount,
   deleteAccount,
-} from './actions/account-actions';
+  updateAvatarUrl,
+} from "./actions/account-actions";
+import { useFileUpload } from "@/hooks/useFileUpload";
 
 // Type definitions
 interface FormData {
@@ -48,6 +51,10 @@ export default function AccountPage() {
   const { user, profile, isLoading } = useAuth();
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState<FormData | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { uploadFile, uploading: isUploading } = useFileUpload({
+    uploadType: "profile",
+  });
 
   useEffect(() => {
     const fetchAccountData = async () => {
@@ -70,8 +77,30 @@ export default function AccountPage() {
   };
 
   const handleDelete = async () => {
-    if (confirm('Are you sure you want to delete your account?')) {
+    if (confirm("Are you sure you want to delete your account?")) {
       await deleteAccount();
+    }
+  };
+
+  const handleFileChange = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    if (event.target.files && event.target.files.length > 0) {
+      const file = event.target.files[0];
+      const result = await uploadFile(file);
+      if (result?.url && user) {
+        await updateAvatarUrl(user.id, result.url);
+        toast({
+          title: "Profile picture updated",
+          description: "Your profile picture has been successfully updated.",
+        });
+      } else {
+        toast({
+          title: "Upload failed",
+          description: "Failed to update profile picture.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -123,29 +152,42 @@ export default function AccountPage() {
                       <AvatarImage
                         src={
                           user?.user_metadata?.avatar_url ||
-                          '/placeholder.svg?height=96&width=96'
+                          "/placeholder.svg?height=96&width=96"
                         }
-                        alt={profile?.full_name || 'User'}
+                        alt={profile?.full_name || "User"}
                       />
                       <AvatarFallback>
                         {profile?.full_name?.charAt(0) ||
                           user?.email?.charAt(0) ||
-                          'U'}
+                          "U"}
                       </AvatarFallback>
                     </Avatar>
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleFileChange}
+                      className="hidden"
+                      accept="image/*"
+                    />
                     <Button
                       size="icon"
                       variant="outline"
                       className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isUploading}
                     >
-                      <Camera className="h-4 w-4" />
+                      {isUploading ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Camera className="h-4 w-4" />
+                      )}
                     </Button>
                   </div>
                   <h3 className="text-xl font-semibold mt-4">
-                    {profile?.full_name || 'User'}
+                    {profile?.full_name || "User"}
                   </h3>
                   <p className="text-muted-foreground">
-                    @{profile?.username || 'username'}
+                    @{profile?.username || "username"}
                   </p>
 
                   <div className="flex items-center mt-2">
@@ -157,7 +199,7 @@ export default function AccountPage() {
                   </div>
 
                   <Badge variant="secondary" className="mt-2">
-                    {profile?.verified ? 'Verified' : 'Unverified'}
+                    {profile?.verified ? "Verified" : "Unverified"}
                   </Badge>
                 </div>
                 <div className="space-y-3">
@@ -179,12 +221,12 @@ export default function AccountPage() {
                   )}
                   <div className="flex items-center text-sm">
                     <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
-                    Joined{' '}
+                    Joined{" "}
                     {new Date(
-                      profile?.created_at || user?.created_at || '',
-                    ).toLocaleDateString('en-US', {
-                      month: 'long',
-                      year: 'numeric',
+                      profile?.created_at || user?.created_at || "",
+                    ).toLocaleDateString("en-US", {
+                      month: "long",
+                      year: "numeric",
                     })}
                   </div>
                 </div>
@@ -255,7 +297,10 @@ export default function AccountPage() {
                     id="bio"
                     value={formData.bio}
                     onChange={(e) =>
-                      setFormData((prev: any) => ({ ...prev, bio: e.target.value }))
+                      setFormData((prev: any) => ({
+                        ...prev,
+                        bio: e.target.value,
+                      }))
                     }
                     placeholder="Tell us about yourself..."
                     rows={3}
@@ -310,7 +355,7 @@ export default function AccountPage() {
 
                 <div className="flex justify-end">
                   <Button onClick={handleSave} disabled={saving}>
-                    {saving ? 'Saving...' : 'Save Changes'}
+                    {saving ? "Saving..." : "Save Changes"}
                   </Button>
                 </div>
               </CardContent>

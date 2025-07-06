@@ -1,18 +1,27 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { ArrowLeft, Eye, EyeOff } from "lucide-react"
-import { createBrowserClient } from "@/utils/supabase/supabase-browser"
-import { resetPasswordSchema, type ResetPasswordInput } from "@/lib/validations"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { ArrowLeft, Eye, EyeOff } from "lucide-react";
+import { getSupabaseClient } from "@/utils/supabase/client";
+import {
+  resetPasswordSchema,
+  type ResetPasswordInput,
+} from "@/lib/validations";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 
 /**
  * Renders the password reset page, allowing users to set a new password using a valid reset link.
@@ -20,12 +29,12 @@ import { zodResolver } from "@hookform/resolvers/zod"
  * Validates the reset link, handles password update via Supabase authentication, manages form validation and error states, and redirects to the sign-in page upon successful password reset.
  */
 export default function ResetPasswordPage() {
-  const [isLoading, setIsLoading] = useState(false)
-  const [showPassword, setShowPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const [error, setError] = useState("")
-  const router = useRouter()
-  const supabase = createBrowserClient()
+  const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [error, setError] = useState("");
+  const router = useRouter();
+  const supabase = getSupabaseClient();
 
   const {
     register,
@@ -33,40 +42,40 @@ export default function ResetPasswordPage() {
     formState: { errors },
   } = useForm<ResetPasswordInput>({
     resolver: zodResolver(resetPasswordSchema),
-  })
+  });
 
   useEffect(() => {
     // Handle the auth callback
     const handleAuthCallback = async () => {
-      const { data, error } = await supabase.auth.getSession()
+      const { data, error } = await supabase.auth.getSession();
       if (error) {
-        setError("Invalid or expired reset link")
+        setError("Invalid or expired reset link");
       }
-    }
+    };
 
-    handleAuthCallback()
-  }, [supabase.auth])
+    handleAuthCallback();
+  }, [supabase.auth]);
 
   const onSubmit = async (data: ResetPasswordInput) => {
-    setIsLoading(true)
-    setError("")
+    setIsLoading(true);
+    setError("");
 
     try {
       const { error } = await supabase.auth.updateUser({
         password: data.password,
-      })
+      });
 
       if (error) {
-        setError(error.message)
+        setError(error.message);
       } else {
-        router.push("/auth/signin?message=Password updated successfully")
+        router.push("/auth/signin?message=Password updated successfully");
       }
     } catch (err) {
-      setError("An unexpected error occurred. Please try again.")
+      setError("An unexpected error occurred. Please try again.");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/50 p-4">
@@ -102,10 +111,16 @@ export default function ResetPasswordPage() {
                   className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
                   onClick={() => setShowPassword(!showPassword)}
                 >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
                 </Button>
               </div>
-              {errors.password && <p className="field-error">{errors.password.message}</p>}
+              {errors.password && (
+                <p className="field-error">{errors.password.message}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -124,10 +139,16 @@ export default function ResetPasswordPage() {
                   className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                 >
-                  {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  {showConfirmPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
                 </Button>
               </div>
-              {errors.confirmPassword && <p className="field-error">{errors.confirmPassword.message}</p>}
+              {errors.confirmPassword && (
+                <p className="field-error">{errors.confirmPassword.message}</p>
+              )}
             </div>
 
             {error && (
@@ -141,7 +162,10 @@ export default function ResetPasswordPage() {
             </Button>
 
             <div className="text-center">
-              <Link href="/auth/signin" className="text-sm text-muted-foreground hover:text-primary">
+              <Link
+                href="/auth/signin"
+                className="text-sm text-muted-foreground hover:text-primary"
+              >
                 Back to sign in
               </Link>
             </div>
@@ -149,5 +173,5 @@ export default function ResetPasswordPage() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

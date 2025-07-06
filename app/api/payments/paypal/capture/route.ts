@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { getSupabaseRouteHandler } from "@/utils/supabase/server";
+import {cookies} from 'next/headers';
 
 /**
  * Handles PayPal payment capture and updates the transaction status upon success.
@@ -10,7 +11,7 @@ export async function POST(request: NextRequest) {
   try {
     const { orderId } = await request.json();
 
-    const supabase = await getSupabaseRouteHandler();
+    const supabase = await getSupabaseRouteHandler(cookies);
     const {
       data: { user },
       error: authError,
