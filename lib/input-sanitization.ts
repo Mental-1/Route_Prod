@@ -10,16 +10,10 @@ export function sanitizeHtml(input: string): string {
 }
 
 export function sanitizeInput(input: string): string {
-  let sanitizedInput;
-  do {
-    sanitizedInput = input;
-    input = sanitizedInput
-      .replace(/[<>]/g, "")
-      .replace(/javascript:/gi, "")
-      .replace(/on\w+=/gi, "")
-      .trim();
-  } while (input !== sanitizedInput);
-  return input;
+  return DOMPurify.sanitize(input, {
+    ALLOWED_TAGS: [],
+    ALLOWED_ATTR: [],
+  }).trim();
 }
 
 // SQL Injection Protection (additional layer beyond parameterized queries)
