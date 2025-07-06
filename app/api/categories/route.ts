@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getSupabaseRouteHandler } from "@/utils/supabase/server";
 
+import { cookies } from "next/headers";
+
 /**
  * Handles GET requests to retrieve all categories from the database, ordered by name.
  *
@@ -8,7 +10,7 @@ import { getSupabaseRouteHandler } from "@/utils/supabase/server";
  */
 export async function GET() {
   try {
-    const supabase = await getSupabaseRouteHandler();
+    const supabase = await getSupabaseRouteHandler(cookies);
 
     const { data: categories, error } = await supabase
       .from("categories")

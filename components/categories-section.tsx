@@ -68,7 +68,7 @@ export default function CategoriesSection() {
                 key={category.id}
                 href={`/listings?category=${category.id}`}
               >
-                <Card className="hover:shadow-md transition-shadow cursor-pointer border-0 bg-muted/50">
+                <Card className="hover:shadow-md transition-shadow cursor-pointer border-3 border-muted bg-muted/50">
                   <CardContent className="p-3 text-center">
                     <div className="text-2xl mb-1">{category.icon || "📦"}</div>
                     <h3 className="text-xs font-medium">{category.name}</h3>

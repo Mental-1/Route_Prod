@@ -4,6 +4,7 @@ import { searchSchema } from "@/lib/validations";
 import { generalApiLimiter, getClientIdentifier } from "@/utils/rate-limiting";
 import { createAuditLogger } from "@/utils/audit-logger";
 import { toast } from "sonner";
+import { cookies } from "next/headers";
 
 /**
  * Handles search requests for listings with rate limiting, input validation, audit logging, and pagination.
@@ -74,7 +75,7 @@ export async function GET(request: NextRequest) {
     // Enhanced validation with better error messages
     try {
       const validatedInput = searchSchema.parse(input);
-      const supabase = await getSupabaseRouteHandler();
+      const supabase = await getSupabaseRouteHandler(cookies);
 
       // Log search for analytics (optional)
       const auditLogger = createAuditLogger({

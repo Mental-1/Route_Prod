@@ -33,6 +33,7 @@ export async function validateRequest(
   }
 
   if (config.allowedHeaders) {
+    // Standard HTTP headers are always allowed, even if not explicitly listed
     const standardHeaders = [
       "host",
       "user-agent",
@@ -56,7 +57,7 @@ export async function validateRequest(
 
   if (config.maxBodySize && request.body) {
     const contentLength = request.headers.get("content-length");
-    if (contentLength && parseInt(contentLength) > config.maxBodySize) {
+    if (contentLength && Number.parseInt(contentLength) > config.maxBodySize) {
       errors.push(
         `Request body exceeds max size of ${config.maxBodySize} bytes`,
       );

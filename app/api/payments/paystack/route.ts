@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { getSupabaseRouteHandler } from "@/utils/supabase/server";
 import { paystackPaymentSchema } from "@/lib/validations";
+import { cookies } from "next/headers";
 
 /**
  * Handles PayStack payment initialization and records the transaction.
@@ -12,7 +13,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const validatedData = paystackPaymentSchema.parse(body);
 
-    const supabase = await getSupabaseRouteHandler();
+    const supabase = await getSupabaseRouteHandler(cookies);
     const {
       data: { user },
       error: authError,

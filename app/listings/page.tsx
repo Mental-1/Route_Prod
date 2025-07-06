@@ -42,7 +42,7 @@ type Subcategory = {
  */
 export default function ListingsPage() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [priceRange, setPriceRange] = useState([0, 5000]);
+  const [priceRange, setPriceRange] = useState([0, 1000000]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState("relevance");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -50,7 +50,7 @@ export default function ListingsPage() {
   // Filters
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedConditions, setSelectedConditions] = useState<string[]>([]);
-  const [maxDistance, setMaxDistance] = useState([10]);
+  const [maxDistance, setMaxDistance] = useState([5]);
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
   const [selectedSubcategories, setSelectedSubcategories] = useState<string[]>(
     [],
@@ -293,7 +293,7 @@ export default function ListingsPage() {
                       .filter(
                         (sub) =>
                           sub.parent_category_id ===
-                          parseInt(selectedCategories[0], 10),
+                          Number.parseInt(selectedCategories[0], 10),
                       )
                       .map((subcategory) => (
                         <div
@@ -410,7 +410,6 @@ export default function ListingsPage() {
               </div>
             </div>
           </div>
-
           {/* Mobile Filter Button */}
           <div className="md:hidden">
             <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
@@ -468,7 +467,7 @@ export default function ListingsPage() {
                               .filter(
                                 (sub) =>
                                   sub.parent_category_id ===
-                                  parseInt(selectedCategories[0], 10),
+                                  Number.parseInt(selectedCategories[0], 10),
                               )
                               .map((subcategory) => (
                                 <div
@@ -507,7 +506,7 @@ export default function ListingsPage() {
                           <Slider
                             defaultValue={[0]}
                             min={1}
-                            step={100}
+                            step={1000}
                             value={priceRange}
                             onValueChange={setPriceRange}
                           />
@@ -585,7 +584,7 @@ export default function ListingsPage() {
                       <AccordionContent>
                         <div className="space-y-4">
                           <Slider
-                            defaultValue={[10]}
+                            defaultValue={[5]}
                             max={50}
                             step={1}
                             value={maxDistance}
@@ -611,7 +610,6 @@ export default function ListingsPage() {
               </SheetContent>
             </Sheet>
           </div>
-
           {/* Main Content */}
           <div className="flex-1">
             {/* Results Header */}
@@ -628,15 +626,21 @@ export default function ListingsPage() {
                     <SelectValue placeholder="Sort by" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="relevance">Relevance</SelectItem>
-                    <SelectItem value="newest">Newest</SelectItem>
-                    <SelectItem value="price-low">
+                    <SelectItem value="relevance" onSelect={() => {}}>
+                      Relevance
+                    </SelectItem>
+                    <SelectItem value="newest" onSelect={() => {}}>
+                      Newest
+                    </SelectItem>
+                    <SelectItem value="price-low" onSelect={() => {}}>
                       Price: Low to High
                     </SelectItem>
-                    <SelectItem value="price-high">
+                    <SelectItem value="price-high" onSelect={() => {}}>
                       Price: High to Low
                     </SelectItem>
-                    <SelectItem value="distance">Distance</SelectItem>
+                    <SelectItem value="distance" onSelect={() => {}}>
+                      Distance
+                    </SelectItem>
                   </SelectContent>
                 </Select>
                 <div className="flex border rounded-md">

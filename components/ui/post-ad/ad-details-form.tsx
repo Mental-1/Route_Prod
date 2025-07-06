@@ -1,7 +1,7 @@
 "use client";
 
 import type React from "react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Locate } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useCategories, useSubcategories } from "@/app/post-ad/hooks/useCategories";
 import { AdDetailsFormData } from "@/lib/types/form-types";
 import type { Database } from "@/utils/supabase/database.types";
@@ -55,6 +56,9 @@ export function AdDetailsForm({
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [locationDialogOpen, setLocationDialogOpen] = useState(false);
+  const [manualLocation, setManualLocation] = useState("");
+  const manualInputRef = useRef<HTMLInputElement>(null);
 
   // Prefetch categories and subcategories on mount
   const {
@@ -93,10 +97,11 @@ export function AdDetailsForm({
         (position) => {
           setFormData((prev) => ({
             ...prev,
+            location: [position.coords.latitude, position.coords.longitude],
             latitude: position.coords.latitude,
             longitude: position.coords.longitude,
-            location: "Current Location",
           }));
+          setLocationDialogOpen(false);
         },
         (error) => {
           console.error("Error getting location:", error);
@@ -298,28 +303,68 @@ export function AdDetailsForm({
 
       <div className="space-y-1">
         <Label htmlFor="location">Location</Label>
-        <div className="relative">
+        <div>
           <Input
             id="location"
-            placeholder="Enter location"
-            value={formData.location}
-            onChange={(e) => handleChange("location", e.target.value)}
+            placeholder="Choose location"
+            value={
+              Array.isArray(formData.location)
+                ? `Lat: ${formData.location[0]}, Lng: ${formData.location[1]}`
+                : formData.location || ""
+            }
+            readOnly
+            onClick={() => setLocationDialogOpen(true)}
           />
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="absolute right-2.5 top-1/2 transform -translate-y-1/2"
-            onClick={detectLocation}
-          >
-            <Locate className="mr-2 h-4 w-4" />
-            Detect
-          </Button>
         </div>
         {errors.location && (
           <p className="text-sm text-red-500">{errors.location}</p>
         )}
       </div>
+
+      <Dialog open={locationDialogOpen} onOpenChange={setLocationDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Set Location</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="manual-location">Enter location manually</Label>
+              <Input
+                id="manual-location"
+                ref={manualInputRef}
+                placeholder="Enter location"
+                value={manualLocation}
+                onChange={(e) => setManualLocation(e.target.value)}
+              />
+              <Button
+                type="button"
+                className="mt-2"
+                onClick={() => {
+                  setFormData((prev) => ({
+                    ...prev,
+                    location: manualLocation,
+                  }));
+                  setLocationDialogOpen(false);
+                }}
+                disabled={!manualLocation.trim()}
+              >
+                Use this location
+              </Button>
+            </div>
+            <div className="flex items-center justify-center">
+              <span className="mx-2 text-gray-400">or</span>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={detectLocation}
+            >
+              <Locate className="mr-2 h-4 w-4" />
+              Detect Location Automatically
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <div className="flex items-center space-x-2">
         <Checkbox

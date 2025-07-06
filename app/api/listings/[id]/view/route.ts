@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { getSupabaseRouteHandler } from "@/utils/supabase/server";
+import { cookies } from "next/headers";
 
 type IncrementListingViewsResult = {
   views: number;
@@ -23,13 +24,12 @@ export async function POST(
   { params }: { params: { id: string } },
 ) {
   try {
-    const supabase = await getSupabaseRouteHandler();
+    const supabase = await getSupabaseRouteHandler(cookies);
 
     // Increment view count using RPC function
-    const { data, error } = await supabase.rpc(
-      "increment_listing_views",
-      { listing_uuid: params.id }
-    );
+    const { data, error } = await supabase.rpc("increment_listing_views", {
+      listing_uuid: params.id,
+    });
 
     if (error) {
       return NextResponse.json({ error: "Database Error" }, { status: 500 });

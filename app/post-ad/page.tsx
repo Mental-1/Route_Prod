@@ -19,7 +19,13 @@ import {
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { ImageUpload } from "@/components/image-upload";
 import { toast } from "@/components/ui/use-toast";
-import { parse } from "zod/v4/core";
+
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 import type { Database } from "@/utils/supabase/database.types";
 type Category = Database["public"]["Tables"]["categories"]["Row"];
@@ -90,13 +96,17 @@ export default function PostAdPage() {
     price: "",
     negotiable: false,
     condition: "new",
-    location: "",
+    location: [] as number[],
     mediaUrls: [] as string[],
     paymentTier: "free",
     paymentMethod: "",
     phoneNumber: "",
     email: "",
   });
+
+  // Add dialog state and manual location state
+  const [locationDialogOpen, setLocationDialogOpen] = useState(false);
+  const [manualLocation, setManualLocation] = useState("");
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -265,6 +275,26 @@ export default function PostAdPage() {
     setFormData((prev) => ({ ...prev, ...data }));
   };
 
+  // Detect location function with high accuracy
+  const detectLocation = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setFormData((prev) => ({
+            ...prev,
+            location: [position.coords.latitude, position.coords.longitude],
+          }));
+          setLocationDialogOpen(false);
+        },
+        (error) => {
+          console.error("Error getting location:", error);
+        },
+        { enableHighAccuracy: true },
+      );
+    }
+  };
+
+  // Update renderStepContent to pass location dialog props to AdDetailsStep
   const renderStepContent = () => {
     switch (currentStep) {
       case 0:
@@ -274,6 +304,11 @@ export default function PostAdPage() {
             updateFormData={updateFormData}
             categories={categories}
             subcategories={subcategories}
+            locationDialogOpen={locationDialogOpen}
+            setLocationDialogOpen={setLocationDialogOpen}
+            manualLocation={manualLocation}
+            setManualLocation={setManualLocation}
+            detectLocation={detectLocation}
           />
         );
       case 1:
@@ -331,7 +366,7 @@ export default function PostAdPage() {
             <div className="relative mt-2">
               <div className="absolute top-0 left-0 h-1 bg-muted w-full"></div>
               <div
-                className="absolute top-0 left-0 h-1 bg-green-600 transition-all"
+                className="absolute top-0 left-0 h-1 bg-blue-600 transition-all"
                 style={{
                   width: `${(currentStep / (steps.length - 1)) * 100}%`,
                 }}
@@ -376,17 +411,23 @@ function AdDetailsStep({
   updateFormData,
   categories,
   subcategories,
+  locationDialogOpen,
+  setLocationDialogOpen,
+  manualLocation,
+  setManualLocation,
+  detectLocation,
 }: {
   formData: any;
   updateFormData: (data: any) => void;
   categories: any[];
   subcategories: any[];
+  locationDialogOpen: boolean;
+  setLocationDialogOpen: (open: boolean) => void;
+  manualLocation: string;
+  setManualLocation: (val: string) => void;
+  detectLocation: () => void;
 }) {
-  const availableSubcategories = formData.category
-    ? subcategories.filter(
-        (sub) => sub.category_id.toString() === formData.category,
-      )
-    : [];
+  const availableSubcategories = formData.category ? subcategories : [];
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-semibold">Ad Details</h2>
@@ -480,7 +521,6 @@ function AdDetailsStep({
               <SelectContent>
                 <SelectItem value="new">New</SelectItem>
                 <SelectItem value="used">Used</SelectItem>
-                <SelectItem value="like_new">Like New</SelectItem>
                 <SelectItem value="refurbished">Refurbished</SelectItem>
               </SelectContent>
             </Select>
@@ -489,12 +529,20 @@ function AdDetailsStep({
 
         <div>
           <Label htmlFor="location">Location</Label>
-          <Input
-            id="location"
-            placeholder="Enter location"
-            value={formData.location}
-            onChange={(e) => updateFormData({ location: e.target.value })}
-          />
+          <div className="flex gap-2">
+            <Input
+              id="location"
+              placeholder="Choose location"
+              readOnly
+              value={
+                Array.isArray(formData.location) && formData.location.length > 0
+                  ? `Lat: ${formData.location[0]}, Lng: ${formData.location[1]}`
+                  : formData.location || ""
+              }
+              onClick={() => setLocationDialogOpen(true)}
+              style={{ cursor: "pointer", background: "#15181e" }}
+            />
+          </div>
         </div>
 
         <div className="flex items-center space-x-2">
@@ -502,12 +550,58 @@ function AdDetailsStep({
             id="negotiable"
             checked={formData.negotiable}
             onCheckedChange={(checked) =>
-              updateFormData({ negotiable: checked })
+              updateFormData({ negotiable: Boolean(checked) })
             }
           />
           <Label htmlFor="negotiable">Price is negotiable</Label>
         </div>
       </div>
+
+      {/* Location Dialog */}
+      <Dialog open={locationDialogOpen} onOpenChange={setLocationDialogOpen}>
+        <DialogContent>
+          <DialogTitle>Set Location</DialogTitle>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="manual-location">Enter location manually</Label>
+              <Input
+                id="manual-location"
+                placeholder="Enter location"
+                value={manualLocation}
+                onChange={(e) => setManualLocation(e.target.value)}
+              />
+              <Button
+                className="mt-2"
+                onClick={() => {
+                  updateFormData({ location: manualLocation });
+                  setLocationDialogOpen(false);
+                }}
+                disabled={!manualLocation.trim()}
+              >
+                Use this location
+              </Button>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="secondary"
+                onClick={detectLocation}
+                type="button"
+              >
+                Detect Location Automatically
+              </Button>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="ghost"
+              onClick={() => setLocationDialogOpen(false)}
+              type="button"
+            >
+              Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -553,6 +647,48 @@ function MediaUploadStep({
   const imageWarning = imageUrls.length > limits.images;
   const videoWarning = videoUrls.length > limits.videos;
 
+  const handleFileChange = async (urls: string[]) => {
+    const newVideos = urls.filter(
+      (url) =>
+        !formData.mediaUrls.includes(url) &&
+        ["mp4", "webm", "mov"].includes(
+          url.split(".").pop()?.toLowerCase() || "",
+        ),
+    );
+    // Filter out invalid videos before updating state
+    const validUrls = [...urls];
+
+    for (const videoUrl of newVideos) {
+      const video = document.createElement("video");
+      video.src = videoUrl;
+      try {
+        await new Promise((resolve, reject) => {
+          video.onloadedmetadata = () => {
+            if (video.duration > 30) {
+              toast({
+                title: "Video Too Long",
+                description: "Videos must be less than 30 seconds.",
+                variant: "destructive",
+              });
+              const index = validUrls.indexOf(videoUrl);
+              if (index > -1) validUrls.splice(index, 1);
+            }
+            video.remove(); // Clean up
+            resolve(undefined);
+          };
+          video.onerror = () => {
+            video.remove(); // Clean up
+            reject(new Error("Failed to load video"));
+          };
+        });
+      } catch (error) {
+        console.error("Video validation error:", error);
+      }
+    }
+
+    updateFormData({ mediaUrls: validUrls });
+  };
+
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-semibold">Media Upload</h2>
@@ -564,7 +700,7 @@ function MediaUploadStep({
           {limits.videos > 0 ? ` and ${limits.videos} videos` : " (no videos)"}
           <br />• Only the allowed number will be published with your listing
           <br />• Images: JPEG, PNG, WebP (max 10MB each)
-          <br />• Videos: MP4, WebM, MOV (max 50MB each)
+          <br />• Videos: MP4, WebM, MOV (max 50MB each, 30 seconds max)
         </p>
       </div>
 
@@ -587,7 +723,7 @@ function MediaUploadStep({
         maxImages={10}
         maxVideos={2}
         value={formData.mediaUrls || []}
-        onChangeAction={(urls) => updateFormData({ mediaUrls: urls })}
+        onChangeAction={handleFileChange}
         uploadType="listing"
       />
     </div>
@@ -611,7 +747,7 @@ function PaymentTierStep({
             key={tier.id}
             className={`cursor-pointer transition-all ${
               formData.paymentTier === tier.id
-                ? "ring-2 ring-blue-500 bg-blue-50"
+                ? "ring-2 ring-blue-500"
                 : "hover:shadow-md"
             }`}
             onClick={() => updateFormData({ paymentTier: tier.id })}
@@ -620,7 +756,7 @@ function PaymentTierStep({
               <div className="text-center">
                 <h3 className="text-lg font-semibold">{tier.name}</h3>
                 <div className="text-2xl font-bold text-blue-600 my-2">
-                  Ksh{tier.price}
+                  Ksh {tier.price}
                   {tier.price > 0 && (
                     <span className="text-sm text-muted-foreground">
                       /month
@@ -691,8 +827,8 @@ function PaymentMethodStep({
 
       <div className="bg-muted p-4 rounded-lg">
         <p className="font-medium">{selectedTier.name} Plan</p>
-        <p className="text-2xl font-bold text-blue-600">
-          Ksh{selectedTier.price}
+        <p className="text-2xl font-bold text-green-600">
+          Ksh {selectedTier.price}
         </p>
       </div>
 
@@ -710,9 +846,11 @@ function PaymentMethodStep({
             >
               <CardContent className="p-4">
                 <div className="flex items-center space-x-3">
-                  <div className="w-12 h-12 bg-green-600 rounded-lg flex items-center justify-center text-white font-bold">
-                    M
-                  </div>
+                  <img
+                    src="/mpesa_logo.png"
+                    alt="M-Pesa Logo"
+                    className="w-12 h-12 object-contain rounded-lg"
+                  />
                   <div>
                     <p className="font-medium">M-Pesa</p>
                     <p className="text-sm text-muted-foreground">
@@ -733,9 +871,11 @@ function PaymentMethodStep({
             >
               <CardContent className="p-4">
                 <div className="flex items-center space-x-3">
-                  <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">
-                    P
-                  </div>
+                  <img
+                    src="/PayStack_Logo.png"
+                    alt="Paystack Logo"
+                    className="w-12 h-12 object-contain rounded-lg"
+                  />
                   <div>
                     <p className="font-medium">Paystack</p>
                     <p className="text-sm text-muted-foreground">
@@ -756,13 +896,15 @@ function PaymentMethodStep({
             >
               <CardContent className="p-4">
                 <div className="flex items-center space-x-3">
-                  <div className="w-12 h-12 bg-yellow-500 rounded-lg flex items-center justify-center text-white font-bold">
-                    PP
-                  </div>
+                  <img
+                    src="/PayPal_Logo.png"
+                    alt="PayPal Logo"
+                    className="w-12 h-12 object-contain rounded-lg"
+                  />
                   <div>
                     <p className="font-medium">PayPal</p>
                     <p className="text-sm text-muted-foreground">
-                      Pay with PayPal balance or card
+                      Coming Soon ...
                     </p>
                   </div>
                 </div>
@@ -819,10 +961,15 @@ function PreviewStep({
     (cat) => cat.id === formData.category,
   );
 
+  // Helper for location display
+  const displayLocation =
+    Array.isArray(formData.location) && formData.location.length > 0
+      ? `Lat: ${formData.location[0]}, Lng: ${formData.location[1]}`
+      : formData.location || "Not specified";
+
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-semibold">Preview Your Ad</h2>
-
       <Card>
         <CardContent className="p-6">
           <div className="space-y-4">
@@ -831,7 +978,7 @@ function PreviewStep({
                 {formData.title || "Ad Title"}
               </h3>
               <p className="text-2xl font-bold text-green-600">
-                Ksh{formData.price || "0"}
+                Ksh {formData.price || "N/A"}
               </p>
               {formData.negotiable && (
                 <span className="text-sm text-muted-foreground">
@@ -871,8 +1018,7 @@ function PreviewStep({
                 {formData.condition || "Not specified"}
               </div>
               <div>
-                <span className="font-medium">Location:</span>{" "}
-                {formData.location || "Not specified"}
+                <span className="font-medium">Location:</span> {displayLocation}
               </div>
               <div>
                 <span className="font-medium">Plan:</span> {selectedTier.name}

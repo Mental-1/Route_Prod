@@ -1,18 +1,27 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { ArrowLeft, Mail } from "lucide-react"
-import { createBrowserClient } from "@/utils/supabase/supabase-browser"
-import { forgotPasswordSchema, type ForgotPasswordInput } from "@/lib/validations"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { ArrowLeft, Mail } from "lucide-react";
+import { getSupabaseClient } from "@/utils/supabase/client";
+import {
+  forgotPasswordSchema,
+  type ForgotPasswordInput,
+} from "@/lib/validations";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 
 /**
  * Renders a password reset request page where users can submit their email to receive a password reset link.
@@ -20,11 +29,11 @@ import { zodResolver } from "@hookform/resolvers/zod"
  * Displays a form with email validation, handles submission to Supabase authentication, and provides feedback for loading, success, and error states.
  */
 export default function ForgotPasswordPage() {
-  const [isLoading, setIsLoading] = useState(false)
-  const [message, setMessage] = useState("")
-  const [error, setError] = useState("")
-  const router = useRouter()
-  const supabase = createBrowserClient()
+  const [isLoading, setIsLoading] = useState(false);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  const router = useRouter();
+  const supabase = getSupabaseClient();
 
   const {
     register,
@@ -32,29 +41,29 @@ export default function ForgotPasswordPage() {
     formState: { errors },
   } = useForm<ForgotPasswordInput>({
     resolver: zodResolver(forgotPasswordSchema),
-  })
+  });
 
   const onSubmit = async (data: ForgotPasswordInput) => {
-    setIsLoading(true)
-    setError("")
-    setMessage("")
+    setIsLoading(true);
+    setError("");
+    setMessage("");
 
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(data.email, {
         redirectTo: `${window.location.origin}/auth/reset-password`,
-      })
+      });
 
       if (error) {
-        setError(error.message)
+        setError(error.message);
       } else {
-        setMessage("If this email exists a password reset link was sent.")
+        setMessage("If this email exists a password reset link was sent.");
       }
     } catch (err) {
-      setError("An unexpected error occurred. Please try again.")
+      setError("An unexpected error occurred. Please try again.");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/50 p-4">
@@ -68,7 +77,9 @@ export default function ForgotPasswordPage() {
             </Button>
             <div>
               <CardTitle className="text-2xl">Forgot Password</CardTitle>
-              <CardDescription>Enter your email address and we'll send you a reset link</CardDescription>
+              <CardDescription>
+                Enter your email address and we'll send you a reset link
+              </CardDescription>
             </div>
           </div>
         </CardHeader>
@@ -86,7 +97,9 @@ export default function ForgotPasswordPage() {
                   {...register("email")}
                 />
               </div>
-              {errors.email && <p className="field-error">{errors.email.message}</p>}
+              {errors.email && (
+                <p className="field-error">{errors.email.message}</p>
+              )}
             </div>
 
             {error && (
@@ -106,7 +119,10 @@ export default function ForgotPasswordPage() {
             </Button>
 
             <div className="text-center">
-              <Link href="/auth?tab=sign-up" className="text-sm text-muted-foreground hover:text-primary">
+              <Link
+                href="/auth?tab=sign-up"
+                className="text-sm text-muted-foreground hover:text-primary"
+              >
                 Back to sign in
               </Link>
             </div>
@@ -114,5 +130,5 @@ export default function ForgotPasswordPage() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { getSupabaseRouteHandler } from "@/utils/supabase/server";
 import { z } from "zod";
+import { cookies } from "next/headers";
 
 const geocodeSchema = z.object({
   address: z.string().min(1),
@@ -21,7 +22,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { address } = geocodeSchema.parse(body);
 
-    const supabase = await getSupabaseRouteHandler();
+    const supabase = await getSupabaseRouteHandler(cookies);
 
     // First check cache
     const { data: cached } = await supabase
@@ -119,7 +120,7 @@ export async function GET(request: NextRequest) {
       lng,
     });
 
-    const supabase = await getSupabaseRouteHandler();
+    const supabase = await getSupabaseRouteHandler(cookies);
 
     // Check for nearby cached results
     const { data: cached } = await supabase.rpc("reverse_geocode", {

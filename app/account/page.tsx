@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState, useRef } from "react";
 import {
   Card,
   CardContent,
@@ -15,7 +14,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { createBrowserClient } from "@/utils/supabase/supabase-browser";
 import { toast } from "@/components/ui/use-toast";
 import { Toaster } from "@/components/ui/toaster";
 import {
@@ -26,8 +24,18 @@ import {
   Phone,
   Mail,
   User,
+  Trash2,
+  Loader2,
 } from "lucide-react";
-import { syncSupabaseSession } from "@/utils/supabase/sync-session";
+import Link from "next/link";
+import { useAuth } from "@/contexts/auth-context";
+import {
+  getAccount,
+  updateAccount,
+  deleteAccount,
+  updateAvatarUrl,
+} from "./actions/account-actions";
+import { useFileUpload } from "@/hooks/useFileUpload";
 
 // Type definitions
 interface FormData {
@@ -36,184 +44,97 @@ interface FormData {
   bio: string;
   phone_number: string;
   location: string;
-  reviews_count: number;
   website: string;
 }
 
-interface UserProfile {
-  id: string;
-  full_name: string | null;
-  username: string | null;
-  email: string;
-  bio: string | null;
-  phone_number: string | null;
-  location: string | null;
-  website: string | null;
-  created_at: string;
-  updated_at?: string;
-  rating: number;
-  reviews_count: number;
-  verified?: boolean;
-}
-
-interface AuthUser {
-  id: string;
-  email: string;
-  user_metadata?: {
-    full_name?: string;
-    username?: string;
-    avatar_url?: string;
-  };
-  created_at: string;
-}
-
-/**
- * Displays the authenticated user's account page, providing profile overview, editable personal information, account security settings, and verification status.
- *
- * Redirects unauthenticated users to the authentication page. Fetches and updates user profile data using Supabase. Allows users to view and edit their profile details, manage security options, and review verification steps.
- */
 export default function AccountPage() {
-  const router = useRouter();
-  const supabase = createBrowserClient();
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { user, profile, isLoading } = useAuth();
   const [saving, setSaving] = useState(false);
-  const [formData, setFormData] = useState<FormData>({
-    full_name: "",
-    username: "",
-    bio: "",
-    phone_number: "",
-    location: "",
-    reviews_count: 0,
-    website: "",
+  const [formData, setFormData] = useState<FormData | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { uploadFile, uploading: isUploading } = useFileUpload({
+    uploadType: "profile",
   });
 
   useEffect(() => {
-    /**
-     * Retrieves the current authenticated user's session and profile data, updating local state accordingly.
-     *
-     * If no authenticated session exists, redirects the user to the authentication page. If a user profile is found in the database, populates state with the profile data; otherwise, initializes state with a default profile based on user metadata.
-     */
-    async function getUser() {
-      await syncSupabaseSession();
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      if (!session) {
-        router.push("/auth");
-        return;
+    const fetchAccountData = async () => {
+      if (user) {
+        try {
+          const accountData = await getAccount();
+          if (accountData) {
+            setFormData(accountData);
+          }
+        } catch (error) {
+          console.error("Failed to fetch account data:", error);
+          setFormData({
+            full_name: "",
+            username: "",
+            bio: "",
+            phone_number: "",
+            location: "",
+            website: "",
+          });
+        }
       }
-
-      setUser(session.user as AuthUser);
-
-      // Get user profile
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", session.user.id)
-        .single();
-
-      if (profile) {
-        const userProfile: UserProfile = {
-          id: profile.id,
-          full_name: profile.full_name ?? "",
-          username: profile.username ?? "",
-          email: profile.email ?? "",
-          bio: profile.bio ?? "",
-          phone_number: profile.phone ?? "",
-          location: profile.location ?? "",
-          website: profile.website ?? "",
-          created_at: profile.created_at ?? "",
-          updated_at: profile.updated_at ?? "",
-          rating: profile.rating ?? 0,
-          reviews_count: profile.reviews_count ?? 0,
-        };
-        setProfile(userProfile);
-        setFormData({
-          full_name: userProfile.full_name ?? "",
-          username: userProfile.username ?? "",
-          bio: userProfile.bio ?? "",
-          phone_number: userProfile.phone_number ?? "",
-          location: userProfile.location ?? "",
-          website: userProfile.website ?? "",
-          reviews_count: userProfile.reviews_count ?? 0,
-        });
-      } else {
-        // Create default profile
-        const defaultProfile: UserProfile = {
-          id: session.user.id,
-          full_name: session.user.user_metadata?.full_name || "",
-          username: session.user.user_metadata?.username || "",
-          email: session.user.email || "",
-          bio: null,
-          phone_number: null,
-          location: null,
-          website: null,
-          created_at: new Date().toISOString(),
-          rating: 0,
-          reviews_count: 0,
-        };
-        setProfile(defaultProfile);
-        setFormData({
-          full_name: defaultProfile.full_name || "",
-          username: defaultProfile.username || "",
-          bio: "",
-          phone_number: "",
-          location: "",
-          website: "",
-          reviews_count: defaultProfile.reviews_count || 0,
-        });
-      }
-
-      setLoading(false);
-    }
-
-    getUser();
-  }, [router, supabase]);
+    };
+    fetchAccountData();
+  }, [user]);
 
   const handleSave = async () => {
-    if (!user) return;
+    if (!user || !formData) return;
 
-    try {
-      setSaving(true);
+    setSaving(true);
+    await updateAccount(formData);
+    setSaving(false);
+  };
 
-      const { error } = await supabase.from("profiles").upsert({
-        id: user.id,
-        ...formData,
-        email: user.email,
-        updated_at: new Date().toISOString(),
-      });
-
-      if (error) {
-        throw error;
-      }
-
-      toast({
-        title: "Success",
-        description: "Profile updated successfully",
-      });
-
-      // Update local state
-      setProfile((prev) => (prev ? { ...prev, ...formData } : null));
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to update profile",
-        variant: "destructive",
-      });
-    } finally {
-      setSaving(false);
+  const handleDelete = async () => {
+    if (confirm("Are you sure you want to delete your account?")) {
+      await deleteAccount();
     }
   };
 
-  if (loading) {
+  const handleFileChange = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    if (event.target.files && event.target.files.length > 0) {
+      const file = event.target.files[0];
+      const result = await uploadFile(file);
+      if (result?.url && user) {
+        await updateAvatarUrl(user.id, result.url);
+        toast({
+          title: "Profile picture updated",
+          description: "Your profile picture has been successfully updated.",
+        });
+      } else {
+        toast({
+          title: "Upload failed",
+          description: "Failed to update profile picture.",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
+  if (isLoading || !formData) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto"></div>
           <p className="mt-4">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <p>You must be logged in to view this page.</p>
+          <Button className="p-3 text-white border border-primary mt-3">
+            <Link href="/auth">Sign up</Link>
+          </Button>
         </div>
       </div>
     );
@@ -253,12 +174,25 @@ export default function AccountPage() {
                           "U"}
                       </AvatarFallback>
                     </Avatar>
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleFileChange}
+                      className="hidden"
+                      accept="image/*"
+                    />
                     <Button
                       size="icon"
                       variant="outline"
                       className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isUploading}
                     >
-                      <Camera className="h-4 w-4" />
+                      {isUploading ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Camera className="h-4 w-4" />
+                      )}
                     </Button>
                   </div>
                   <h3 className="text-xl font-semibold mt-4">
@@ -308,7 +242,6 @@ export default function AccountPage() {
                     })}
                   </div>
                 </div>
-                //TODO: Fetch actual listings count from the database.
                 <div className="grid grid-cols-3 gap-4 text-center pt-4 border-t">
                   <div>
                     <p className="text-2xl font-bold text-primary">23</p>
@@ -346,7 +279,7 @@ export default function AccountPage() {
                       id="full_name"
                       value={formData.full_name}
                       onChange={(e) =>
-                        setFormData((prev) => ({
+                        setFormData((prev: any) => ({
                           ...prev,
                           full_name: e.target.value,
                         }))
@@ -360,7 +293,7 @@ export default function AccountPage() {
                       id="username"
                       value={formData.username}
                       onChange={(e) =>
-                        setFormData((prev) => ({
+                        setFormData((prev: any) => ({
                           ...prev,
                           username: e.target.value,
                         }))
@@ -376,7 +309,10 @@ export default function AccountPage() {
                     id="bio"
                     value={formData.bio}
                     onChange={(e) =>
-                      setFormData((prev) => ({ ...prev, bio: e.target.value }))
+                      setFormData((prev: any) => ({
+                        ...prev,
+                        bio: e.target.value,
+                      }))
                     }
                     placeholder="Tell us about yourself..."
                     rows={3}
@@ -390,7 +326,7 @@ export default function AccountPage() {
                       id="phone_number"
                       value={formData.phone_number}
                       onChange={(e) =>
-                        setFormData((prev) => ({
+                        setFormData((prev: any) => ({
                           ...prev,
                           phone_number: e.target.value,
                         }))
@@ -404,7 +340,7 @@ export default function AccountPage() {
                       id="location"
                       value={formData.location}
                       onChange={(e) =>
-                        setFormData((prev) => ({
+                        setFormData((prev: any) => ({
                           ...prev,
                           location: e.target.value,
                         }))
@@ -420,7 +356,7 @@ export default function AccountPage() {
                     id="website"
                     value={formData.website}
                     onChange={(e) =>
-                      setFormData((prev) => ({
+                      setFormData((prev: any) => ({
                         ...prev,
                         website: e.target.value,
                       }))
@@ -537,6 +473,30 @@ export default function AccountPage() {
                   </div>
                   <Button variant="outline" size="sm">
                     Verify
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>Danger Zone</CardTitle>
+                <CardDescription>
+                  These actions are permanent and cannot be undone.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="font-medium text-destructive">
+                      Delete Account
+                    </h4>
+                    <p className="text-sm text-muted-foreground">
+                      Permanently delete your account and all data
+                    </p>
+                  </div>
+                  <Button variant="destructive" onClick={handleDelete}>
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete
                   </Button>
                 </div>
               </CardContent>

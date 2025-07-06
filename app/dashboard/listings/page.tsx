@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { createBrowserClient } from "@/utils/supabase/supabase-browser";
+import { getSupabaseClient } from "@/utils/supabase/client";
 import {
   Edit,
   Trash2,
@@ -29,6 +29,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import Link from "next/link";
+import { useAuth } from "@/contexts/auth-context";
 
 interface Listing {
   id: string;
@@ -55,26 +56,22 @@ interface Listing {
 export default function UserListingsPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const { user, isLoading } = useAuth();
   const [listings, setListings] = useState<Listing[]>([]);
-  const [loading, setLoading] = useState(true);
   const [userPlan, setUserPlan] = useState<string>("free");
 
   useEffect(() => {
-    fetchUserListings();
-    fetchUserPlan();
-  }, []);
+    if (!isLoading && user) {
+      fetchUserListings();
+      fetchUserPlan();
+    } else if (!isLoading && !user) {
+      router.push("/auth");
+    }
+  }, [user, isLoading]);
 
   const fetchUserListings = async () => {
     try {
-      const supabase = createBrowserClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (!user) {
-        router.push("/auth");
-        return;
-      }
+      const supabase = getSupabaseClient();
 
       const { data: listings, error } = await supabase
         .from("listings")
@@ -84,7 +81,7 @@ export default function UserListingsPage() {
           category:categories(name)
         `,
         )
-        .eq("user_id", user.id)
+        .eq("user_id", user!.id)
         .order("created_at", { ascending: false });
 
       if (error) {
@@ -116,24 +113,17 @@ export default function UserListingsPage() {
       }
     } catch (error) {
       console.error("Error:", error);
-    } finally {
-      setLoading(false);
     }
   };
 
   const fetchUserPlan = async () => {
     try {
-      const supabase = createBrowserClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (!user) return;
+      const supabase = getSupabaseClient();
 
       const { data: plan } = await supabase
         .from("plans")
         .select("name")
-        .eq("user_id", user.id)
+        .eq("user_id", user!.id)
         .order("created_at", { ascending: false })
         .limit(1)
         .single();
@@ -155,8 +145,7 @@ export default function UserListingsPage() {
 
   const canFeature = (listing: Listing) => {
     return (
-      (userPlan === "premium" || userPlan === "premium_plus") &&
-      !listing.featured
+      (userPlan === "premium" || userPlan === "enterprise") && !listing.featured
     );
   };
 
@@ -166,7 +155,7 @@ export default function UserListingsPage() {
 
   const handleDelete = async (listingId: string) => {
     try {
-      const supabase = createBrowserClient();
+      const supabase = getSupabaseClient();
       const { error } = await supabase
         .from("listings")
         .delete()
@@ -197,7 +186,7 @@ export default function UserListingsPage() {
 
   const handleFeature = async (listingId: string) => {
     try {
-      const supabase = createBrowserClient();
+      const supabase = getSupabaseClient();
       const { data, error } = await supabase.rpc("feature_listing", {
         listing_uuid: listingId,
         duration_days: 7,
@@ -243,7 +232,7 @@ export default function UserListingsPage() {
     return `${minutes}m left to edit`;
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -262,9 +251,6 @@ export default function UserListingsPage() {
           <h1 className="text-3xl font-bold">My Listings</h1>
           <p className="text-muted-foreground">Manage your posted items</p>
         </div>
-        <Button asChild>
-          <Link href="/post-ad">Post New Ad</Link>
-        </Button>
       </div>
 
       {listings.length === 0 ? (

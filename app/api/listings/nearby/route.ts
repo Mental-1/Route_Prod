@@ -1,5 +1,6 @@
 import { getSupabaseRouteHandler } from "@/utils/supabase/server";
 import { type NextRequest, NextResponse } from "next/server";
+import { cookies } from "next/headers";
 
 /**
  * Handles GET requests to retrieve active listings near specified geographic coordinates within a given radius.
@@ -8,7 +9,7 @@ import { type NextRequest, NextResponse } from "next/server";
  */
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await getSupabaseRouteHandler();
+    const supabase = await getSupabaseRouteHandler(cookies);
 
     // Input validation
     const url = new URL(request.url);

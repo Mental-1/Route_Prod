@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { getSupabaseRouteHandler } from "@/utils/supabase/server";
 import crypto from "crypto";
+import { cookies } from "next/headers";
 
 /**
  * Handles Paystack webhook POST requests to process payment events.
@@ -30,7 +31,7 @@ export async function POST(request: NextRequest) {
     if (event.event === "charge.success") {
       const { reference, status, amount } = event.data;
 
-      const supabase = await getSupabaseRouteHandler();
+      const supabase = await getSupabaseRouteHandler(cookies);
 
       // Update transaction status
       const { error } = await supabase

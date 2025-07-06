@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { getSupabaseRouteHandler } from "@/utils/supabase/server";
 import crypto from "node:crypto";
+import { cookies } from "next/headers";
 
 /**
  * Handles M-Pesa payment callback POST requests, verifies request authenticity, updates transaction status, and sends user notifications.
@@ -34,7 +35,7 @@ export async function POST(request: NextRequest) {
     const { CheckoutRequestID, ResultCode, CallbackMetadata } =
       Body.stkCallback;
 
-    const supabase = await getSupabaseRouteHandler();
+    const supabase = await getSupabaseRouteHandler(cookies);
 
     // Update transaction status
     const status = ResultCode === 0 ? "completed" : "failed";

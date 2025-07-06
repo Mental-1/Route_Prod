@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Search, MapPin, Star } from "lucide-react";
+import { Search, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import dynamic from "next/dynamic";
 import { CategoriesSkeleton } from "@/components/categories-skeleton";
 import { getRecentListings, DisplayListingItem } from "@/lib/data";
+import { useRouter } from "next/navigation";
 
 const CategoriesSection = dynamic(
   () => import("../components/categories-section"),
@@ -28,6 +29,7 @@ const CategoriesSection = dynamic(
  *
  * Fetches and renders recent listings dynamically, and provides navigation to browse or post items.
  */
+
 export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [recentListings, setRecentListings] = useState<DisplayListingItem[]>(
@@ -35,6 +37,14 @@ export default function HomePage() {
   );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      router.push(`/listings?search=${encodeURIComponent(searchQuery)}`);
+    }
+  };
 
   useEffect(() => {
     /**
@@ -60,7 +70,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-green-600 to-green-800 text-white py-12">
+      <section className="bg-gradient-to-br from-blue-600 to-blue-800 text-white py-12">
         <div className="container px-4">
           <div className="max-w-3xl mx-auto text-center">
             <h1 className="text-3xl md:text-5xl font-bold mb-4">
@@ -73,19 +83,21 @@ export default function HomePage() {
 
             {/* Search Bar */}
             <div className="relative max-w-2xl mx-auto">
-              <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
-              <Input
-                placeholder="Search for items, services..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-12 pr-4 py-6 text-base bg-white text-gray-900 border-0 h-12"
-              />
-              <Button
-                size="sm"
-                className="absolute right-2 top-1/2 -translate-y-1/2"
-              >
-                Search
-              </Button>
+              <form className="relative" onSubmit={handleSearch}>
+                <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+                <Input
+                  placeholder="Search for items, services..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-12 pr-4 py-6 text-base bg-white text-gray-900 border-0 h-12"
+                />
+                <Button
+                  size="sm"
+                  className="absolute right-2 top-1/2 -translate-y-1/2"
+                >
+                  Search
+                </Button>
+              </form>
             </div>
           </div>
         </div>
@@ -161,7 +173,7 @@ export default function HomePage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-10 bg-green-600 text-white">
+      <section className="py-10 bg-blue-600 text-white">
         <div className="container px-4 text-center">
           <h2 className="text-2xl font-bold mb-3">Ready to Start Selling?</h2>
           <p className="text-lg mb-6 text-blue-100">
