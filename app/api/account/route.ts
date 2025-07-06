@@ -6,9 +6,8 @@ import { SupabaseClient } from "@supabase/supabase-js";
 import { Database } from "@/utils/supabase/database.types";
 
 const phoneRegex = new RegExp(
-  /^([\(]{0,1}[0-9]{3}[\)]{0,1}[\s\-]{0,1})?([0-9]{3}[\s\-]{0,1}[0-9]{4})$/,
+  /^(\+?[1-9]\d{0,3})?[\s.-]?\(?\d{1,4}\)?[\s.-]?\d{1,4}[\s.-]?\d{1,9}$/,
 );
-
 const accountSchema = z.object({
   full_name: z.string().min(2, "Full name must be at least 2 characters long"),
   username: z.string().min(3, "Username must be at least 3 characters long"),

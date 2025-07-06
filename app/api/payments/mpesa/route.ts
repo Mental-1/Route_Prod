@@ -42,8 +42,7 @@ export async function POST(request: NextRequest) {
     console.log("Attempting to fetch M-Pesa access token...");
     console.log("URL:", authUrl);
     console.log(
-      "Authorization Header (masked):",
-      authHeader.substring(0, 20) + "...",
+      `Authorization Header (masked): ${authHeader.substring(0, 20)}...`,
     ); // Mask for security
 
     let authResponse;

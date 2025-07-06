@@ -79,12 +79,13 @@ export async function POST(request: NextRequest) {
     const filename = `${type}/${user.id}/${timestamp}-${randomString}.${processedExtension}`;
 
     const bucket = type === "profile" ? "profiles" : "listings";
-    const filePath = `${user.id}/${timestamp}${filename}-${randomString}.${processedExtension}`;
-
+    const filePath = filename;
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from(bucket)
       .upload(filePath, processedBuffer, {
-        contentType: `image/${processedExtension}`,
+        contentType: file.type.startsWith("image/")
+          ? `image/${processedExtension}`
+          : file.type,
         upsert: false,
       });
 

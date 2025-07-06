@@ -1,32 +1,32 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { saveSettings, getSettings } from './actions/settings-actions';
-import { deleteAccount, exportUserData } from './actions/account-actions';
-import { getAvailableLanguages } from './actions/language-actions';
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { saveSettings, getSettings } from "./actions/settings-actions";
+import { deleteAccountById, exportUserData } from "./actions/account-actions";
+import { getAvailableLanguages } from "./actions/language-actions";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
-import { toast } from '@/components/ui/use-toast';
-import { Toaster } from '@/components/ui/toaster';
-import { Bell, Shield, Globe, Download, Trash2 } from 'lucide-react';
-import { useAuth } from '@/contexts/auth-context';
+} from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
+import { toast } from "@/components/ui/use-toast";
+import { Toaster } from "@/components/ui/toaster";
+import { Bell, Shield, Globe, Download, Trash2 } from "lucide-react";
+import { useAuth } from "@/contexts/auth-context";
 
 export default function SettingsPage() {
   const { user, isLoading } = useAuth();
@@ -53,9 +53,9 @@ export default function SettingsPage() {
   const handleSaveSettings = async () => {
     if (!user) {
       toast({
-        title: 'Error',
-        description: 'You must be logged in to save settings.',
-        variant: 'destructive',
+        title: "Error",
+        description: "You must be logged in to save settings.",
+        variant: "destructive",
       });
       return;
     }
@@ -65,27 +65,27 @@ export default function SettingsPage() {
   const handleDeleteAccount = async () => {
     if (
       confirm(
-        'Are you sure you want to delete your account? This action cannot be undone.',
+        "Are you sure you want to delete your account? This action cannot be undone.",
       )
     ) {
       if (!user) {
         toast({
-          title: 'Error',
-          description: 'You must be logged in to delete your account.',
-          variant: 'destructive',
+          title: "Error",
+          description: "You must be logged in to delete your account.",
+          variant: "destructive",
         });
         return;
       }
-      await deleteAccount(user.id);
+      await deleteAccountById(user.id);
     }
   };
 
   const handleExportData = async () => {
     if (!user) {
       toast({
-        title: 'Error',
-        description: 'You must be logged in to export data.',
-        variant: 'destructive',
+        title: "Error",
+        description: "You must be logged in to export data.",
+        variant: "destructive",
       });
       return;
     }
@@ -110,7 +110,7 @@ export default function SettingsPage() {
           <p>You must be logged in to view this page.</p>
           <Button
             className="p-3 text-white border border-primary mt-3"
-            onClick={() => router.push('/auth')}
+            onClick={() => router.push("/auth")}
           >
             Create an account or log in.
           </Button>

@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
     // --- Database Fetch if not in cache ---
     const { count, error: countError } = await supabase
       .from("reviews")
-      .select("*", { count: "exact", head: true })
+      .select("id", { count: "exact", head: true })
       .eq("user_id", userId);
 
     if (countError) {
@@ -88,6 +88,13 @@ export async function POST(request: NextRequest) {
         code: 400,
       });
     }
+    if (rating < 1 || rating > 5) {
+      return NextResponse.json({
+        message: "Rating must be between 1 and 5.",
+        status: "error",
+        code: 400,
+      });
+    }
 
     const { data, error } = await supabase
       .from("reviews")
@@ -109,9 +116,9 @@ export async function POST(request: NextRequest) {
     }
 
     // --- Cache Invalidation ---
-    reviewCountCache.delete(userId);
+    reviewCountCache.delete(sellerId);
     console.log(
-      `Cache invalidated for user ${userId} review count after POST.`,
+      `Cache invalidated for user ${sellerId} review count after POST.`,
     );
 
     return NextResponse.json({
@@ -138,16 +145,51 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   const supabase = await getSupabaseRouteHandler(cookies);
 
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+  if (authError || !user) {
+    return NextResponse.json({
+      message: "Unauthorized",
+      status: "error",
+      code: 401,
+    });
+  }
+
   try {
     const reviewId = request.nextUrl.searchParams.get("reviewId");
     const body = await request.json();
-    const { reviewContent, userId } = body; // Need userId to potentially invalidate other caches if actual reviews are cached
+    const { reviewContent, userId } = body;
 
     if (!reviewId || !reviewContent || !userId) {
       return NextResponse.json({
         message: "Review ID, review content, and User ID are required.",
         status: "error",
         code: 400,
+      });
+    }
+
+    // First, fetch the review to verify ownership
+    const { data: existingReview, error: fetchError } = await supabase
+      .from("reviews")
+      .select("reviewer_id, seller_id")
+      .eq("id", reviewId)
+      .single();
+
+    if (fetchError || !existingReview) {
+      return NextResponse.json({
+        message: "Review not found",
+        status: "error",
+        code: 404,
+      });
+    }
+
+    if (existingReview.reviewer_id !== user.id) {
+      return NextResponse.json({
+        message: "Forbidden: You can only update your own reviews",
+        status: "error",
+        code: 403,
       });
     }
 
@@ -172,7 +214,10 @@ export async function PUT(request: NextRequest) {
     // If you had `userReviewsListCache`, you'd invalidate it here:
     // userReviewsListCache.delete(userId);
     // console.log(`Cache invalidated for user ${userId} review list after PUT.`);
-
+    // Invalidate seller's review count cache since review content might affect aggregations
+    if (existingReview?.seller_id) {
+      reviewCountCache.delete(existingReview.seller_id);
+    }
     return NextResponse.json({
       message: "Review updated successfully.",
       status: "success",

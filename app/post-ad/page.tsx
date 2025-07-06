@@ -283,8 +283,6 @@ export default function PostAdPage() {
           setFormData((prev) => ({
             ...prev,
             location: [position.coords.latitude, position.coords.longitude],
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
           }));
           setLocationDialogOpen(false);
         },
@@ -537,7 +535,7 @@ function AdDetailsStep({
               placeholder="Choose location"
               readOnly
               value={
-                Array.isArray(formData.location)
+                Array.isArray(formData.location) && formData.location.length > 0
                   ? `Lat: ${formData.location[0]}, Lng: ${formData.location[1]}`
                   : formData.location || ""
               }
@@ -552,7 +550,7 @@ function AdDetailsStep({
             id="negotiable"
             checked={formData.negotiable}
             onCheckedChange={(checked) =>
-              updateFormData({ negotiable: checked })
+              updateFormData({ negotiable: Boolean(checked) })
             }
           />
           <Label htmlFor="negotiable">Price is negotiable</Label>
@@ -657,26 +655,38 @@ function MediaUploadStep({
           url.split(".").pop()?.toLowerCase() || "",
         ),
     );
+    // Filter out invalid videos before updating state
+    const validUrls = [...urls];
 
     for (const videoUrl of newVideos) {
       const video = document.createElement("video");
       video.src = videoUrl;
-      video.onloadedmetadata = () => {
-        if (video.duration > 30) {
-          toast({
-            title: "Video Too Long",
-            description: "Videos must be less than 30 seconds.",
-            variant: "destructive",
-          });
-          const updatedUrls = formData.mediaUrls.filter(
-            (url: string) => url !== videoUrl,
-          );
-          updateFormData({ mediaUrls: updatedUrls });
-        }
-      };
+      try {
+        await new Promise((resolve, reject) => {
+          video.onloadedmetadata = () => {
+            if (video.duration > 30) {
+              toast({
+                title: "Video Too Long",
+                description: "Videos must be less than 30 seconds.",
+                variant: "destructive",
+              });
+              const index = validUrls.indexOf(videoUrl);
+              if (index > -1) validUrls.splice(index, 1);
+            }
+            video.remove(); // Clean up
+            resolve(undefined);
+          };
+          video.onerror = () => {
+            video.remove(); // Clean up
+            reject(new Error("Failed to load video"));
+          };
+        });
+      } catch (error) {
+        console.error("Video validation error:", error);
+      }
     }
 
-    updateFormData({ mediaUrls: urls });
+    updateFormData({ mediaUrls: validUrls });
   };
 
   return (
@@ -836,7 +846,11 @@ function PaymentMethodStep({
             >
               <CardContent className="p-4">
                 <div className="flex items-center space-x-3">
-                  <img src="/mpesa_logo.png" alt="M-Pesa Logo" className="w-12 h-12 object-contain rounded-lg" />
+                  <img
+                    src="/mpesa_logo.png"
+                    alt="M-Pesa Logo"
+                    className="w-12 h-12 object-contain rounded-lg"
+                  />
                   <div>
                     <p className="font-medium">M-Pesa</p>
                     <p className="text-sm text-muted-foreground">
@@ -857,7 +871,11 @@ function PaymentMethodStep({
             >
               <CardContent className="p-4">
                 <div className="flex items-center space-x-3">
-                  <img src="/PayStack_Logo.png" alt="Paystack Logo" className="w-12 h-12 object-contain rounded-lg" />
+                  <img
+                    src="/PayStack_Logo.png"
+                    alt="Paystack Logo"
+                    className="w-12 h-12 object-contain rounded-lg"
+                  />
                   <div>
                     <p className="font-medium">Paystack</p>
                     <p className="text-sm text-muted-foreground">
@@ -878,7 +896,11 @@ function PaymentMethodStep({
             >
               <CardContent className="p-4">
                 <div className="flex items-center space-x-3">
-                  <img src="/PayPal_Logo.png" alt="PayPal Logo" className="w-12 h-12 object-contain rounded-lg" />
+                  <img
+                    src="/PayPal_Logo.png"
+                    alt="PayPal Logo"
+                    className="w-12 h-12 object-contain rounded-lg"
+                  />
                   <div>
                     <p className="font-medium">PayPal</p>
                     <p className="text-sm text-muted-foreground">
@@ -940,9 +962,10 @@ function PreviewStep({
   );
 
   // Helper for location display
-  const displayLocation = Array.isArray(formData.location)
-    ? `Lat: ${formData.location[0]}, Lng: ${formData.location[1]}`
-    : formData.location || "Not specified";
+  const displayLocation =
+    Array.isArray(formData.location) && formData.location.length > 0
+      ? `Lat: ${formData.location[0]}, Lng: ${formData.location[1]}`
+      : formData.location || "Not specified";
 
   return (
     <div className="space-y-6">
@@ -955,7 +978,7 @@ function PreviewStep({
                 {formData.title || "Ad Title"}
               </h3>
               <p className="text-2xl font-bold text-green-600">
-                Ksh {selectedTier.price || "N/A"}
+                Ksh {formData.price || "N/A"}
               </p>
               {formData.negotiable && (
                 <span className="text-sm text-muted-foreground">

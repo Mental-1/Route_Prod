@@ -45,7 +45,7 @@ const settingsCache = new LRUCache<string, any>({
 // Rate limiter for settings updates (once per day)
 const settingsUpdateLimiter = createRateLimiter({
   windowMs: 24 * 60 * 60 * 1000, // 24 hours
-  maxRequests: 1,
+  maxRequests: 10,
 });
 
 async function getUserId() {
@@ -134,9 +134,12 @@ export async function POST(req: NextRequest) {
   const { allowed, remaining, resetTime } =
     settingsUpdateLimiter.check(identifier);
   if (!allowed) {
+    const hoursRemaining = Math.ceil(
+      (resetTime - Date.now()) / (1000 * 60 * 60),
+    );
     return NextResponse.json(
       {
-        error: "Too many requests. Please try again later.",
+        error: `Too many requests. Please try again in ${hoursRemaining} hour${hoursRemaining > 1 ? "s" : ""}.`,
         retryAfter: resetTime - Date.now(),
       },
       { status: 429 },
@@ -216,16 +219,11 @@ export async function PATCH(req: NextRequest) {
     const body = await req.json();
     const validatedSettings = settingsSchema.partial().parse(body);
 
-    const updateData: any = {};
-    if (validatedSettings.notifications) {
-      Object.assign(updateData, validatedSettings.notifications);
-    }
-    if (validatedSettings.privacy) {
-      Object.assign(updateData, validatedSettings.privacy);
-    }
-    if (validatedSettings.preferences) {
-      Object.assign(updateData, validatedSettings.preferences);
-    }
+    const updateData = {
+      ...validatedSettings.notifications,
+      ...validatedSettings.privacy,
+      ...validatedSettings.preferences,
+    };
 
     const { data, error } = await supabase
       .from("profiles")

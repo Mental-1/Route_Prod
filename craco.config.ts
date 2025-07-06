@@ -4,7 +4,7 @@ module.exports = function () {
   return {
     webpack: {
       plugins:
-        process.env.ANALYZE === "true"
+        process.env.ANALYZE?.toLowerCase() === "true"
           ? [new BundleAnalyzerPlugin({ analyzerMode: "server" })]
           : [],
     },

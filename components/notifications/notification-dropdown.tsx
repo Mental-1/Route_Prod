@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { createBrowserClient } from "@/utils/supabase/supabase-browser";
+import { getSupabaseClient } from "@/utils/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
 import { z } from "zod";
@@ -60,7 +60,7 @@ export function NotificationDropdown({
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
-  const supabase = createBrowserClient();
+  const supabase = getSupabaseClient();
 
   useEffect(() => {
     if (open) {

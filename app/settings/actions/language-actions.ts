@@ -3,7 +3,7 @@
 import { toast } from "@/components/ui/use-toast";
 
 export async function getAvailableLanguages() {
-  // In a real app, this would fetch from an API or a static list
+  // TODO: Consider moving to config file or API endpoint for easier management
   return [
     { code: "en", name: "English" },
     { code: "es", name: "Spanish" },
@@ -13,7 +13,10 @@ export async function getAvailableLanguages() {
   ];
 }
 
-export async function updateLanguagePreference(userId: string, language: string) {
+export async function updateLanguagePreference(
+  userId: string,
+  language: string,
+) {
   try {
     // This would be an API call to your backend
     console.log(`Updating language for user ${userId} to ${language}`);

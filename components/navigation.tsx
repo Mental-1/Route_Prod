@@ -154,7 +154,6 @@ export default function Navigation() {
         </nav>
       </div>
       <div className="hidden md:flex items-center gap-4">
-        <div className="relative w-full max-w-sm"></div>
         <ThemeToggle />
         {user ? (
           <Button variant="default" onClick={() => router.push("/post-ad")}>

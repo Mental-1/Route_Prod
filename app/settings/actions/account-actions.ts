@@ -1,7 +1,7 @@
 "use client";
 import { toast } from "@/components/ui/use-toast";
 
-export async function deleteAccount(userId: string) {
+export async function deleteAccountById(userId: string) {
   // Mock implementation - replace with actual API call
   console.log(`Deleting account for user ${userId}`);
   toast({
