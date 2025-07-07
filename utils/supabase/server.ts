@@ -1,5 +1,3 @@
-"use server";
-
 import { createServerClient } from "@supabase/ssr";
 import { cookies as nextCookies } from "next/headers";
 import type { Database } from "@/utils/supabase/database.types";
@@ -73,7 +71,7 @@ export async function getSupabaseRouteHandler(cookiesFn: typeof nextCookies) {
  * @param request - The incoming HTTP request containing cookies in its headers.
  * @returns An object with the configured Supabase client and a response object with updated cookie headers.
  */
-export async function getSupabaseMiddleware(request: Request) {
+export function getSupabaseMiddleware(request: Request) {
   const response = new Response();
 
   const supabase = createServerClient<Database>(
@@ -118,7 +116,7 @@ export async function getSupabaseMiddleware(request: Request) {
  * Throws an error if the service role key environment variable is not set. Cookie handling is disabled for this client.
  * @returns A Supabase client instance with service role access.
  */
-export async function getSupabaseServiceRole() {
+export function getSupabaseServiceRole() {
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
     throw new Error(
       "SUPABASE_SERVICE_ROLE_KEY environment variable is not set",
