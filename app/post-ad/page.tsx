@@ -83,6 +83,13 @@ const paymentTiers = [
   },
 ];
 
+/**
+ * Renders the multi-step ad posting page, managing form state, step navigation, data fetching, payment processing, and submission.
+ *
+ * Handles category and subcategory loading, form data updates, location detection, payment tier and method selection, and displays the appropriate UI for each step. On submission, processes payment if required, submits the listing, and provides user feedback via toast notifications.
+ *
+ * @returns The complete ad posting page component.
+ */
 export default function PostAdPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [subcategories, setSubcategories] = useState<SubCategory[]>([]);
@@ -415,7 +422,11 @@ export default function PostAdPage() {
   );
 }
 
-// Step Components
+/**
+ * Renders the ad details step of the multi-step ad posting form, allowing users to enter information such as title, description, category, subcategory, price, condition, location, and negotiable status.
+ *
+ * Provides UI for selecting category and subcategory, entering price and condition, and setting location either manually or via automatic detection. Updates form data on user input and manages the location dialog state.
+ */
 function AdDetailsStep({
   formData,
   updateFormData,
@@ -953,9 +964,9 @@ function PaymentMethodStep({
 }
 
 /**
- * Displays a preview of the ad based on the current form data and selected category.
+ * Renders a summary preview of the advertisement using the current form data and selected category.
  *
- * Shows the ad's title, price, negotiable status, media thumbnails, description, category, condition, location, and selected payment plan.
+ * Displays the ad's title, price, negotiable status, up to four media thumbnails, description, category, condition, location, and selected payment plan. Also shows a notice regarding the Terms of Service and Privacy Policy.
  */
 function PreviewStep({
   formData,

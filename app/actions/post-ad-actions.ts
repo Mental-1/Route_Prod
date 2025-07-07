@@ -131,11 +131,11 @@ async function processImages(imageUrls: string[], userId: string) {
 }
 
 /**
- * Creates a new listing with validated input, user authentication, rate limiting, and auditing.
+ * Handles the complete workflow for creating a new listing, including validation, authentication, rate limiting, payment confirmation, auditing, and database insertion.
  *
- * Validates the provided listing data, enforces user plan and rate limits, processes images, and inserts the listing into the database. Updates the user's profile listing count, logs audit events, generates a slug, and triggers cache revalidation for relevant pages.
+ * Validates the provided listing data, enforces user plan and rate limits, checks payment status, processes images, and inserts the listing into the database. Updates the user's profile listing count, logs audit events, generates a slug, and triggers cache revalidation for relevant pages. Returns a success response with the new listing's ID and slug, or a failure response with error details.
  *
- * @param formData - The listing details and associated image URLs to be created.
+ * @param formData - The listing details, associated image URLs, and payment confirmation status.
  * @returns An object indicating success or failure, with the new listing's ID and slug on success.
  */
 export async function createListingAction(

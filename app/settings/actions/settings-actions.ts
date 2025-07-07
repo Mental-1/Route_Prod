@@ -26,6 +26,11 @@ export interface UserSettings {
   };
 }
 
+/**
+ * Retrieves the current user's settings from the server.
+ *
+ * @returns The user settings object if successful, or `null` if the fetch fails.
+ */
 export async function getSettings() {
   try {
     const response = await fetch("/api/settings");
@@ -44,6 +49,13 @@ export async function getSettings() {
   }
 }
 
+/**
+ * Saves the provided user settings to the server.
+ *
+ * Sends a POST request with the given settings data. Displays a success notification on completion or an error notification if the operation fails.
+ *
+ * @param settings - The user settings data to be saved
+ */
 export async function saveSettings(settings: UserSettings) {
   try {
     const response = await fetch("/api/settings", {

@@ -59,6 +59,11 @@ interface FormData {
   website: string;
 }
 
+/**
+ * Displays and manages the user's account page, allowing profile editing, avatar upload, password and email changes, two-factor authentication management, and account deletion.
+ *
+ * Renders profile information, account security settings, verification status, and provides interactive modals for updating sensitive information and enabling or disabling security features.
+ */
 export default function AccountPage() {
   const { user, profile, isLoading } = useAuth();
   const [saving, setSaving] = useState(false);
