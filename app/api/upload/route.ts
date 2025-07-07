@@ -114,7 +114,9 @@ export async function POST(request: NextRequest) {
       url: publicUrl,
       filename: filePath,
       size: processedBuffer.length,
-      type: `image/${processedExtension}`,
+      type: file.type.startsWith("image/")
+        ? `image/${processedExtension}`
+        : file.type,
       bucket: bucket,
       user: user.id,
     });
