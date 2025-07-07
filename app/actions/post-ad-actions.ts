@@ -139,7 +139,7 @@ async function processImages(imageUrls: string[], userId: string) {
  * @returns An object indicating success or failure, with the new listing's ID and slug on success.
  */
 export async function createListingAction(
-  formData: AdDetailsFormData & { mediaUrls: string[] },
+  formData: AdDetailsFormData & { mediaUrls: string[]; paymentConfirmed: boolean },
 ): Promise<ActionResponse<{ id: string; slug: string }>> {
   try {
     const headersList = await headers();
@@ -198,6 +198,13 @@ export async function createListingAction(
 
     const validatedData = validationResult.data;
 
+    if (!formData.paymentConfirmed) {
+      return {
+        success: false,
+        message: "Payment failed. Please try again.",
+      };
+    }
+
     const { category, subcategory } = await validateCategories(
       validatedData.category,
       validatedData.subcategory,
@@ -228,7 +235,7 @@ export async function createListingAction(
       images: processedImages,
       user_id: user.id,
       status: "active",
-      payment_status: "free",
+      payment_status: "paid",
       plan: plan,
       views: 0,
       created_at: new Date().toISOString(),
@@ -242,7 +249,17 @@ export async function createListingAction(
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      await auditLogger.log({
+        action: "create_listing_failed",
+        resource_type: "listing",
+        metadata: { error: error.message },
+      });
+      return {
+        success: false,
+        message: "Failed to create listing. Please try again later.",
+      };
+    }
 
     await supabase
       .from("profiles")

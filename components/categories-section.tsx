@@ -56,7 +56,7 @@ export default function CategoriesSection() {
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold">Categories</h2>
           <Button variant="ghost" size="sm" asChild>
-            <Link href="/categories">View All</Link>
+            <Link href="/listings">View All</Link>
           </Button>
         </div>
         {isLoading ? (
