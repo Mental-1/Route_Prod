@@ -25,6 +25,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Sanitize phone number to 254... format
+    let sanitizedPhoneNumber = validatedData.phoneNumber.trim();
+    if (sanitizedPhoneNumber.startsWith("+")) {
+      sanitizedPhoneNumber = sanitizedPhoneNumber.substring(1);
+    }
+    if (sanitizedPhoneNumber.startsWith("0")) {
+      sanitizedPhoneNumber = "254" + sanitizedPhoneNumber.substring(1);
+    }
+
     // M-Pesa STK Push implementation
     const timestamp = new Date()
       .toISOString()
@@ -86,6 +95,22 @@ export async function POST(request: NextRequest) {
     }
 
     // Initiate STK Push
+    const stkPayload = {
+      BusinessShortCode: process.env.MPESA_BUSINESS_SHORT_CODE,
+      Password: password,
+      Timestamp: timestamp,
+      TransactionType: "CustomerPayBillOnline",
+      Amount: validatedData.amount,
+      PartyA: sanitizedPhoneNumber,
+      PartyB: process.env.MPESA_BUSINESS_SHORT_CODE,
+      PhoneNumber: sanitizedPhoneNumber,
+      CallBackURL: `${process.env.NEXT_PUBLIC_APP_URL}/api/payments/mpesa/callback`,
+      AccountReference: `RouteMe-${user.id}`,
+      TransactionDesc: "RouteMe Payment",
+    };
+
+    console.log("M-Pesa STK Push Payload:", stkPayload);
+
     const stkResponse = await fetch(
       "https://api.safaricom.co.ke/mpesa/stkpush/v1/processrequest",
       {
@@ -94,19 +119,7 @@ export async function POST(request: NextRequest) {
           Authorization: `Bearer ${authData.access_token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          BusinessShortCode: process.env.MPESA_BUSINESS_SHORT_CODE,
-          Password: password,
-          Timestamp: timestamp,
-          TransactionType: "CustomerPayBillOnline",
-          Amount: validatedData.amount,
-          PartyA: validatedData.phoneNumber,
-          PartyB: process.env.MPESA_BUSINESS_SHORT_CODE,
-          PhoneNumber: validatedData.phoneNumber,
-          CallBackURL: `${process.env.NEXT_PUBLIC_APP_URL}/api/payments/mpesa/callback`,
-          AccountReference: `RouteMe-${user.id}`,
-          TransactionDesc: "RouteMe Payment",
-        }),
+        body: JSON.stringify(stkPayload),
       },
     );
 

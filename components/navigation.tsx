@@ -198,6 +198,13 @@ export default function Navigation() {
                     >
                       Account
                     </Button>
+                     <Button
+                      variant="ghost"
+                      className="justify-start"
+                      onClick={() => router.push("/dashboard")}
+                    >
+                      Dashboard
+                    </Button>
                     <Button
                       className="mt-4"
                       onClick={() => router.push("/post-ad")}

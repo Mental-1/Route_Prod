@@ -179,7 +179,12 @@ export default function PostAdPage() {
         );
 
         if (!paymentResult) {
-          throw new Error("Payment Failed");
+          toast({
+            title: "Payment Failed",
+            description: "Your payment could not be processed. Please try again.",
+            variant: "destructive",
+          });
+          return;
         }
       }
       //Step 2
@@ -214,9 +219,12 @@ export default function PostAdPage() {
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(
-          result.error || "An error occurred while submitting your ad.",
-        );
+        toast({
+          title: "Failed to Create Listing",
+          description: result.error || "An error occurred while submitting your ad.",
+          variant: "destructive",
+        });
+        return;
       }
 
       // We show a success message if the ad was successfully submitted
@@ -958,7 +966,7 @@ function PreviewStep({
     paymentTiers.find((tier) => tier.id === formData.paymentTier) ||
     paymentTiers[0];
   const selectedCategory = categories.find(
-    (cat) => cat.id === formData.category,
+    (cat) => cat.id === parseInt(formData.category, 10),
   );
 
   // Helper for location display

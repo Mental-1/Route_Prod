@@ -17,6 +17,7 @@ export async function POST(request: NextRequest) {
     } = await supabase.auth.getUser();
 
     if (authError || !user) {
+      console.error("Authentication error:", authError);
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -53,7 +54,7 @@ export async function POST(request: NextRequest) {
     if (!allowedTypes.includes(file.type)) {
       return NextResponse.json(
         {
-          error: "Invalid file type",
+          error: `Invalid file type. Allowed types are: ${allowedTypes.join(", ")}`,
         },
         { status: 400 },
       );
@@ -63,14 +64,22 @@ export async function POST(request: NextRequest) {
     let processedBuffer: Buffer;
     let processedExtension = "webp";
 
-    if (file.type.startsWith("image/")) {
-      const imageBuffer = Buffer.from(await file.arrayBuffer());
-      processedBuffer = await sharp(imageBuffer)
-        .webp({ quality: 80 })
-        .toBuffer();
-    } else {
-      processedBuffer = Buffer.from(await file.arrayBuffer());
-      processedExtension = file.name.split(".").pop() || "";
+    try {
+      if (file.type.startsWith("image/")) {
+        const imageBuffer = Buffer.from(await file.arrayBuffer());
+        processedBuffer = await sharp(imageBuffer)
+          .webp({ quality: 80 })
+          .toBuffer();
+      } else {
+        processedBuffer = Buffer.from(await file.arrayBuffer());
+        processedExtension = file.name.split(".").pop() || "";
+      }
+    } catch (processingError) {
+      console.error("File processing error:", processingError);
+      return NextResponse.json(
+        { error: "Failed to process file." },
+        { status: 500 },
+      );
     }
 
     // Generate unique filename
@@ -90,9 +99,9 @@ export async function POST(request: NextRequest) {
       });
 
     if (uploadError) {
-      console.error("Upload error:", uploadError);
+      console.error("Supabase upload error:", uploadError);
       return NextResponse.json(
-        { error: "Failed to upload file to storage." },
+        { error: "Failed to upload file to storage. Please try again later." },
         { status: 500 },
       );
     }
@@ -101,6 +110,7 @@ export async function POST(request: NextRequest) {
     } = supabase.storage.from(bucket).getPublicUrl(filePath);
 
     return NextResponse.json({
+      message: "File uploaded successfully",
       url: publicUrl,
       filename: filePath,
       size: processedBuffer.length,
@@ -111,7 +121,10 @@ export async function POST(request: NextRequest) {
       user: user.id,
     });
   } catch (error) {
-    console.error("Upload error:", error);
-    return NextResponse.json({ error: "Upload failed" }, { status: 500 });
+    console.error("Unhandled upload error:", error);
+    return NextResponse.json(
+      { error: "An unexpected error occurred during upload." },
+      { status: 500 },
+    );
   }
 }
