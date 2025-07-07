@@ -2,7 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { saveSettings, getSettings } from "./actions/settings-actions";
+import {
+  saveSettings,
+  getSettings,
+  UserSettings,
+} from "./actions/settings-actions";
 import { deleteAccountById, exportUserData } from "./actions/account-actions";
 import { getAvailableLanguages } from "./actions/language-actions";
 import {
@@ -28,9 +32,39 @@ import { Toaster } from "@/components/ui/toaster";
 import { Bell, Shield, Globe, Download, Trash2 } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 
+const defaultSettings: UserSettings = {
+  notifications: {
+    email_notifications: false,
+    push_notifications: false,
+    sms_notifications: false,
+    new_messages: false,
+    listing_updates: false,
+    marketing_emails: false,
+    price_alerts: false,
+  },
+  privacy: {
+    profile_visibility: "public",
+    show_phone: false,
+    show_email: false,
+    show_last_seen: false,
+  },
+  preferences: {
+    language: "en",
+    currency: "USD",
+    timezone: "UTC",
+    theme: "system",
+  },
+};
+
+/**
+ * Renders the user account settings page, allowing authenticated users to view and manage their notification, privacy, preference, and data settings.
+ *
+ * Displays loading indicators while user or settings data is being fetched. If the user is not authenticated, prompts for login or account creation. Provides controls for updating notification preferences, privacy options, language, currency, timezone, exporting user data, and deleting the account.
+ */
 export default function SettingsPage() {
   const { user, isLoading } = useAuth();
-  const [settings, setSettings] = useState<any>(null);
+  const [settings, setSettings] = useState<UserSettings>(defaultSettings);
+  const [isSettingsLoading, setIsSettingsLoading] = useState(true);
   const [availableLanguages, setAvailableLanguages] = useState<
     { code: string; name: string }[]
   >([]);
@@ -38,25 +72,43 @@ export default function SettingsPage() {
 
   useEffect(() => {
     const fetchInitialSettings = async () => {
+      setIsSettingsLoading(true);
       try {
         const fetchedSettings = await getSettings();
         if (fetchedSettings) {
-          setSettings(fetchedSettings);
+          // Deep merge fetched settings with defaults
+          setSettings((prevSettings) => ({
+            ...prevSettings,
+            ...fetchedSettings,
+            notifications: {
+              ...prevSettings.notifications,
+              ...fetchedSettings.notifications,
+            },
+            privacy: {
+              ...prevSettings.privacy,
+              ...fetchedSettings.privacy,
+            },
+            preferences: {
+              ...prevSettings.preferences,
+              ...fetchedSettings.preferences,
+            },
+          }));
         }
         const languages = await getAvailableLanguages();
         setAvailableLanguages(languages);
       } catch (error) {
         console.error("Failed to fetch initial settings:", error);
-        // Set default settings to ensure UI remains functional
-        setSettings({
-          notifications: {},
-          privacy: {},
-          preferences: {},
-        });
+        // Default settings are already set, so we can just log the error
+      } finally {
+        setIsSettingsLoading(false);
       }
     };
-    fetchInitialSettings();
-  }, [user]);
+    if (user) {
+      fetchInitialSettings();
+    } else if (!isLoading) {
+      setIsSettingsLoading(false);
+    }
+  }, [user, isLoading]);
 
   const handleSaveSettings = async () => {
     if (!user) {
@@ -100,7 +152,7 @@ export default function SettingsPage() {
     await exportUserData(user.id);
   };
 
-  if (isLoading || !settings) {
+  if (isLoading || isSettingsLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -163,9 +215,9 @@ export default function SettingsPage() {
                 </div>
                 <Switch
                   id="email-notifications"
-                  checked={settings.notifications.email_notifications}
+                  checked={settings.notifications?.email_notifications}
                   onCheckedChange={(checked) =>
-                    setSettings((prev: any) => ({
+                    setSettings((prev) => ({
                       ...prev,
                       notifications: {
                         ...prev.notifications,
@@ -185,9 +237,9 @@ export default function SettingsPage() {
                 </div>
                 <Switch
                   id="push-notifications"
-                  checked={settings.notifications.push_notifications}
+                  checked={settings.notifications?.push_notifications}
                   onCheckedChange={(checked) =>
-                    setSettings((prev: any) => ({
+                    setSettings((prev) => ({
                       ...prev,
                       notifications: {
                         ...prev.notifications,
@@ -207,9 +259,9 @@ export default function SettingsPage() {
                 </div>
                 <Switch
                   id="sms-notifications"
-                  checked={settings.notifications.sms_notifications}
+                  checked={settings.notifications?.sms_notifications}
                   onCheckedChange={(checked) =>
-                    setSettings((prev: any) => ({
+                    setSettings((prev) => ({
                       ...prev,
                       notifications: {
                         ...prev.notifications,
@@ -231,9 +283,9 @@ export default function SettingsPage() {
                 </div>
                 <Switch
                   id="new-messages"
-                  checked={settings.notifications.new_messages}
+                  checked={settings.notifications?.new_messages}
                   onCheckedChange={(checked) =>
-                    setSettings((prev: any) => ({
+                    setSettings((prev) => ({
                       ...prev,
                       notifications: {
                         ...prev.notifications,
@@ -253,9 +305,9 @@ export default function SettingsPage() {
                 </div>
                 <Switch
                   id="listing-updates"
-                  checked={settings.notifications.listing_updates}
+                  checked={settings.notifications?.listing_updates}
                   onCheckedChange={(checked) =>
-                    setSettings((prev: any) => ({
+                    setSettings((prev) => ({
                       ...prev,
                       notifications: {
                         ...prev.notifications,
@@ -275,9 +327,9 @@ export default function SettingsPage() {
                 </div>
                 <Switch
                   id="marketing-emails"
-                  checked={settings.notifications.marketing_emails}
+                  checked={settings.notifications?.marketing_emails}
                   onCheckedChange={(checked) =>
-                    setSettings((prev: any) => ({
+                    setSettings((prev) => ({
                       ...prev,
                       notifications: {
                         ...prev.notifications,
@@ -312,11 +364,17 @@ export default function SettingsPage() {
                   </p>
                 </div>
                 <Select
-                  value={settings.privacy.profile_visibility}
+                  value={settings.privacy?.profile_visibility}
                   onValueChange={(value) =>
-                    setSettings((prev: any) => ({
+                    setSettings((prev) => ({
                       ...prev,
-                      privacy: { ...prev.privacy, profile_visibility: value },
+                      privacy: {
+                        ...prev.privacy,
+                        profile_visibility: value as
+                          | "public"
+                          | "private"
+                          | "friends",
+                      },
                     }))
                   }
                 >
@@ -340,9 +398,9 @@ export default function SettingsPage() {
                 </div>
                 <Switch
                   id="show-phone"
-                  checked={settings.privacy.show_phone}
+                  checked={settings.privacy?.show_phone}
                   onCheckedChange={(checked) =>
-                    setSettings((prev: any) => ({
+                    setSettings((prev) => ({
                       ...prev,
                       privacy: { ...prev.privacy, show_phone: checked },
                     }))
@@ -359,9 +417,9 @@ export default function SettingsPage() {
                 </div>
                 <Switch
                   id="show-email"
-                  checked={settings.privacy.show_email}
+                  checked={settings.privacy?.show_email}
                   onCheckedChange={(checked) =>
-                    setSettings((prev: any) => ({
+                    setSettings((prev) => ({
                       ...prev,
                       privacy: { ...prev.privacy, show_email: checked },
                     }))
@@ -378,9 +436,9 @@ export default function SettingsPage() {
                 </div>
                 <Switch
                   id="show-last-seen"
-                  checked={settings.privacy.show_last_seen}
+                  checked={settings.privacy?.show_last_seen}
                   onCheckedChange={(checked) =>
-                    setSettings((prev: any) => ({
+                    setSettings((prev) => ({
                       ...prev,
                       privacy: { ...prev.privacy, show_last_seen: checked },
                     }))
@@ -408,9 +466,9 @@ export default function SettingsPage() {
                 <div className="space-y-2">
                   <Label htmlFor="language">Language</Label>
                   <Select
-                    value={settings.preferences.language}
+                    value={settings.preferences?.language}
                     onValueChange={(value) =>
-                      setSettings((prev: any) => ({
+                      setSettings((prev) => ({
                         ...prev,
                         preferences: { ...prev.preferences, language: value },
                       }))
@@ -432,9 +490,9 @@ export default function SettingsPage() {
                 <div className="space-y-2">
                   <Label htmlFor="currency">Currency</Label>
                   <Select
-                    value={settings.preferences.currency}
+                    value={settings.preferences?.currency}
                     onValueChange={(value) =>
-                      setSettings((prev: any) => ({
+                      setSettings((prev) => ({
                         ...prev,
                         preferences: { ...prev.preferences, currency: value },
                       }))
@@ -455,9 +513,9 @@ export default function SettingsPage() {
                 <div className="space-y-2">
                   <Label htmlFor="timezone">Timezone</Label>
                   <Select
-                    value={settings.preferences.timezone}
+                    value={settings.preferences?.timezone}
                     onValueChange={(value) =>
-                      setSettings((prev: any) => ({
+                      setSettings((prev) => ({
                         ...prev,
                         preferences: { ...prev.preferences, timezone: value },
                       }))

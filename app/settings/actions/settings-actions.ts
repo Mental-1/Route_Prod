@@ -2,11 +2,35 @@
 
 import { toast } from "@/components/ui/use-toast";
 
-interface settingsUpdate {
-  key: string;
-  value: any;
+export interface UserSettings {
+  notifications?: {
+    email_notifications?: boolean;
+    push_notifications?: boolean;
+    sms_notifications?: boolean;
+    marketing_emails?: boolean;
+    new_messages?: boolean;
+    listing_updates?: boolean;
+    price_alerts?: boolean;
+  };
+  privacy?: {
+    profile_visibility?: "public" | "private" | "friends";
+    show_phone?: boolean;
+    show_email?: boolean;
+    show_last_seen?: boolean;
+  };
+  preferences?: {
+    language?: string;
+    currency?: string;
+    timezone?: string;
+    theme?: string;
+  };
 }
 
+/**
+ * Retrieves the current user's settings from the server.
+ *
+ * @returns The user settings object if successful, or `null` if the fetch fails.
+ */
 export async function getSettings() {
   try {
     const response = await fetch("/api/settings");
@@ -25,7 +49,14 @@ export async function getSettings() {
   }
 }
 
-export async function saveSettings(settings: settingsUpdate) {
+/**
+ * Saves the provided user settings to the server.
+ *
+ * Sends a POST request with the given settings data. Displays a success notification on completion or an error notification if the operation fails.
+ *
+ * @param settings - The user settings data to be saved
+ */
+export async function saveSettings(settings: UserSettings) {
   try {
     const response = await fetch("/api/settings", {
       method: "POST",

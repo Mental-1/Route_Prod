@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/accordion";
 import { Checkbox } from "@/components/ui/checkbox";
 import { fetchListings, ListingsItem } from "@/lib/data";
+import { ListingCardSkeleton } from "@/components/skeletons/listing-card-skeleton";
 
 type Subcategory = {
   id: number;
@@ -36,9 +37,9 @@ type Subcategory = {
 };
 
 /**
- * Renders the listings page with filtering, sorting, infinite scrolling, and responsive view modes.
+ * Displays a responsive listings page with filtering, sorting, infinite scrolling, and grid or list view modes.
  *
- * Displays a list of items fetched from APIs, allowing users to filter by category, subcategory, price range, condition, and distance. Supports grid and list layouts, sorting options, and infinite scroll loading. Includes a responsive filter sidebar for desktop and a sheet-based filter UI for mobile devices.
+ * Users can filter listings by category, subcategory, price range, item condition, and distance. The component fetches data from APIs, supports infinite scroll loading, and adapts its filter UI for desktop and mobile devices. Loading skeletons are shown while data is being fetched. Includes a back-to-top button and sorting options.
  */
 export default function ListingsPage() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -94,6 +95,7 @@ export default function ListingsPage() {
   // Fetch listings from API
   useEffect(() => {
     setLoading(true);
+    setListings([]);
     fetchListings({
       page: 1,
       filters: {
@@ -113,10 +115,12 @@ export default function ListingsPage() {
         setListings(data);
         setHasMore(data.length > 10);
         setPage(1);
-        setLoading(false);
       })
       .catch((error) => {
         console.error("Error fetching listings:", error);
+        setListings([]);
+      })
+      .finally(() => {
         setLoading(false);
       });
   }, [
@@ -667,96 +671,106 @@ export default function ListingsPage() {
             {/* Grid View */}
             {viewMode === "grid" && (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {filteredListings.map((listing) => (
-                  <Card
-                    key={listing.id}
-                    className="overflow-hidden border-0 hover:shadow-md transition-shadow"
-                  >
-                    <CardContent className="p-0">
-                      <div className="aspect-square bg-muted">
-                        <img
-                          src={
-                            (listing.images && listing.images.length > 0
-                              ? listing.images[0]
-                              : null) || "/placeholder.svg"
-                          }
-                          alt={listing.title}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      <div className="p-3">
-                        <h3 className="font-medium text-base mb-1 truncate">
-                          {listing.title}
-                        </h3>
-                        <p className="text-lg font-bold text-green-600 mb-1">
-                          Ksh{listing.price}
-                        </p>
-                        <p className="text-xs text-muted-foreground mb-2 line-clamp-2">
-                          {listing.description}
-                        </p>
-                        <div className="flex items-center gap-2 mb-1">
-                          <Badge variant="outline" className="text-xs">
-                            {listing.condition}
-                          </Badge>
-                        </div>
-                        <div className="flex items-center justify-between text-xs text-muted-foreground">
-                          <div className="flex items-center gap-1">
-                            <MapPin className="h-3 w-3" />
-                            {listing.location}
+                {loading && listings.length === 0
+                  ? Array.from({ length: 12 }).map((_, i) => (
+                      <ListingCardSkeleton key={i} layout="grid" />
+                    ))
+                  : filteredListings.map((listing) => (
+                      <Card
+                        key={listing.id}
+                        className="overflow-hidden border-0 hover:shadow-md transition-shadow"
+                      >
+                        <CardContent className="p-0">
+                          <div className="aspect-square bg-muted">
+                            <img
+                              src={
+                                (listing.images && listing.images.length > 0
+                                  ? listing.images[0]
+                                  : null) || "/placeholder.svg"
+                              }
+                              alt={listing.title}
+                              className="w-full h-full object-cover"
+                            />
                           </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                          <div className="p-3">
+                            <h3 className="font-medium text-base mb-1 truncate">
+                              {listing.title}
+                            </h3>
+                            <p className="text-lg font-bold text-green-600 mb-1">
+                              Ksh{listing.price}
+                            </p>
+                            <p className="text-xs text-muted-foreground mb-2 line-clamp-2">
+                              {listing.description}
+                            </p>
+                            <div className="flex items-center gap-2 mb-1">
+                              <Badge variant="outline" className="text-xs">
+                                {listing.condition}
+                              </Badge>
+                            </div>
+                            <div className="flex items-center justify-between text-xs text-muted-foreground">
+                              <div className="flex items-center gap-1">
+                                <MapPin className="h-3 w-3" />
+                                {listing.location}
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
               </div>
             )}
 
             {/* List View */}
             {viewMode === "list" && (
               <div className="space-y-4">
-                {filteredListings.map((listing) => (
-                  <Card
-                    key={listing.id}
-                    className="overflow-hidden border-0 hover:shadow-md transition-shadow"
-                  >
-                    <CardContent className="p-0">
-                      <div className="flex">
-                        <div className="w-40 h-40 bg-muted">
-                          <img
-                            src={
-                              (listing.images && listing.images.length > 0
-                                ? listing.images[0]
-                                : null) || "/placeholder.svg"
-                            }
-                            alt={listing.title}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        <div className="p-4 flex-1">
-                          <h3 className="font-medium text-lg mb-1">
-                            {listing.title}
-                          </h3>
-                          <p className="text-xl font-bold text-green-600 mb-2">
-                            Ksh{listing.price}
-                          </p>
-                          <p className="text-sm text-muted-foreground mb-3">
-                            {listing.description}
-                          </p>
-                          <div className="flex items-center gap-2 mb-2">
-                            <Badge variant="outline">{listing.condition}</Badge>
-                          </div>
-                          <div className="flex items-center justify-between text-sm text-muted-foreground">
-                            <div className="flex items-center gap-1">
-                              <MapPin className="h-4 w-4" />
-                              {listing.location}
+                {loading && listings.length === 0
+                  ? Array.from({ length: 8 }).map((_, i) => (
+                      <ListingCardSkeleton key={i} layout="list" />
+                    ))
+                  : filteredListings.map((listing) => (
+                      <Card
+                        key={listing.id}
+                        className="overflow-hidden border-0 hover:shadow-md transition-shadow"
+                      >
+                        <CardContent className="p-0">
+                          <div className="flex">
+                            <div className="w-40 h-40 bg-muted">
+                              <img
+                                src={
+                                  (listing.images && listing.images.length > 0
+                                    ? listing.images[0]
+                                    : null) || "/placeholder.svg"
+                                }
+                                alt={listing.title}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                            <div className="p-4 flex-1">
+                              <h3 className="font-medium text-lg mb-1">
+                                {listing.title}
+                              </h3>
+                              <p className="text-xl font-bold text-green-600 mb-2">
+                                Ksh{listing.price}
+                              </p>
+                              <p className="text-sm text-muted-foreground mb-3">
+                                {listing.description}
+                              </p>
+                              <div className="flex items-center gap-2 mb-2">
+                                <Badge variant="outline">
+                                  {listing.condition}
+                                </Badge>
+                              </div>
+                              <div className="flex items-center justify-between text-sm text-muted-foreground">
+                                <div className="flex items-center gap-1">
+                                  <MapPin className="h-4 w-4" />
+                                  {listing.location}
+                                </div>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                        </CardContent>
+                      </Card>
+                    ))}
               </div>
             )}
             {/* Loading indicator for infinite scroll */}

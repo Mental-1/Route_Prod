@@ -12,13 +12,13 @@ import dynamic from "next/dynamic";
 const MapComponent = dynamic(() => import("@/components/map-component"), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-[calc(100vh-4rem)] bg-muted flex items-center justify-center">
+    <div className="w-full h-full bg-muted flex items-center justify-center">
       Loading map...
     </div>
   ),
 });
 
-// TODO: Replace with actual data fetching logic  for nearby listing using the postgis API in supabase
+// TODO: Replace with actual data fetching logic for nearby listings using the postgis API in supabase
 const nearbyListings = [
   {
     id: 1,
@@ -31,6 +31,11 @@ const nearbyListings = [
   },
 ];
 
+/**
+ * Renders a page with a sidebar of nearby item listings and an interactive map centered on the user's location.
+ *
+ * The sidebar allows users to search and filter listings by distance, select a listing, and toggle its visibility. The map displays the user's current location (or a default location if unavailable) and highlights the selected listing.
+ */
 export default function MapViewPage() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -68,12 +73,12 @@ export default function MapViewPage() {
   }, []);
 
   return (
-    <div className="h-[calc(100vh-4rem)] flex">
+    <div className="h-screen-minus-header flex relative">
       {/* Sidebar */}
       <div
-        className={`${
+        className={`bg-background border-r transition-all duration-300 overflow-hidden flex flex-col absolute top-0 left-0 h-full z-20 ${
           sidebarOpen ? "w-80" : "w-0"
-        } bg-background border-r transition-all duration-300 overflow-hidden flex flex-col`}
+        }`}
       >
         <div className="p-4 border-b">
           <div className="flex items-center justify-between mb-4">
@@ -150,7 +155,7 @@ export default function MapViewPage() {
         <Button
           variant="secondary"
           size="sm"
-          className="absolute top-20 left-4 z-10"
+          className="absolute top-4 left-4 z-30"
           onClick={() => setSidebarOpen(true)}
         >
           <ChevronRight className="h-4 w-4 mr-1" />
@@ -159,7 +164,7 @@ export default function MapViewPage() {
       )}
 
       {/* Map */}
-      <div className="flex-1 relative">
+      <div className="flex-1 h-full w-full absolute top-0 left-0 z-10">
         {userLocation ? (
           <MapComponent
             userLocation={userLocation}

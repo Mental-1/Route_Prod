@@ -33,9 +33,21 @@ import {
   getAccount,
   updateAccount,
   deleteAccount,
+  updateEmail,
   updateAvatarUrl,
+  updatePassword,
+  enable2FA,
+  disable2FA,
+  verify2FA,
 } from "./actions/account-actions";
 import { useFileUpload } from "@/hooks/useFileUpload";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 // Type definitions
 interface FormData {
@@ -47,6 +59,11 @@ interface FormData {
   website: string;
 }
 
+/**
+ * Displays and manages the user's account page, allowing profile editing, avatar upload, password and email changes, two-factor authentication management, and account deletion.
+ *
+ * Renders profile information, account security settings, verification status, and provides interactive modals for updating sensitive information and enabling or disabling security features.
+ */
 export default function AccountPage() {
   const { user, profile, isLoading } = useAuth();
   const [saving, setSaving] = useState(false);
@@ -55,6 +72,22 @@ export default function AccountPage() {
   const { uploadFile, uploading: isUploading } = useFileUpload({
     uploadType: "profile",
   });
+
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [passwordSaving, setPasswordSaving] = useState(false);
+
+  const [show2FAModal, setShow2FAModal] = useState(false);
+  const [is2FAEnabled, setIs2FAEnabled] = useState(false);
+  const [qrCode, setQrCode] = useState<string | null>(null);
+  const [verificationCode, setVerificationCode] = useState("");
+  const [twoFASaving, setTwoFASaving] = useState(false);
+
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [newEmail, setNewEmail] = useState("");
+  const [emailSaving, setEmailSaving] = useState(false);
 
   useEffect(() => {
     const fetchAccountData = async () => {
@@ -113,6 +146,121 @@ export default function AccountPage() {
           variant: "destructive",
         });
       }
+    }
+  };
+
+  const handleChangePassword = async () => {
+    if (newPassword !== confirmNewPassword) {
+      toast({
+        title: "Error",
+        description: "New passwords do not match.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setPasswordSaving(true);
+    const { success, message } = await updatePassword(
+      currentPassword,
+      newPassword,
+    );
+    setPasswordSaving(false);
+    if (success) {
+      toast({
+        title: "Success",
+        description: message,
+      });
+      setShowPasswordModal(false);
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmNewPassword("");
+    } else {
+      toast({
+        title: "Error",
+        description: message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleEmailChange = async () => {
+    setEmailSaving(true);
+    const { success, message } = await updateEmail(newEmail);
+    setEmailSaving(false);
+    if (success) {
+      toast({
+        title: "Success",
+        description: message,
+      });
+      setShowEmailModal(false);
+      setNewEmail("");
+    } else {
+      toast({
+        title: "Error",
+        description: message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleEnable2FA = async () => {
+    setTwoFASaving(true);
+    const { success, message, qrCode } = await enable2FA();
+    setTwoFASaving(false);
+    if (success && qrCode) {
+      setQrCode(qrCode);
+      toast({
+        title: "Success",
+        description: message,
+      });
+    } else {
+      toast({
+        title: "Error",
+        description: message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleVerify2FA = async () => {
+    setTwoFASaving(true);
+    const { success, message } = await verify2FA(verificationCode);
+    setTwoFASaving(false);
+    if (success) {
+      setIs2FAEnabled(true);
+      setShow2FAModal(false);
+      setQrCode(null);
+      setVerificationCode("");
+      toast({
+        title: "Success",
+        description: message,
+      });
+    } else {
+      toast({
+        title: "Error",
+        description: message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDisable2FA = async () => {
+    setTwoFASaving(true);
+    const { success, message } = await disable2FA(verificationCode);
+    setTwoFASaving(false);
+    if (success) {
+      setIs2FAEnabled(false);
+      setShow2FAModal(false);
+      setVerificationCode("");
+      toast({
+        title: "Success",
+        description: message,
+      });
+    } else {
+      toast({
+        title: "Error",
+        description: message,
+        variant: "destructive",
+      });
     }
   };
 
@@ -244,17 +392,17 @@ export default function AccountPage() {
                 </div>
                 <div className="grid grid-cols-3 gap-4 text-center pt-4 border-t">
                   <div>
-                    <p className="text-2xl font-bold text-primary">23</p>
+                    <p className="text-2xl font-bold text-primary">0</p>
                     <p className="text-xs text-muted-foreground">Items Sold</p>
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-primary">8</p>
+                    <p className="text-2xl font-bold text-primary">0</p>
                     <p className="text-xs text-muted-foreground">
                       Active Listings
                     </p>
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-primary">15</p>
+                    <p className="text-2xl font-bold text-primary">0</p>
                     <p className="text-xs text-muted-foreground">Saved Items</p>
                   </div>
                 </div>
@@ -388,7 +536,11 @@ export default function AccountPage() {
                       {user?.email}
                     </p>
                   </div>
-                  <Button variant="outline" size="sm">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowEmailModal(true)}
+                  >
                     Change
                   </Button>
                 </div>
@@ -400,7 +552,11 @@ export default function AccountPage() {
                       Last changed 3 months ago
                     </p>
                   </div>
-                  <Button variant="outline" size="sm">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowPasswordModal(true)}
+                  >
                     Change
                   </Button>
                 </div>
@@ -412,8 +568,12 @@ export default function AccountPage() {
                       Add an extra layer of security
                     </p>
                   </div>
-                  <Button variant="outline" size="sm">
-                    Enable
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShow2FAModal(true)}
+                  >
+                    {is2FAEnabled ? "Disable" : "Enable"}
                   </Button>
                 </div>
               </CardContent>
@@ -505,6 +665,162 @@ export default function AccountPage() {
         </div>
       </div>
       <Toaster />
+
+      {/* Password Change Modal */}
+      <Dialog open={showPasswordModal} onOpenChange={setShowPasswordModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Change Password</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="current-password">Current Password</Label>
+              <Input
+                id="current-password"
+                type="password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="new-password">New Password</Label>
+              <Input
+                id="new-password"
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirm-new-password">Confirm New Password</Label>
+              <Input
+                id="confirm-new-password"
+                type="password"
+                value={confirmNewPassword}
+                onChange={(e) => setConfirmNewPassword(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowPasswordModal(false)}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleChangePassword} disabled={passwordSaving}>
+              {passwordSaving ? "Saving..." : "Change Password"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 2FA Modal */}
+      <Dialog open={show2FAModal} onOpenChange={setShow2FAModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Two-Factor Authentication</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {!is2FAEnabled ? (
+              qrCode ? (
+                <div className="text-center">
+                  <p className="mb-4">
+                    Scan the QR code with your authenticator app:
+                  </p>
+                  <img
+                    src={qrCode}
+                    alt="QR Code"
+                    className="mx-auto w-48 h-48"
+                  />
+                  <div className="space-y-2 mt-4">
+                    <Label htmlFor="verification-code">Verification Code</Label>
+                    <Input
+                      id="verification-code"
+                      value={verificationCode}
+                      onChange={(e) => setVerificationCode(e.target.value)}
+                      placeholder="Enter code from app"
+                    />
+                  </div>
+                  <Button
+                    onClick={handleVerify2FA}
+                    disabled={twoFASaving}
+                    className="mt-4"
+                  >
+                    {twoFASaving ? "Verifying..." : "Verify and Enable 2FA"}
+                  </Button>
+                </div>
+              ) : (
+                <div className="text-center">
+                  <p className="mb-4">
+                    Enable two-factor authentication for added security.
+                  </p>
+                  <Button onClick={handleEnable2FA} disabled={twoFASaving}>
+                    {twoFASaving ? "Generating..." : "Enable 2FA"}
+                  </Button>
+                </div>
+              )
+            ) : (
+              <div className="text-center">
+                <p className="mb-4">
+                  Two-Factor Authentication is currently enabled.
+                </p>
+                <div className="space-y-2 mt-4">
+                  <Label htmlFor="disable-code">Verification Code</Label>
+                  <Input
+                    id="disable-code"
+                    value={verificationCode}
+                    onChange={(e) => setVerificationCode(e.target.value)}
+                    placeholder="Enter code from app to disable"
+                  />
+                </div>
+                <Button
+                  onClick={handleDisable2FA}
+                  disabled={twoFASaving}
+                  variant="destructive"
+                  className="mt-4"
+                >
+                  {twoFASaving ? "Disabling..." : "Disable 2FA"}
+                </Button>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShow2FAModal(false)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Email Change Modal */}
+      <Dialog open={showEmailModal} onOpenChange={setShowEmailModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Change Email Address</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="new-email">New Email</Label>
+              <Input
+                id="new-email"
+                type="email"
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+                placeholder="Enter your new email address"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEmailModal(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleEmailChange} disabled={emailSaving}>
+              {emailSaving ? "Saving..." : "Change Email"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

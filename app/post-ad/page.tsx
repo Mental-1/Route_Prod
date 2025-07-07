@@ -83,6 +83,13 @@ const paymentTiers = [
   },
 ];
 
+/**
+ * Renders the multi-step ad posting page, managing form state, step navigation, data fetching, payment processing, and submission.
+ *
+ * Handles category and subcategory loading, form data updates, location detection, payment tier and method selection, and displays the appropriate UI for each step. On submission, processes payment if required, submits the listing, and provides user feedback via toast notifications.
+ *
+ * @returns The complete ad posting page component.
+ */
 export default function PostAdPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [subcategories, setSubcategories] = useState<SubCategory[]>([]);
@@ -179,7 +186,12 @@ export default function PostAdPage() {
         );
 
         if (!paymentResult) {
-          throw new Error("Payment Failed");
+          toast({
+            title: "Payment Failed",
+            description: "Your payment could not be processed. Please try again.",
+            variant: "destructive",
+          });
+          return;
         }
       }
       //Step 2
@@ -214,9 +226,12 @@ export default function PostAdPage() {
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(
-          result.error || "An error occurred while submitting your ad.",
-        );
+        toast({
+          title: "Failed to Create Listing",
+          description: result.error || "An error occurred while submitting your ad.",
+          variant: "destructive",
+        });
+        return;
       }
 
       // We show a success message if the ad was successfully submitted
@@ -405,7 +420,11 @@ export default function PostAdPage() {
   );
 }
 
-// Step Components
+/**
+ * Renders the ad details step of the multi-step ad posting form, allowing users to enter information such as title, description, category, subcategory, price, condition, location, and negotiable status.
+ *
+ * Provides UI for selecting category and subcategory, entering price and condition, and setting location either manually or via automatic detection. Updates form data on user input and manages the location dialog state.
+ */
 function AdDetailsStep({
   formData,
   updateFormData,
@@ -540,7 +559,7 @@ function AdDetailsStep({
                   : formData.location || ""
               }
               onClick={() => setLocationDialogOpen(true)}
-              style={{ cursor: "pointer", background: "#15181e" }}
+              className="cursor-pointer bg-[#15181e]"
             />
           </div>
         </div>
@@ -943,9 +962,9 @@ function PaymentMethodStep({
 }
 
 /**
- * Displays a preview of the ad based on the current form data and selected category.
+ * Renders a summary preview of the advertisement using the current form data and selected category.
  *
- * Shows the ad's title, price, negotiable status, media thumbnails, description, category, condition, location, and selected payment plan.
+ * Displays the ad's title, price, negotiable status, up to four media thumbnails, description, category, condition, location, and selected payment plan. Also shows a notice regarding the Terms of Service and Privacy Policy.
  */
 function PreviewStep({
   formData,
@@ -958,7 +977,7 @@ function PreviewStep({
     paymentTiers.find((tier) => tier.id === formData.paymentTier) ||
     paymentTiers[0];
   const selectedCategory = categories.find(
-    (cat) => cat.id === formData.category,
+    (cat) => cat.id === parseInt(formData.category, 10),
   );
 
   // Helper for location display
