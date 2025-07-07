@@ -8,6 +8,7 @@ import Navigation from "@/components/navigation";
 import { Footer } from "@/components/footer";
 import { Toaster } from "@/components/ui/toaster";
 import ReactQueryClientProvider from "@/components/reactQueryClientProvider";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -15,7 +16,7 @@ export const metadata: Metadata = {
   title: "RouteMe - Classified Ads",
   description: "Find and post classified ads in your area",
   keywords:
-    "Jiji, OLX, classifieds, ads, marketplace, direction, rentals near me",
+    "Jiji, OLX, classifieds, ads, marketplace, direction, rentals near me,routteme",
 };
 
 /**
@@ -50,6 +51,7 @@ export default function RootLayout({
             </AuthProvider>
           </ThemeProvider>
         </ReactQueryClientProvider>
+        <SpeedInsights />
       </body>
     </html>
   );

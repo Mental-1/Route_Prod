@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
       sanitizedPhoneNumber = sanitizedPhoneNumber.substring(1);
     }
     if (sanitizedPhoneNumber.startsWith("0")) {
-      sanitizedPhoneNumber = "254" + sanitizedPhoneNumber.substring(1);
+      sanitizedPhoneNumber = `254${sanitizedPhoneNumber.substring(1)}`;
     }
 
     // M-Pesa STK Push implementation
