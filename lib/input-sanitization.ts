@@ -22,7 +22,7 @@ export function validateSqlInput(input: string): boolean {
     /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC|UNION|SCRIPT)\b)/gi,
     /(\b(OR|AND)\s+\d+\s*=\s*\d+)/gi,
     /(--|\/\*|\*\/|;)/g,
-    /(\b(CHAR|NCHAR|VARCHAR|NVARCHAR)\s*$$\s*\d+\s*$$)/gi,
+    /\b(CHAR|NCHAR|VARCHAR|NVARCHAR)\s*\(\s*\d+\s*\)/gi,
   ];
 
   return !sqlInjectionPatterns.some((pattern) => pattern.test(input));
