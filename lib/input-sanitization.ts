@@ -16,7 +16,11 @@ export function sanitizeInput(input: string): string {
   }).trim();
 }
 
-// SQL Injection Protection (additional layer beyond parameterized queries)
+/**
+ * Checks if the input string contains patterns commonly associated with SQL injection attempts.
+ *
+ * Returns `true` if the input does not match any SQL injection patterns, otherwise returns `false`.
+ */
 export function validateSqlInput(input: string): boolean {
   const sqlInjectionPatterns = [
     /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC|UNION|SCRIPT)\b)/gi,

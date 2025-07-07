@@ -3,6 +3,11 @@
 import { toast } from "@/components/ui/use-toast";
 import { getSupabaseServer } from "@/utils/supabase/server";
 
+/**
+ * Retrieves the current user's account data from the server.
+ *
+ * @returns The account data as a JSON object, or `null` if the request fails.
+ */
 export async function getAccount() {
   try {
     const response = await fetch("/api/account");
@@ -70,6 +75,11 @@ export async function deleteAccount() {
   }
 }
 
+/**
+ * Updates the user's profile picture by sending the new avatar URL to the server.
+ *
+ * Sends a PUT request to update the avatar URL for the specified user. Displays a toast notification indicating success or failure.
+ */
 export async function updateAvatarUrl(userId: string, avatarUrl: string) {
   try {
     const response = await fetch("/api/account/avatar", {
@@ -97,6 +107,12 @@ export async function updateAvatarUrl(userId: string, avatarUrl: string) {
   }
 }
 
+/**
+ * Updates the user's email address and triggers a verification email to the new address.
+ *
+ * @param newEmail - The new email address to set for the user
+ * @returns An object indicating success or failure, and a message describing the result
+ */
 export async function updateEmail(newEmail: string) {
   const supabase = await getSupabaseServer();
   const { data, error } = await supabase.auth.updateUser({
@@ -113,6 +129,13 @@ export async function updateEmail(newEmail: string) {
   return { success: true, message: "Verification email sent to your new address. Please verify to complete the change." };
 }
 
+/**
+ * Updates the user's password using Supabase authentication and signs the user out upon success.
+ *
+ * @param currentPassword - The user's current password (not verified in this implementation)
+ * @param newPassword - The new password to set for the user
+ * @returns An object indicating success or failure, with a message describing the outcome
+ */
 export async function updatePassword(
   currentPassword: string,
   newPassword: string,
@@ -146,6 +169,11 @@ export async function updatePassword(
   return { success: true, message: "Password updated successfully. Please log in with your new password." };
 }
 
+/**
+ * Initiates TOTP-based two-factor authentication enrollment for the current user.
+ *
+ * @returns An object indicating success or failure, a message describing the result, and the QR code string for TOTP setup if successful.
+ */
 export async function enable2FA() {
   const supabase = await getSupabaseServer();
   const { data, error } = await supabase.auth.mfa.enroll({
@@ -165,6 +193,14 @@ export async function enable2FA() {
   return { success: true, message: "Scan QR code to enable 2FA.", qrCode: data.totp.qr_code };
 }
 
+/**
+ * Verifies a TOTP-based two-factor authentication (2FA) setup using the provided code.
+ *
+ * Attempts to find an unverified TOTP factor and verifies it with the given code. Returns an object indicating success or failure, along with a relevant message.
+ *
+ * @param code - The TOTP code to verify the 2FA setup
+ * @returns An object with `success` and `message` properties describing the result
+ */
 export async function verify2FA(code: string) {
   const supabase = await getSupabaseServer();
   const { data, error: fetchError } = await supabase.auth.mfa.listFactors();
@@ -193,6 +229,12 @@ export async function verify2FA(code: string) {
   return { success: true, message: "2FA enabled successfully." };
 }
 
+/**
+ * Disables TOTP-based two-factor authentication (2FA) for the current user after verifying the provided code.
+ *
+ * @param code - The TOTP code to verify before disabling 2FA
+ * @returns An object indicating success or failure, with a corresponding message
+ */
 export async function disable2FA(code: string) {
   const supabase = await getSupabaseServer();
   const { data, error: fetchError } = await supabase.auth.mfa.listFactors();

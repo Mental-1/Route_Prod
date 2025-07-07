@@ -56,6 +56,11 @@ const defaultSettings: UserSettings = {
   },
 };
 
+/**
+ * Renders the user account settings page, allowing authenticated users to view and manage their notification, privacy, preference, and data settings.
+ *
+ * Displays loading indicators while user or settings data is being fetched. If the user is not authenticated, prompts for login or account creation. Provides controls for updating notification preferences, privacy options, language, currency, timezone, exporting user data, and deleting the account.
+ */
 export default function SettingsPage() {
   const { user, isLoading } = useAuth();
   const [settings, setSettings] = useState<UserSettings>(defaultSettings);

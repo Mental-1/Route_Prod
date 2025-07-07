@@ -31,6 +31,11 @@ const nearbyListings = [
   },
 ];
 
+/**
+ * Renders a page with a sidebar of nearby item listings and an interactive map centered on the user's location.
+ *
+ * The sidebar allows users to search and filter listings by distance, select a listing, and toggle its visibility. The map displays the user's current location (or a default location if unavailable) and highlights the selected listing.
+ */
 export default function MapViewPage() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");

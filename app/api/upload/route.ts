@@ -6,7 +6,7 @@ import { cookies } from "next/headers";
 /**
  * Handles authenticated file uploads via POST, storing files in Supabase Storage and returning their public URLs.
  *
- * Validates user authentication, file presence, size, and MIME type based on the provided `type` ("profile" or other). Stores the file in the appropriate Supabase Storage bucket with a unique filename and returns a JSON response containing the public URL, file metadata, and user ID. Responds with appropriate error messages and status codes for authentication, validation, or upload failures.
+ * Validates user authentication, file presence, size, and MIME type based on the provided `type` ("profile" or other). Processes image files to WebP format, generates a unique filename, and stores the file in the appropriate Supabase Storage bucket. Returns a JSON response with the public URL, file metadata, and user ID, or an error message with the relevant HTTP status code if validation or upload fails.
  */
 export async function POST(request: NextRequest) {
   try {
