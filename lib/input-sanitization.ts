@@ -16,17 +16,13 @@ export function sanitizeInput(input: string): string {
   }).trim();
 }
 
-/**
- * Checks if the input string contains patterns commonly associated with SQL injection attempts.
- *
- * Returns `true` if the input does not match any SQL injection patterns, otherwise returns `false`.
- */
+// SQL Injection Protection (additional layer beyond parameterized queries)
 export function validateSqlInput(input: string): boolean {
   const sqlInjectionPatterns = [
     /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC|UNION|SCRIPT)\b)/gi,
     /(\b(OR|AND)\s+\d+\s*=\s*\d+)/gi,
     /(--|\/\*|\*\/|;)/g,
-    /\b(CHAR|NCHAR|VARCHAR|NVARCHAR)\s*\(\s*\d+\s*\)/gi,
+    /(\b(CHAR|NCHAR|VARCHAR|NVARCHAR)\s*$$\s*\d+\s*$$)/gi,
   ];
 
   return !sqlInjectionPatterns.some((pattern) => pattern.test(input));

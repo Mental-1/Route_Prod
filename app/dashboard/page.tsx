@@ -11,13 +11,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
-import { Check, Clock, Eye, Plus, Star } from "lucide-react";
+import { Check, Clock, DollarSign, Eye, Plus, Star } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 
 /**
- * Renders the authenticated user's dashboard, displaying profile details, statistics, recent activity, and navigation shortcuts.
+ * Displays the authenticated user's dashboard with profile information, statistics, recent activity, and navigation actions.
  *
- * Redirects unauthenticated users to the sign-in page. Shows loading feedback while authentication state is being determined. All statistics and activity data are currently placeholders and display empty or zero values.
+ * Redirects unauthenticated users to the sign-in page. Fetches and presents user profile data, mock statistics, and recent activities. Provides quick access to account management, listings, transactions, messages, and settings.
  */
 export default function DashboardPage() {
   const router = useRouter();
@@ -25,15 +25,109 @@ export default function DashboardPage() {
 
   // Mock data for listings Use listings API to fetch profile tagged active, pending and expired listings.
   // Transactions will also be fetched within the same request to reduce number of API calls.
-  const activeListings = [];
+  const activeListings = [
+    {
+      id: 1,
+      title: "iPhone 13 Pro Max",
+      price: 899,
+      image: "/placeholder.svg?height=80&width=80",
+      views: 23,
+      created_at: "2023-06-01",
+    },
+    {
+      id: 2,
+      title: "Modern Sofa Set",
+      price: 450,
+      image: "/placeholder.svg?height=80&width=80",
+      views: 15,
+      created_at: "2023-06-05",
+    },
+  ];
 
-  const pendingListings = [];
+  const pendingListings = [
+    {
+      id: 3,
+      title: "Gaming Chair",
+      price: 180,
+      image: "/placeholder.svg?height=80&width=80",
+      created_at: "2023-06-07",
+    },
+  ];
 
-  const expiredListings = [];
+  const expiredListings = [
+    {
+      id: 4,
+      title: "Vintage Camera",
+      price: 120,
+      image: "/placeholder.svg?height=80&width=80",
+      views: 8,
+      created_at: "2023-05-01",
+      expired_at: "2023-06-01",
+    },
+  ];
 
-  const transactions = [];
+  const transactions = [
+    {
+      id: 1,
+      type: "sale",
+      item: "iPhone 13 Pro Max",
+      amount: 899,
+      date: "2023-06-02",
+      status: "completed",
+    },
+    {
+      id: 2,
+      type: "purchase",
+      item: "Wireless Headphones",
+      amount: 150,
+      date: "2023-05-28",
+      status: "completed",
+    },
+    {
+      id: 3,
+      type: "subscription",
+      item: "Premium Plan",
+      amount: 29,
+      date: "2023-06-01",
+      status: "active",
+    },
+  ];
 
-  const recentActivity = [];
+  const recentActivity = [
+    {
+      id: 1,
+      type: "sale",
+      title: "Item Sold",
+      description: "iPhone 13 Pro Max sold for $899",
+      amount: 899,
+      date: "2 hours ago",
+      icon: <Check className="h-4 w-4 text-green-500" />,
+    },
+    {
+      id: 2,
+      type: "message",
+      title: "New Message",
+      description: "Sarah is interested in your MacBook",
+      date: "4 hours ago",
+      icon: <Clock className="h-4 w-4 text-blue-500" />,
+    },
+    {
+      id: 3,
+      type: "view",
+      title: "Listing Viewed",
+      description: "Your sofa listing has 23 new views",
+      date: "6 hours ago",
+      icon: <Eye className="h-4 w-4 text-purple-500" />,
+    },
+    {
+      id: 4,
+      type: "listing",
+      title: "New Listing",
+      description: "Gaming Chair posted successfully",
+      date: "1 day ago",
+      icon: <Plus className="h-4 w-4 text-orange-500" />,
+    },
+  ];
 
   if (isLoading) {
     return (
@@ -116,9 +210,9 @@ export default function DashboardPage() {
                 </p>
                 <div className="flex items-center mt-1">
                   <Star className="h-4 w-4 fill-yellow-400 text-yellow-400 mr-1" />
-                  <span className="font-medium">{profile?.rating || 0}</span>
+                  <span className="font-medium">{profile?.rating || 4.8}</span>
                   <span className="text-muted-foreground text-sm ml-1">
-                    ({profile?.reviews_count || 0} reviews)
+                    ({profile?.reviews_count || 47} reviews)
                   </span>
                 </div>
               </div>
@@ -126,17 +220,17 @@ export default function DashboardPage() {
               <div className="grid grid-cols-3 gap-4 text-center mb-6">
                 <div>
                   {/* TODO: Write function to get the number of items sold, active listings, and saved items */}
-                  <p className="text-2xl font-bold text-primary">0</p>
+                  <p className="text-2xl font-bold text-primary">23</p>
                   <p className="text-xs text-muted-foreground">Items Sold</p>
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-primary">0</p>
+                  <p className="text-2xl font-bold text-primary">8</p>
                   <p className="text-xs text-muted-foreground">
                     Active Listings
                   </p>
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-primary">0</p>
+                  <p className="text-2xl font-bold text-primary">15</p>
                   <p className="text-xs text-muted-foreground">Saved Items</p>
                 </div>
               </div>
@@ -243,7 +337,7 @@ export default function DashboardPage() {
                     </svg>
                     Messages
                     <span className="ml-auto bg-primary text-primary-foreground text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                      0
+                      3
                     </span>
                   </Link>
                 </Button>
@@ -288,10 +382,10 @@ export default function DashboardPage() {
               </CardHeader>
               <CardContent>
                 <div className="flex items-center">
-                  <span className="text-muted-foreground mr-2 font-bold">KES</span>
-                  <div className="text-2xl font-bold">0</div>
+                  <DollarSign className="h-4 w-4 text-muted-foreground mr-2" />
+                  <div className="text-2xl font-bold">$2,847</div>
                   <span className="ml-2 text-xs text-green-500">
-                    +0% this month
+                    +12% this month
                   </span>
                 </div>
               </CardContent>
@@ -321,9 +415,9 @@ export default function DashboardPage() {
                     <rect width="7" height="7" x="14" y="14" rx="1"></rect>
                     <rect width="7" height="7" x="3" y="14" rx="1"></rect>
                   </svg>
-                  <div className="text-2xl font-bold">0</div>
+                  <div className="text-2xl font-bold">8</div>
                   <span className="ml-2 text-xs text-blue-500">
-                    0 new this week
+                    2 new this week
                   </span>
                 </div>
               </CardContent>
@@ -336,7 +430,7 @@ export default function DashboardPage() {
               <div>
                 <CardTitle>Recent Activity</CardTitle>
                 <CardDescription>
-                  Your latest activity on FoundIt
+                  Your latest activity on RouteMe
                 </CardDescription>
               </div>
               <Button variant="ghost" size="sm">
@@ -345,37 +439,31 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {recentActivity.length === 0 ? (
-                  <div className="text-center text-muted-foreground py-8">
-                    <p>No recent activity to display.</p>
-                  </div>
-                ) : (
-                  recentActivity.map((activity) => (
-                    <div key={activity.id} className="flex items-start">
-                      <div className="mr-4 mt-0.5">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
-                          {activity.icon}
-                        </div>
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between">
-                          <p className="font-medium">{activity.title}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {activity.date}
-                          </p>
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                          {activity.description}
-                        </p>
-                        {activity.amount && (
-                          <p className="text-sm font-medium text-green-600">
-                            +KES{activity.amount}
-                          </p>
-                        )}
+                {recentActivity.map((activity) => (
+                  <div key={activity.id} className="flex items-start">
+                    <div className="mr-4 mt-0.5">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
+                        {activity.icon}
                       </div>
                     </div>
-                  ))
-                )}
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <p className="font-medium">{activity.title}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {activity.date}
+                        </p>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        {activity.description}
+                      </p>
+                      {activity.amount && (
+                        <p className="text-sm font-medium text-green-600">
+                          +${activity.amount}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
             </CardContent>
           </Card>

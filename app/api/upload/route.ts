@@ -6,7 +6,7 @@ import { cookies } from "next/headers";
 /**
  * Handles authenticated file uploads via POST, storing files in Supabase Storage and returning their public URLs.
  *
- * Validates user authentication, file presence, size, and MIME type based on the provided `type` ("profile" or other). Processes image files to WebP format, generates a unique filename, and stores the file in the appropriate Supabase Storage bucket. Returns a JSON response with the public URL, file metadata, and user ID, or an error message with the relevant HTTP status code if validation or upload fails.
+ * Validates user authentication, file presence, size, and MIME type based on the provided `type` ("profile" or other). Stores the file in the appropriate Supabase Storage bucket with a unique filename and returns a JSON response containing the public URL, file metadata, and user ID. Responds with appropriate error messages and status codes for authentication, validation, or upload failures.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -17,7 +17,6 @@ export async function POST(request: NextRequest) {
     } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      console.error("Authentication error:", authError);
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -54,7 +53,7 @@ export async function POST(request: NextRequest) {
     if (!allowedTypes.includes(file.type)) {
       return NextResponse.json(
         {
-          error: `Invalid file type. Allowed types are: ${allowedTypes.join(", ")}`,
+          error: "Invalid file type",
         },
         { status: 400 },
       );
@@ -64,22 +63,14 @@ export async function POST(request: NextRequest) {
     let processedBuffer: Buffer;
     let processedExtension = "webp";
 
-    try {
-      if (file.type.startsWith("image/")) {
-        const imageBuffer = Buffer.from(await file.arrayBuffer());
-        processedBuffer = await sharp(imageBuffer)
-          .webp({ quality: 80 })
-          .toBuffer();
-      } else {
-        processedBuffer = Buffer.from(await file.arrayBuffer());
-        processedExtension = file.name.split(".").pop() || "";
-      }
-    } catch (processingError) {
-      console.error("File processing error:", processingError);
-      return NextResponse.json(
-        { error: "Failed to process file." },
-        { status: 500 },
-      );
+    if (file.type.startsWith("image/")) {
+      const imageBuffer = Buffer.from(await file.arrayBuffer());
+      processedBuffer = await sharp(imageBuffer)
+        .webp({ quality: 80 })
+        .toBuffer();
+    } else {
+      processedBuffer = Buffer.from(await file.arrayBuffer());
+      processedExtension = file.name.split(".").pop() || "";
     }
 
     // Generate unique filename
@@ -99,9 +90,9 @@ export async function POST(request: NextRequest) {
       });
 
     if (uploadError) {
-      console.error("Supabase upload error:", uploadError);
+      console.error("Upload error:", uploadError);
       return NextResponse.json(
-        { error: "Failed to upload file to storage. Please try again later." },
+        { error: "Failed to upload file to storage." },
         { status: 500 },
       );
     }
@@ -110,21 +101,15 @@ export async function POST(request: NextRequest) {
     } = supabase.storage.from(bucket).getPublicUrl(filePath);
 
     return NextResponse.json({
-      message: "File uploaded successfully",
       url: publicUrl,
       filename: filePath,
       size: processedBuffer.length,
-      type: file.type.startsWith("image/")
-        ? `image/${processedExtension}`
-        : file.type,
+      type: `image/${processedExtension}`,
       bucket: bucket,
       user: user.id,
     });
   } catch (error) {
-    console.error("Unhandled upload error:", error);
-    return NextResponse.json(
-      { error: "An unexpected error occurred during upload." },
-      { status: 500 },
-    );
+    console.error("Upload error:", error);
+    return NextResponse.json({ error: "Upload failed" }, { status: 500 });
   }
 }

@@ -29,7 +29,7 @@ const createListingSchema = z.object({
   }),
   category: z.number().min(1),
   subcategory: z.number().optional(),
-  condition: z.enum(["new", "used", "like-new", "refurbished"]),
+  condition: z.enum(["new", "used", "refurbished"]),
   location: createSanitizedString({ min: 2, max: 100 }),
   latitude: z.number().min(-90).max(90).optional(),
   longitude: z.number().min(-180).max(180).optional(),
@@ -131,15 +131,15 @@ async function processImages(imageUrls: string[], userId: string) {
 }
 
 /**
- * Handles the complete workflow for creating a new listing, including validation, authentication, rate limiting, payment confirmation, auditing, and database insertion.
+ * Creates a new listing with validated input, user authentication, rate limiting, and auditing.
  *
- * Validates the provided listing data, enforces user plan and rate limits, checks payment status, processes images, and inserts the listing into the database. Updates the user's profile listing count, logs audit events, generates a slug, and triggers cache revalidation for relevant pages. Returns a success response with the new listing's ID and slug, or a failure response with error details.
+ * Validates the provided listing data, enforces user plan and rate limits, processes images, and inserts the listing into the database. Updates the user's profile listing count, logs audit events, generates a slug, and triggers cache revalidation for relevant pages.
  *
- * @param formData - The listing details, associated image URLs, and payment confirmation status.
+ * @param formData - The listing details and associated image URLs to be created.
  * @returns An object indicating success or failure, with the new listing's ID and slug on success.
  */
 export async function createListingAction(
-  formData: AdDetailsFormData & { mediaUrls: string[]; paymentConfirmed: boolean },
+  formData: AdDetailsFormData & { mediaUrls: string[] },
 ): Promise<ActionResponse<{ id: string; slug: string }>> {
   try {
     const headersList = await headers();
@@ -198,13 +198,6 @@ export async function createListingAction(
 
     const validatedData = validationResult.data;
 
-    if (!formData.paymentConfirmed) {
-      return {
-        success: false,
-        message: "Payment failed. Please try again.",
-      };
-    }
-
     const { category, subcategory } = await validateCategories(
       validatedData.category,
       validatedData.subcategory,
@@ -235,7 +228,7 @@ export async function createListingAction(
       images: processedImages,
       user_id: user.id,
       status: "active",
-      payment_status: "paid",
+      payment_status: "free",
       plan: plan,
       views: 0,
       created_at: new Date().toISOString(),
@@ -249,17 +242,7 @@ export async function createListingAction(
       .select()
       .single();
 
-    if (error) {
-      await auditLogger.log({
-        action: "create_listing_failed",
-        resource_type: "listing",
-        metadata: { error: error.message },
-      });
-      return {
-        success: false,
-        message: "Failed to create listing. Please try again later.",
-      };
-    }
+    if (error) throw error;
 
     await supabase
       .from("profiles")
