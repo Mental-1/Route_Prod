@@ -4,9 +4,9 @@ import { mpesaPaymentSchema } from "@/lib/validations";
 import { cookies } from "next/headers";
 
 /**
- * Handles M-Pesa payment initiation via a POST request.
+ * Initiates an M-Pesa STK Push payment in response to a POST request.
  *
- * Validates the request body, authenticates the user, obtains an M-Pesa access token, and initiates an STK Push payment request. On success, records the transaction in the database and returns payment initiation details. Returns appropriate error responses for authentication, validation, or payment initiation failures.
+ * Validates the request body, authenticates the user, sanitizes the phone number, obtains an M-Pesa access token, and sends an STK Push payment request to Safaricom. On successful initiation, records the transaction in the database and returns payment initiation details. Returns appropriate error responses for authentication, validation, or payment initiation failures.
  *
  * @returns A JSON response indicating success with payment and transaction details, or an error message with the appropriate HTTP status code.
  */

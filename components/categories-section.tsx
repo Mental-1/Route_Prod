@@ -33,9 +33,9 @@ const fallbackCategories = [
 ];
 
 /**
- * Displays a section with a grid of category cards, fetching data from the API and falling back to predefined categories if needed.
+ * Renders a section displaying a grid of category cards, fetching category data from the API and falling back to static categories if unavailable.
  *
- * Renders a loading skeleton while fetching, and shows each category as a clickable card linking to filtered listings. Includes a header with a "View All" button.
+ * Shows a loading skeleton while fetching data. Each card links to a filtered listings page for the selected category. Includes a header with a "View All" button that navigates to the listings page.
  */
 export default function CategoriesSection() {
   const { data, isLoading, isError } = useQuery({

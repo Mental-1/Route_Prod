@@ -15,9 +15,9 @@ import { Check, Clock, Eye, Plus, Star } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 
 /**
- * Displays the authenticated user's dashboard with profile information, statistics, recent activity, and navigation actions.
+ * Renders the authenticated user's dashboard, displaying profile details, statistics, recent activity, and navigation shortcuts.
  *
- * Redirects unauthenticated users to the sign-in page. Fetches and presents user profile data, mock statistics, and recent activities. Provides quick access to account management, listings, transactions, messages, and settings.
+ * Redirects unauthenticated users to the sign-in page. Shows loading feedback while authentication state is being determined. All statistics and activity data are currently placeholders and display empty or zero values.
  */
 export default function DashboardPage() {
   const router = useRouter();
