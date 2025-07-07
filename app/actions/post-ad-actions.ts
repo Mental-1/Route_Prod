@@ -29,7 +29,7 @@ const createListingSchema = z.object({
   }),
   category: z.number().min(1),
   subcategory: z.number().optional(),
-  condition: z.enum(["new", "used", "refurbished"]),
+  condition: z.enum(["new", "used", "like-new", "refurbished"]),
   location: createSanitizedString({ min: 2, max: 100 }),
   latitude: z.number().min(-90).max(90).optional(),
   longitude: z.number().min(-180).max(180).optional(),
@@ -139,7 +139,10 @@ async function processImages(imageUrls: string[], userId: string) {
  * @returns An object indicating success or failure, with the new listing's ID and slug on success.
  */
 export async function createListingAction(
-  formData: AdDetailsFormData & { mediaUrls: string[]; paymentConfirmed: boolean },
+  formData: AdDetailsFormData & {
+    mediaUrls: string[];
+    paymentConfirmed: boolean;
+  },
 ): Promise<ActionResponse<{ id: string; slug: string }>> {
   try {
     const headersList = await headers();
@@ -235,7 +238,7 @@ export async function createListingAction(
       images: processedImages,
       user_id: user.id,
       status: "active",
-      payment_status: "paid",
+      payment_status: plan === "free" ? "unpaid" : "paid",
       plan: plan,
       views: 0,
       created_at: new Date().toISOString(),

@@ -120,13 +120,24 @@ export async function updatePassword(
   const supabase = await getSupabaseServer();
   const { data: userResponse, error: userError } = await supabase.auth.getUser();
 
-  if (userError || !userResponse.user) {
-    return { success: false, message: "Authentication required." };
+  if (userError || !userResponse.user || !userResponse.user.email) {
+    return { success: false, message: "Authentication required or user email not found." };
   }
 
-  // Supabase's update user password function does not require current password
-  // For security, you might want to re-authenticate the user or verify current password on the server side
-  // For this example, we'll proceed directly with the update
+  const userEmail = userResponse.user.email;
+
+  // Re-authenticate the user with their current password
+  const { error: signInError } = await supabase.auth.signInWithPassword({
+    email: userEmail,
+    password: currentPassword,
+  });
+
+  if (signInError) {
+    console.error("Re-authentication failed:", signInError);
+    return { success: false, message: "Incorrect current password." };
+  }
+
+  // Proceed with password update only if re-authentication succeeds
   const { error } = await supabase.auth.updateUser({
     password: newPassword,
   });

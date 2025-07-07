@@ -94,8 +94,7 @@ export function filterNullValues<T>(array: (T | null | undefined)[]): T[] {
  * @returns True if the input is a valid email address; otherwise, false
  */
 export function validateEmail(email: string): boolean {
-  const emailRegex =
-    /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+  const emailRegex = /^(?!.*\.\.)([a-zA-Z0-9._%+-]+)@([a-zA-Z0-9.-]+)\.([a-zA-Z]{2,})$/;
   return emailRegex.test(email);
 }
 
