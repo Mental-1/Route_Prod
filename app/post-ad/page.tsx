@@ -540,7 +540,7 @@ function AdDetailsStep({
                   : formData.location || ""
               }
               onClick={() => setLocationDialogOpen(true)}
-              style={{ cursor: "pointer", background: "#15181e" }}
+              className="cursor-pointer bg-[#15181e]"
             />
           </div>
         </div>

@@ -2,9 +2,28 @@
 
 import { toast } from "@/components/ui/use-toast";
 
-interface settingsUpdate {
-  key: string;
-  value: any;
+export interface UserSettings {
+  notifications?: {
+    email_notifications?: boolean;
+    push_notifications?: boolean;
+    sms_notifications?: boolean;
+    marketing_emails?: boolean;
+    new_messages?: boolean;
+    listing_updates?: boolean;
+    price_alerts?: boolean;
+  };
+  privacy?: {
+    profile_visibility?: "public" | "private" | "friends";
+    show_phone?: boolean;
+    show_email?: boolean;
+    show_last_seen?: boolean;
+  };
+  preferences?: {
+    language?: string;
+    currency?: string;
+    timezone?: string;
+    theme?: string;
+  };
 }
 
 export async function getSettings() {
@@ -25,7 +44,7 @@ export async function getSettings() {
   }
 }
 
-export async function saveSettings(settings: settingsUpdate) {
+export async function saveSettings(settings: UserSettings) {
   try {
     const response = await fetch("/api/settings", {
       method: "POST",
