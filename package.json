@@ -54,6 +54,7 @@
     "@tanstack/react-query": "^5.81.2",
     "@types/leaflet": "^1.9.18",
     "@vercel/blob": "latest",
+    "@vercel/speed-insights": "^1.2.0",
     "autoprefixer": "^10.4.21",
     "axios": "^1.10.0",
     "browser-image-compression": "^2.0.2",
