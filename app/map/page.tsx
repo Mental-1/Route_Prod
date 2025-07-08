@@ -73,12 +73,10 @@ export default function MapViewPage() {
   }, []);
 
   return (
-    <div className="h-screen-minus-header flex relative">
+    <div className="flex flex-col md:flex-row h-full w-full">
       {/* Sidebar */}
       <div
-        className={`bg-background border-r transition-all duration-300 overflow-hidden flex flex-col absolute top-0 left-0 h-full z-20 ${
-          sidebarOpen ? "w-80" : "w-0"
-        }`}
+        className={`bg-background border-r transition-transform duration-300 ease-in-out flex flex-col h-full absolute top-0 left-0 z-20 md:relative md:translate-x-0 ${sidebarOpen ? "translate-x-0 w-80" : "-translate-x-full w-80"}`}
       >
         <div className="p-4 border-b">
           <div className="flex items-center justify-between mb-4">
@@ -155,7 +153,7 @@ export default function MapViewPage() {
         <Button
           variant="secondary"
           size="sm"
-          className="absolute top-4 left-4 z-30"
+          className="absolute top-4 left-4 z-30 md:hidden"
           onClick={() => setSidebarOpen(true)}
         >
           <ChevronRight className="h-4 w-4 mr-1" />
@@ -164,7 +162,7 @@ export default function MapViewPage() {
       )}
 
       {/* Map */}
-      <div className="flex-1 h-full w-full absolute top-0 left-0 z-10">
+      <div className="flex-1 relative z-10">
         {userLocation ? (
           <MapComponent
             userLocation={userLocation}

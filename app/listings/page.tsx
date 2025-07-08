@@ -45,7 +45,7 @@ export default function ListingsPage() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [priceRange, setPriceRange] = useState([0, 1000000]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [sortBy, setSortBy] = useState("relevance");
+  const [sortBy, setSortBy] = useState("newest");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   // Filters
@@ -68,6 +68,10 @@ export default function ListingsPage() {
   const [showBackToTop, setShowBackToTop] = useState(false);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadingRef = useRef<HTMLDivElement>(null);
+  const [userLocation, setUserLocation] = useState<{
+    lat: number;
+    lon: number;
+  } | null>(null);
   const [categoryError, setCategoryError] = useState<string | null>(null);
 
   // Fetch categories from API
@@ -79,6 +83,22 @@ export default function ListingsPage() {
         setCategoryError("Failed to load categories");
         setCategories([]);
       });
+  }, []);
+
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            lat: position.coords.latitude,
+            lon: position.coords.longitude,
+          });
+        },
+        (error) => {
+          console.error("Error getting user location:", error);
+        },
+      );
+    }
   }, []);
 
   // Fetch subcategories from API
@@ -108,8 +128,10 @@ export default function ListingsPage() {
           min: priceRange[0],
           max: priceRange[1],
         },
+        maxDistance: maxDistance[0],
       },
       sortBy,
+      userLocation,
     })
       .then((data) => {
         setListings(data);
@@ -148,8 +170,10 @@ export default function ListingsPage() {
           min: priceRange[0],
           max: priceRange[1],
         },
+        maxDistance: maxDistance[0],
       },
       sortBy,
+      userLocation,
     });
     setListings((prev) => [...prev, ...moreListings]);
     setHasMore(moreListings.length > 0);
@@ -224,6 +248,27 @@ export default function ListingsPage() {
     return true;
   });
 
+  // Sorting logic
+  const sortedListings = [...filteredListings].sort((a, b) => {
+    if (sortBy === "newest") {
+      const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+      const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+      return dateB - dateA;
+    }
+    if (sortBy === "price-low") {
+      return (a.price || 0) - (b.price || 0);
+    }
+    if (sortBy === "price-high") {
+      return (b.price || 0) - (a.price || 0);
+    }
+    if (sortBy === "distance" && userLocation) {
+      // Distance sorting is now handled by the backend via get_listings_within_radius
+      // This client-side sort will not be accurate without fetching distance from backend
+      return 0;
+    }
+    return 0;
+  });
+
   // Checkbox handlers
   const handleCategoryChange = (categoryId: string, checked: boolean) => {
     if (checked) {
@@ -254,7 +299,7 @@ export default function ListingsPage() {
       <div className="container px-4 py-6">
         <div className="flex flex-col md:flex-row gap-6">
           {/* Filter Sidebar - Desktop */}
-          <div className="hidden md:block w-64 space-y-6">
+          <div className="hidden md:block w-64 space-y-6 overflow-y-auto">
             <div className="font-medium text-lg">Filters</div>
 
             <div className="space-y-4">
@@ -630,9 +675,6 @@ export default function ListingsPage() {
                     <SelectValue placeholder="Sort by" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="relevance" onSelect={() => {}}>
-                      Relevance
-                    </SelectItem>
                     <SelectItem value="newest" onSelect={() => {}}>
                       Newest
                     </SelectItem>
@@ -675,7 +717,7 @@ export default function ListingsPage() {
                   ? Array.from({ length: 12 }).map((_, i) => (
                       <ListingCardSkeleton key={i} layout="grid" />
                     ))
-                  : filteredListings.map((listing) => (
+                  : sortedListings.map((listing) => (
                       <Card
                         key={listing.id}
                         className="overflow-hidden border-0 hover:shadow-md transition-shadow"
@@ -727,7 +769,7 @@ export default function ListingsPage() {
                   ? Array.from({ length: 8 }).map((_, i) => (
                       <ListingCardSkeleton key={i} layout="list" />
                     ))
-                  : filteredListings.map((listing) => (
+                  : sortedListings.map((listing) => (
                       <Card
                         key={listing.id}
                         className="overflow-hidden border-0 hover:shadow-md transition-shadow"

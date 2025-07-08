@@ -23,7 +23,7 @@ export interface ListingsItem {
   views: number | null;
   category_id: number | null;
   subcategory_id: number | null;
-  createdAt: string | null;
+  created_at: string | null;
 }
 
 /**
@@ -82,6 +82,7 @@ export async function fetchListings({
   filters = {},
   sortBy = "created_at",
   sortOrder = "desc",
+  userLocation = null,
 }: {
   page?: number;
   pageSize?: number;
@@ -90,9 +91,11 @@ export async function fetchListings({
     subcategories?: number[];
     conditions?: string[];
     priceRange?: { min: number; max: number };
+    maxDistance?: number;
   };
   sortBy?: string;
   sortOrder?: "asc" | "desc";
+  userLocation?: { lat: number; lon: number } | null;
 } = {}): Promise<ListingsItem[]> {
   const supabase = getSupabaseClient();
 
@@ -123,14 +126,34 @@ export async function fetchListings({
       .gte("price", filters.priceRange.min)
       .lte("price", filters.priceRange.max);
   }
+
   const { data, error } = await query;
 
   if (error) {
-    console.error("Error fetching listings:", error?.message);
+    console.error("Error fetching listings:", error.message);
     throw new Error("Failed to fetch listings");
   }
 
-  return (data || []).map((listing) => ({
+  let filteredData = data || [];
+
+  if (userLocation && filters.maxDistance !== undefined) {
+    const { data: listingsInRadius, error: radiusError } = await supabase.rpc('get_listings_within_radius', {
+      user_latitude: userLocation.lat,
+      user_longitude: userLocation.lon,
+      radius_km: filters.maxDistance,
+    });
+
+    if (radiusError) {
+      console.error("Error fetching listings within radius:", radiusError.message);
+      throw new Error("Failed to fetch listings within radius");
+    }
+    
+    // Filter the already fetched data by the IDs returned from the RPC call
+    const listingsInRadiusIds = new Set(listingsInRadius.map(listing => listing.id));
+    filteredData = filteredData.filter(listing => listingsInRadiusIds.has(listing.id));
+  }
+
+  return filteredData.map((listing) => ({
     id: listing.id,
     title: listing.title,
     description: listing.description,
@@ -141,6 +164,6 @@ export async function fetchListings({
     views: listing.views,
     category_id: listing.category_id,
     subcategory_id: listing.subcategory_id,
-    createdAt: listing.created_at,
+    created_at: listing.created_at,
   }));
 }

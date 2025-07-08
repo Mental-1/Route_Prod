@@ -1,5 +1,7 @@
 "use client";
 
+import { getDashboardData } from "./actions";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Card,
@@ -14,26 +16,36 @@ import Link from "next/link";
 import { Check, Clock, Eye, Plus, Star } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 
+import { ListingItem, TransactionItem, RecentActivityItem } from "@/lib/types/dashboard-types";
+
 /**
  * Renders the authenticated user's dashboard, displaying profile details, statistics, recent activity, and navigation shortcuts.
  *
  * Redirects unauthenticated users to the sign-in page. Shows loading feedback while authentication state is being determined. All statistics and activity data are currently placeholders and display empty or zero values.
  */
 export default function DashboardPage() {
-  const router = useRouter();
   const { user, profile, isLoading } = useAuth();
+  const [activeListings, setActiveListings] = useState<ListingItem[]>([]);
+  const [pendingListings, setPendingListings] = useState<ListingItem[]>([]);
+  const [expiredListings, setExpiredListings] = useState<ListingItem[]>([]);
+  const [transactions, setTransactions] = useState<TransactionItem[]>([]);
+  const [recentActivity, setRecentActivity] = useState<RecentActivityItem[]>([]);
+  const router = useRouter();
 
-  // Mock data for listings Use listings API to fetch profile tagged active, pending and expired listings.
-  // Transactions will also be fetched within the same request to reduce number of API calls.
-  const activeListings = [];
+  useEffect(() => {
+    const fetchData = async () => {
+      const data = await getDashboardData();
+      setActiveListings(data.activeListings);
+      setPendingListings(data.pendingListings);
+      setExpiredListings(data.expiredListings);
+      setTransactions(data.transactions);
+      setRecentActivity(data.recentActivity);
+    };
 
-  const pendingListings = [];
-
-  const expiredListings = [];
-
-  const transactions = [];
-
-  const recentActivity = [];
+    if (user) {
+      fetchData();
+    }
+  }, [user]);
 
   if (isLoading) {
     return (
@@ -125,7 +137,6 @@ export default function DashboardPage() {
 
               <div className="grid grid-cols-3 gap-4 text-center mb-6">
                 <div>
-                  {/* TODO: Write function to get the number of items sold, active listings, and saved items */}
                   <p className="text-2xl font-bold text-primary">0</p>
                   <p className="text-xs text-muted-foreground">Items Sold</p>
                 </div>
@@ -288,7 +299,9 @@ export default function DashboardPage() {
               </CardHeader>
               <CardContent>
                 <div className="flex items-center">
-                  <span className="text-muted-foreground mr-2 font-bold">KES</span>
+                  <span className="text-muted-foreground mr-2 font-bold">
+                    KES
+                  </span>
                   <div className="text-2xl font-bold">0</div>
                   <span className="ml-2 text-xs text-green-500">
                     +0% this month
@@ -336,7 +349,7 @@ export default function DashboardPage() {
               <div>
                 <CardTitle>Recent Activity</CardTitle>
                 <CardDescription>
-                  Your latest activity on FoundIt
+                  Your latest activity on RouteMe
                 </CardDescription>
               </div>
               <Button variant="ghost" size="sm">
@@ -369,7 +382,7 @@ export default function DashboardPage() {
                         </p>
                         {activity.amount && (
                           <p className="text-sm font-medium text-green-600">
-                            +KES{activity.amount}
+                            +KES {activity.amount}
                           </p>
                         )}
                       </div>

@@ -17,8 +17,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { ImageUpload } from "@/components/image-upload";
+import { MediaBufferInput } from "@/components/post-ad/media-buffer-input";
 import { toast } from "@/components/ui/use-toast";
+import { uploadBufferedMedia } from "./actions/upload-buffered-media";
+import { getSupabaseClient } from "@/utils/supabase/client";
 
 import {
   Dialog,
@@ -93,6 +95,7 @@ const paymentTiers = [
 export default function PostAdPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [subcategories, setSubcategories] = useState<SubCategory[]>([]);
+  const [allSubcategories, setAllSubcategories] = useState<SubCategory[]>([]);
   const [, setCategoriesLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [formData, setFormData] = useState({
@@ -132,27 +135,36 @@ export default function PostAdPage() {
 
   useEffect(() => {
     const fetchSubcategories = async () => {
-      if (formData.category) {
-        try {
-          const response = await fetch(
-            `/api/subcategories?category_id=${formData.category}`,
-          );
-          const data = await response.json();
-          setSubcategories(data);
-        } catch (error) {
-          console.error("Failed to fetch subcategories:", error);
-        }
-      } else {
-        setSubcategories([]);
+      try {
+        const response = await fetch("/api/subcategories");
+        const data = await response.json();
+        setAllSubcategories(data);
+      } catch (error) {
+        console.error("Failed to fetch subcategories:", error);
       }
     };
 
     fetchSubcategories();
-  }, [formData.category]);
+  }, []);
+
+  useEffect(() => {
+    if (formData.category) {
+      setSubcategories(
+        allSubcategories.filter(
+          (sub) => sub.parent_category_id === Number(formData.category),
+        ),
+      );
+    } else {
+      setSubcategories([]);
+    }
+  }, [formData.category, allSubcategories]);
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(0);
+  const selectedTier = paymentTiers.find(
+    (tier) => tier.id === formData.paymentTier,
+  ) || paymentTiers[0];
 
-  const handleNext = () => {
+  const handleAdvanceStep = () => {
     if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
     }
@@ -164,38 +176,142 @@ export default function PostAdPage() {
     }
   };
 
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [isPublishingListing, setIsPublishingListing] = useState(false);
+  const [paymentCompleted, setPaymentCompleted] = useState(false);
+  const [currentTransactionId, setCurrentTransactionId] = useState<string | null>(null);
+
   const handleSubmit = async () => {
-    try {
-      setIsSubmitted(true);
+    setIsSubmitted(true);
 
-      // Get selected details
-      const selectedTier = paymentTiers.find(
-        (tier) => tier.id === formData.paymentTier,
-      );
+    if (!selectedTier) {
+      toast({
+        title: "Error",
+        description: "Invalid payment tier selected.",
+        variant: "destructive",
+      });
+      setIsSubmitted(false);
+      return;
+    }
 
-      if (!selectedTier) {
-        throw new Error("Invalid payment tier");
-      }
-
-      // Step 1
-      let paymentResult = null;
-      if (selectedTier.price > 0) {
-        paymentResult = await processPayment(
+    // --- Payment Processing --- //
+    if (selectedTier.price > 0 && !paymentCompleted) {
+      setIsProcessingPayment(true);
+      try {
+        const paymentResult = await processPayment(
           selectedTier,
           formData.paymentMethod,
         );
 
-        if (!paymentResult) {
+        if (!paymentResult || !paymentResult.success) {
           toast({
             title: "Payment Failed",
             description:
+              paymentResult?.error ||
               "Your payment could not be processed. Please try again.",
             variant: "destructive",
           });
+          setIsProcessingPayment(false);
           return;
         }
+
+        setCurrentTransactionId(paymentResult.transactionId);
+        toast({
+          title: "Payment Initiated",
+          description: "Waiting for payment confirmation...",
+          variant: "default",
+        });
+
+        // Poll for transaction status
+        const checkPaymentStatus = async () => {
+          const supabase = getSupabaseClient();
+          const { data: transaction, error } = await supabase
+            .from("transactions")
+            .select("status")
+            .eq("id", paymentResult.transactionId)
+            .single();
+
+          if (error || !transaction) {
+            console.error("Error fetching transaction status:", error);
+            toast({
+              title: "Payment Status Error",
+              description: "Could not retrieve payment status.",
+              variant: "destructive",
+            });
+            setIsProcessingPayment(false);
+            setIsSubmitted(false);
+            return;
+          }
+
+          if (transaction.status === "completed") {
+            setPaymentCompleted(true);
+            toast({
+              title: "Payment Successful!",
+              description: "Your ad is being published...",
+              variant: "success",
+            });
+            setIsProcessingPayment(false);
+            // Automatically proceed to publishing after successful payment
+            // No need to return here, let the rest of handleSubmit execute
+          } else if (transaction.status === "failed" || transaction.status === "cancelled") {
+            toast({
+              title: "Payment Failed",
+              description: "Your payment was not successful. Please try again.",
+              variant: "destructive",
+            });
+            setIsProcessingPayment(false);
+            setIsSubmitted(false);
+            setCurrentTransactionId(null);
+            return; // Stop here, payment failed
+          } else {
+            // Still pending, poll again after a delay
+            setTimeout(checkPaymentStatus, 3000); // Poll every 3 seconds
+          }
+        };
+
+        checkPaymentStatus();
+        return; // Exit handleSubmit for now, it will be re-triggered by user or automatically after payment success
+      } catch (error) {
+        console.error("Payment processing error:", error);
+        toast({
+          title: "Payment Error",
+          description: "An unexpected error occurred during payment.",
+          variant: "destructive",
+        });
+        setIsProcessingPayment(false);
+        setIsSubmitted(false);
+        return;
       }
-      //Step 2
+    }
+
+    // --- Listing Publication (only if payment is free or already completed) --- //
+    // This part will only execute if selectedTier.price is 0 OR paymentCompleted is true
+    if (selectedTier.price > 0 && !paymentCompleted) {
+      // This case should ideally not be reached if the flow is correct
+      // It means a paid tier was selected but payment wasn't completed yet
+      toast({
+        title: "Action Required",
+        description: "Please complete the payment first.",
+        variant: "destructive",
+      });
+      setIsSubmitted(false);
+      return;
+    }
+
+    setIsPublishingListing(true);
+    toast({
+      title: "Publishing Ad",
+      description: "Your ad is being published. This may take a moment.",
+      variant: "default",
+    });
+
+    try {
+      const uploadedMediaResults = await uploadBufferedMedia(
+        formData.mediaUrls,
+        "listings",
+      );
+      const finalMediaUrls = uploadedMediaResults.map((res) => res.url);
+
       const listingData = {
         title: formData.title,
         description: formData.description,
@@ -206,7 +322,7 @@ export default function PostAdPage() {
           : null,
         location: formData.location,
         condition: formData.condition,
-        images: formData.mediaUrls,
+        images: finalMediaUrls, // Use uploaded URLs
         paymentTier: formData.paymentTier,
         paymentStatus: selectedTier.price > 0 ? "paid" : "free",
         paymentMethod: formData.paymentMethod,
@@ -216,6 +332,7 @@ export default function PostAdPage() {
         negotiable: formData.negotiable,
         plan_id: selectedTier.id,
       };
+
       const response = await fetch("api/listings", {
         method: "POST",
         headers: {
@@ -236,7 +353,6 @@ export default function PostAdPage() {
         return;
       }
 
-      // We show a success message if the ad was successfully submitted
       toast({
         title: "Success",
         description: "Your ad has been published successfully.",
@@ -248,20 +364,47 @@ export default function PostAdPage() {
       console.error("Submission Error", error);
       toast({
         title: "Error",
-        description: "An error occurred while submitting your ad.",
+        description: "An error occurred while publishing your ad.",
         variant: "destructive",
         duration: 5000,
       });
     } finally {
       setIsSubmitted(false);
+      setIsPublishingListing(false);
     }
   };
   const processPayment = async (tier: any, paymentMethod: string) => {
+    const supabase = getSupabaseClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return { success: false, error: "User not authenticated." };
+    }
+
+    // Create a pending transaction record
+    const { data: transaction, error: transactionError } = await supabase
+      .from("transactions")
+      .insert({
+        user_id: user.id,
+        payment_method: paymentMethod,
+        amount: tier.price,
+        status: "pending",
+        // Add other relevant transaction details here
+      })
+      .select()
+      .single();
+
+    if (transactionError || !transaction) {
+      console.error("Error creating pending transaction:", transactionError);
+      return { success: false, error: "Failed to create pending transaction." };
+    }
+
     const paymentData = {
       amount: tier.price,
       phoneNumber: formData.phoneNumber,
       email: formData.email,
       description: `RouteMe Listing - ${tier.name} Plan`,
+      transactionId: transaction.id, // Pass transaction ID to backend
     };
 
     let endpoint = "";
@@ -285,7 +428,7 @@ export default function PostAdPage() {
       },
       body: JSON.stringify(paymentData),
     });
-    return await response.json();
+    return { success: true, ...await response.json(), transactionId: transaction.id };
   };
 
   const updateFormData = (data: Partial<typeof formData>) => {
@@ -406,10 +549,19 @@ export default function PostAdPage() {
                 </Button>
 
                 {currentStep === steps.length - 1 ? (
-                  <Button onClick={handleSubmit}>Submit Ad</Button>
+                  <Button onClick={handleSubmit} disabled={isSubmitted}>
+                    Submit Ad
+                  </Button>
                 ) : (
-                  <Button onClick={handleNext}>
-                    Next
+                  <Button
+                    onClick={currentStep === 3 && selectedTier.price > 0 && !paymentCompleted
+                      ? handleSubmit
+                      : handleAdvanceStep}
+                    disabled={isSubmitted}
+                  >
+                    {currentStep === 3 && selectedTier.price > 0 && !paymentCompleted
+                      ? "Pay"
+                      : "Next"}
                     <ChevronRight className="h-4 w-4 ml-2" />
                   </Button>
                 )}
@@ -418,6 +570,30 @@ export default function PostAdPage() {
           </Card>
         </div>
       </div>
+
+      <Dialog open={isProcessingPayment} onOpenChange={setIsProcessingPayment}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogTitle>Processing Payment...</DialogTitle>
+          <div className="flex flex-col items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mb-4"></div>
+            <p className="text-muted-foreground">
+              Please wait while your payment is being processed.
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isPublishingListing} onOpenChange={setIsPublishingListing}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogTitle>Publishing Ad...</DialogTitle>
+          <div className="flex flex-col items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mb-4"></div>
+            <p className="text-muted-foreground">
+              Your ad is being published. This may take a moment.
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -656,58 +832,18 @@ function MediaUploadStep({
 
   // Show warning if user has uploaded more than their tier allows
   const imageUrls = (formData.mediaUrls || []).filter((url: string) => {
-    const extension = url.split(".").pop()?.toLowerCase();
-    return ["jpg", "jpeg", "png", "webp"].includes(extension || "");
+    return url.startsWith("data:image/") || (url.startsWith("blob:") && !url.includes("video"));
   });
 
   const videoUrls = (formData.mediaUrls || []).filter((url: string) => {
-    const extension = url.split(".").pop()?.toLowerCase();
-    return ["mp4", "webm", "mov"].includes(extension || "");
+    return url.startsWith("blob:") && url.includes("video");
   });
 
   const imageWarning = imageUrls.length > limits.images;
   const videoWarning = videoUrls.length > limits.videos;
 
-  const handleFileChange = async (urls: string[]) => {
-    const newVideos = urls.filter(
-      (url) =>
-        !formData.mediaUrls.includes(url) &&
-        ["mp4", "webm", "mov"].includes(
-          url.split(".").pop()?.toLowerCase() || "",
-        ),
-    );
-    // Filter out invalid videos before updating state
-    const validUrls = [...urls];
-
-    for (const videoUrl of newVideos) {
-      const video = document.createElement("video");
-      video.src = videoUrl;
-      try {
-        await new Promise((resolve, reject) => {
-          video.onloadedmetadata = () => {
-            if (video.duration > 30) {
-              toast({
-                title: "Video Too Long",
-                description: "Videos must be less than 30 seconds.",
-                variant: "destructive",
-              });
-              const index = validUrls.indexOf(videoUrl);
-              if (index > -1) validUrls.splice(index, 1);
-            }
-            video.remove(); // Clean up
-            resolve(undefined);
-          };
-          video.onerror = () => {
-            video.remove(); // Clean up
-            reject(new Error("Failed to load video"));
-          };
-        });
-      } catch (error) {
-        console.error("Video validation error:", error);
-      }
-    }
-
-    updateFormData({ mediaUrls: validUrls });
+  const handleFileChange = (urls: string[]) => {
+    updateFormData({ mediaUrls: urls });
   };
 
   return (
@@ -740,12 +876,11 @@ function MediaUploadStep({
         </div>
       )}
 
-      <ImageUpload
-        maxImages={10}
-        maxVideos={2}
+      <MediaBufferInput
+        maxImages={limits.images}
+        maxVideos={limits.videos}
         value={formData.mediaUrls || []}
-        onChangeAction={handleFileChange}
-        uploadType="listing"
+        onChange={handleFileChange}
       />
     </div>
   );
@@ -941,7 +1076,11 @@ function PaymentMethodStep({
               id="phoneNumber"
               placeholder="Enter your M-Pesa number"
               value={formData.phoneNumber}
-              onChange={(e) => updateFormData({ phoneNumber: e.target.value })}
+              onChange={(e) =>
+                updateFormData({
+                  phoneNumber: e.target.value.replace(/[^\d]/g, ""),
+                })
+              }
             />
           </div>
         )}
