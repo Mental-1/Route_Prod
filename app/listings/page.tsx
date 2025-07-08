@@ -712,7 +712,7 @@ export default function ListingsPage() {
 
             {/* Grid View */}
             {viewMode === "grid" && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {loading && listings.length === 0
                   ? Array.from({ length: 12 }).map((_, i) => (
                       <ListingCardSkeleton key={i} layout="grid" />

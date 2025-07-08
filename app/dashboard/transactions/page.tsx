@@ -26,6 +26,9 @@ interface Transaction {
   } | null;
 }
 
+import Link from "next/link";
+import { ChevronLeft, CalendarIcon, DownloadIcon } from "lucide-react";
+
 export default function TransactionsPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [page, setPage] = useState(1);
@@ -76,64 +79,74 @@ export default function TransactionsPage() {
   };
 
   return (
-    <Card className="mx-4 my-8 px-4 py-8">
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle>Transactions</CardTitle>
-          <div className="flex items-center space-x-4">
-            <DatePickerWithRange onDateChangeAction={setDateRange} />
-            <Button>Export</Button>
+    <div className="px-4 py-4">
+      <Link href="/dashboard" className="flex items-center text-sm text-muted-foreground hover:text-primary mb-4">
+        <ChevronLeft className="h-4 w-4 mr-1" />
+        Back to Dashboard
+      </Link>
+      <Card className="mx-auto px-4 py-8">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>Transactions</CardTitle>
+            <div className="flex items-center space-x-2 md:space-x-4">
+              <DatePickerWithRange onDateChangeAction={setDateRange} />
+              {/* Export Button */}
+              <Button>
+                <DownloadIcon className="h-4 w-4 mr-0 md:mr-2" />
+                <span className="hidden md:inline">Export</span>
+              </Button>
+            </div>
           </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Listing ID</TableHead>
-              <TableHead>Payment Method</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Amount</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {transactions.map((transaction) => (
-              <TableRow key={transaction.id}>
-                <TableCell>{transaction.listings?.title || "N/A"}</TableCell>
-                <TableCell>{transaction.payment_method}</TableCell>
-                <TableCell>
-                  {new Date(transaction.created_at).toLocaleString()}
-                </TableCell>
-                <TableCell>
-                  <span className={getStatusClass(transaction.status)}>
-                    {transaction.status}
-                  </span>
-                </TableCell>
-                <TableCell>KES {transaction.amount.toFixed(2)}</TableCell>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Listing ID</TableHead>
+                <TableHead>Payment Method</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Amount</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-        <div className="flex items-center justify-end space-x-2 py-4">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setPage(page - 1)}
-            disabled={page === 1}
-          >
-            Previous
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setPage(page + 1)}
-            disabled={page === totalPages}
-          >
-            Next
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+            </TableHeader>
+            <TableBody>
+              {transactions.map((transaction) => (
+                <TableRow key={transaction.id}>
+                  <TableCell>{transaction.listings?.title || "N/A"}</TableCell>
+                  <TableCell>{transaction.payment_method}</TableCell>
+                  <TableCell>
+                    {new Date(transaction.created_at).toLocaleString()}
+                  </TableCell>
+                  <TableCell>
+                    <span className={getStatusClass(transaction.status)}>
+                      {transaction.status}
+                    </span>
+                  </TableCell>
+                  <TableCell>KES {transaction.amount.toFixed(2)}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+          <div className="flex items-center justify-end space-x-2 py-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage(page - 1)}
+              disabled={page === 1}
+            >
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage(page + 1)}
+              disabled={page === totalPages}
+            >
+              Next
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
