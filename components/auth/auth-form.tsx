@@ -5,6 +5,7 @@ import { z } from "zod";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { getSupabaseClient } from "@/utils/supabase/client";
+import { AuthError } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,6 +22,13 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, Loader2, Eye, EyeOff } from "lucide-react";
 import { useToast } from "../ui/use-toast";
 import Link from "next/link";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const signInSchema = z.object({
   email: z.string().email(),
@@ -57,6 +65,10 @@ export function AuthForm() {
   const [message, setMessage] = useState<string | null>(null);
   const [authMode, setAuthMode] = useState<"sign-in" | "sign-up">("sign-in");
   const [showPassword, setShowPassword] = useState(false);
+  const [show2FAModal, setShow2FAModal] = useState(false);
+  const [factorId, setFactorId] = useState<string | null>(null);
+  const [challengeId, setChallengeId] = useState<string | null>(null);
+  const [twoFACode, setTwoFACode] = useState("");
   const { toast } = useToast();
   const supabase = getSupabaseClient();
 
@@ -84,7 +96,23 @@ export function AuthForm() {
         password,
       });
 
-      if (error) throw error;
+      if (error) {
+        if (error.message === "A multi-factor authentication challenge is required") {
+          const mfaError = error as AuthError & { next_step?: { type: string; challenge_id: string; factor_id: string; } };
+          if (mfaError.next_step && mfaError.next_step.type === "mfa_required" && mfaError.next_step.challenge_id && mfaError.next_step.factor_id) {
+            setChallengeId(mfaError.next_step.challenge_id);
+            setFactorId(mfaError.next_step.factor_id);
+            setShow2FAModal(true);
+            setMessage("Multi-factor authentication required. Please enter your 2FA code.");
+            setLoading(false);
+            return;
+          } else {
+            throw new Error("MFA required but missing challenge or factor ID.");
+          }
+        } else {
+          throw error;
+        }
+      }
 
       if (data.session) {
         const res = await fetch("/auth/callback", {
@@ -106,6 +134,48 @@ export function AuthForm() {
       }
     } catch (error: any) {
       setError(error.message || "An error occurred during sign in");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handle2FASubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    if (!factorId || !challengeId) {
+      setError("2FA factor ID or challenge ID is missing.");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/auth/verify-2fa', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ factorId, challengeId, code: twoFACode }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to verify 2FA code');
+      }
+
+      if (result.success) {
+        setMessage("2FA code verified successfully. Signing in...");
+        setShow2FAModal(false);
+        // After successful 2FA verification, the user should be signed in.
+        // Supabase's challengeAndVerify should handle the session update.
+        router.push("/");
+      } else {
+        setError("Invalid 2FA code.");
+      }
+    } catch (error: any) {
+      setError(error.message || "An error occurred during 2FA verification");
     } finally {
       setLoading(false);
     }
@@ -424,6 +494,45 @@ export function AuthForm() {
             : "Already have an account? Switch to Sign In"}
         </p>
       </CardFooter>
+
+      <Dialog open={show2FAModal} onOpenChange={setShow2FAModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Enter 2FA Code</DialogTitle>
+            <DialogDescription>
+              Please enter the 6-digit code from your authenticator app.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handle2FASubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="two-fa-code">2FA Code</Label>
+              <Input
+                id="two-fa-code"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={6}
+                value={twoFACode}
+                onChange={(e) => setTwoFACode(e.target.value)}
+                required
+              />
+            </div>
+            {error && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                "Verify Code"
+              )}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
