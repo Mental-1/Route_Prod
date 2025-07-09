@@ -18,14 +18,21 @@ import {
 export function DatePickerWithRange({
   className,
   onDateChangeAction,
+  initialRange,
+  placeholder = "Pick a date",
 }: React.HTMLAttributes<HTMLDivElement> & {
   onDateChangeAction: (date: DateRange | undefined) => void;
+  initialRange?: DateRange;
+  placeholder?: string;
 }) {
-  const [date, setDate] = React.useState<DateRange | undefined>({
-    from: new Date(2022, 0, 20),
-    to: addDays(new Date(2022, 0, 20), 20),
-  });
+  const [date, setDate] = React.useState<DateRange | undefined>(initialRange);
   const isMobile = useMediaQuery("(max-width: 768px)");
+
+  React.useEffect(() => {
+    if (date) {
+      onDateChangeAction(date);
+    }
+  }, [date]);
 
   return (
     <div className={cn("grid gap-2", className)}>
@@ -41,8 +48,8 @@ export function DatePickerWithRange({
             )}
           >
             <CalendarDays className="mr-2 h-4 w-4" />
-            {!isMobile && (
-              date?.from ? (
+            {!isMobile &&
+              (date?.from ? (
                 date.to ? (
                   <>
                     {format(date.from, "LLL dd, y")} -{","}
@@ -53,8 +60,7 @@ export function DatePickerWithRange({
                 )
               ) : (
                 <span>Pick a date</span>
-              )
-            )}
+              ))}
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="start">

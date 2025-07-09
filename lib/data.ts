@@ -137,20 +137,30 @@ export async function fetchListings({
   let filteredData = data || [];
 
   if (userLocation && filters.maxDistance !== undefined) {
-    const { data: listingsInRadius, error: radiusError } = await supabase.rpc('get_listings_within_radius', {
-      user_latitude: userLocation.lat,
-      user_longitude: userLocation.lon,
-      radius_km: filters.maxDistance,
-    });
+    const { data: listingsInRadius, error: radiusError } = await supabase.rpc(
+      "get_listings_within_radius",
+      {
+        user_latitude: userLocation.lat,
+        user_longitude: userLocation.lon,
+        radius_km: filters.maxDistance,
+      },
+    );
 
     if (radiusError) {
-      console.error("Error fetching listings within radius:", radiusError.message);
+      console.error(
+        "Error fetching listings within radius:",
+        radiusError.message,
+      );
       throw new Error("Failed to fetch listings within radius");
     }
-    
+
     // Filter the already fetched data by the IDs returned from the RPC call
-    const listingsInRadiusIds = new Set(listingsInRadius.map(listing => listing.id));
-    filteredData = filteredData.filter(listing => listingsInRadiusIds.has(listing.id));
+    const listingsInRadiusIds = new Set(
+      listingsInRadius.map((listing) => listing.id),
+    );
+    filteredData = filteredData.filter((listing) =>
+      listingsInRadiusIds.has(listing.id),
+    );
   }
 
   return filteredData.map((listing) => ({
@@ -167,3 +177,9 @@ export async function fetchListings({
     created_at: listing.created_at,
   }));
 }
+// In lib/data.ts around lines 130 to 154, the current code fetches all listings
+// before filtering by distance, which is inefficient for large datasets. To fix
+// this, modify the RPC function to accept all filter criteria including distance
+// and perform the entire filtering within the database query. Update the code to
+// call this enhanced RPC directly with all filters, eliminating the need to fetch
+// and filter listings client-side.

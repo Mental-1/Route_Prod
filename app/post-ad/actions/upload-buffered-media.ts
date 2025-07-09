@@ -9,6 +9,7 @@ interface UploadResult {
   filename: string;
   size: number;
   type: string;
+  error?: string;
 }
 
 export async function uploadBufferedMedia(
@@ -16,7 +17,10 @@ export async function uploadBufferedMedia(
   uploadType: "listings" | "profiles",
 ): Promise<UploadResult[]> {
   const supabase = await getSupabaseRouteHandler(cookies);
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
 
   if (authError || !user) {
     console.error("Authentication error:", authError);
@@ -30,32 +34,59 @@ export async function uploadBufferedMedia(
       let file: File;
       let processedBuffer: Buffer;
       let processedExtension: string;
+      const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB limit
 
       if (url.startsWith("blob:")) {
         // Handle Blob URLs (for videos or processed images)
         const response = await fetch(url);
         const blob = await response.blob();
-        file = new File([blob], `upload-${Date.now()}.${blob.type.split('/').pop()}`, { type: blob.type });
+        if (blob.size > MAX_FILE_SIZE) {
+          throw new Error(
+            `File size exceeds ${MAX_FILE_SIZE / 1024 / 1024}MB limit`,
+          );
+        }
+        file = new File(
+          [blob],
+          `upload-${Date.now()}.${blob.type.split("/").pop()}`,
+          { type: blob.type },
+        );
       } else if (url.startsWith("data:")) {
         // Handle Data URLs (for processed images)
-        const parts = url.split(';base64,');
-        const contentType = parts[0].split(':')[1];
+        const parts = url.split(";base64,");
+        const contentType = parts[0].split(":")[1];
         const base64 = parts[1];
-        const buffer = Buffer.from(base64, 'base64');
-        file = new File([buffer], `upload-${Date.now()}.${contentType.split('/').pop()}`, { type: contentType });
+        const buffer = Buffer.from(base64, "base64");
+        file = new File(
+          [buffer],
+          `upload-${Date.now()}.${contentType.split("/").pop()}`,
+          { type: contentType },
+        );
       } else {
         // Skip already uploaded URLs or invalid ones
         continue;
       }
+      const ALLOWED_IMAGE_TYPES = [
+        "image/jpeg",
+        "image/png",
+        "image/webp",
+        "image/gif",
+      ];
+      const ALLOWED_VIDEO_TYPES = ["video/mp4", "video/webm"];
 
       // Re-process images to ensure consistent WebP and compression
       if (file.type.startsWith("image/")) {
+        if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+          throw new Error(`Invalid image type: ${file.type}`);
+        }
         const imageBuffer = Buffer.from(await file.arrayBuffer());
         processedBuffer = await sharp(imageBuffer)
           .webp({ quality: 80 })
           .toBuffer();
         processedExtension = "webp";
       } else {
+        if (!ALLOWED_VIDEO_TYPES.includes(file.type)) {
+          throw new Error(`Invalid file type: ${file.type}`);
+        }
         processedBuffer = Buffer.from(await file.arrayBuffer());
         processedExtension = file.name.split(".").pop() || "";
       }
@@ -78,21 +109,40 @@ export async function uploadBufferedMedia(
 
       if (uploadError) {
         console.error("Supabase upload error for file", file.name, uploadError);
-        throw new Error(`Failed to upload ${file.name}: ${uploadError.message}`);
+        throw new Error(
+          `Failed to upload ${file.name}: ${uploadError.message}`,
+        );
       }
 
-      const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(filePath);
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from(bucket).getPublicUrl(filePath);
       results.push({
         url: publicUrl,
         filename: filePath,
         size: processedBuffer.length,
-        type: file.type.startsWith("image/") ? `image/${processedExtension}` : file.type,
+        type: file.type.startsWith("image/")
+          ? `image/${processedExtension}`
+          : file.type,
       });
     } catch (error) {
       console.error("Error processing/uploading media URL:", url, error);
       // Continue with other files even if one fails
+      results.push({
+        url: url,
+        filename: "",
+        size: 0,
+        type: "",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
     }
   }
 
   return results;
 }
+// In app/post-ad/actions/upload-buffered-media.ts around lines 34 to 39, the code
+// attempts to fetch a Blob URL on the server side, which is invalid because Blob
+// URLs only exist in the browser context. To fix this, modify the client to send
+// the actual file data (e.g., as base64 or FormData) instead of Blob URLs, and
+// update the server-side code to handle the received file data directly rather
+// than trying to fetch from a Blob URL.

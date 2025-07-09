@@ -19,7 +19,7 @@ export async function getAccountData() {
     .single();
 
   if (error) {
-    console.error("error", error);
+    console.error("Failed to fetch user profile", error);
     return { formData: null };
   }
 

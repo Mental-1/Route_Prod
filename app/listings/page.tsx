@@ -73,6 +73,8 @@ export default function ListingsPage() {
     lon: number;
   } | null>(null);
   const [categoryError, setCategoryError] = useState<string | null>(null);
+  const [locationLoading, setLocationLoading] = useState(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
 
   // Fetch categories from API
   useEffect(() => {
@@ -87,17 +89,30 @@ export default function ListingsPage() {
 
   useEffect(() => {
     if (navigator.geolocation) {
+      setLocationLoading(true);
       navigator.geolocation.getCurrentPosition(
         (position) => {
           setUserLocation({
             lat: position.coords.latitude,
             lon: position.coords.longitude,
           });
+          setLocationLoading(false);
         },
         (error) => {
           console.error("Error getting user location:", error);
+          setLocationError(
+            "Unable to get your location. Distance sorting may be less accurate.",
+          );
+          setLocationLoading(false);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 300000, // 5 minutes
         },
       );
+    } else {
+      setLocationError("Geolocation is not supported by this browser.");
     }
   }, []);
 
@@ -262,9 +277,10 @@ export default function ListingsPage() {
       return (b.price || 0) - (a.price || 0);
     }
     if (sortBy === "distance" && userLocation) {
-      // Distance sorting is now handled by the backend via get_listings_within_radius
-      // This client-side sort will not be accurate without fetching distance from backend
-      return 0;
+      // Fallback: sort by creation date when distance data is not available
+      const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+      const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+      return dateB - dateA;
     }
     return 0;
   });

@@ -1,6 +1,5 @@
 "use server";
 
-import { getSupabaseServer } from "@/utils/supabase/server";
 import { toast } from "@/components/ui/use-toast";
 
 export async function updateAccount(formData: any) {

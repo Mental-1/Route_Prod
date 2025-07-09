@@ -134,7 +134,7 @@ export default function MapViewPage() {
                       {listing.title}
                     </h3>
                     <p className="text-base font-bold text-green-600 mb-1">
-                      ${listing.price}
+                      Ksh {listing.price}
                     </p>
                     <div className="flex items-center text-xs text-muted-foreground">
                       <MapPin className="h-3 w-3 mr-1" />

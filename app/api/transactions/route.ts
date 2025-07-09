@@ -3,11 +3,29 @@ import { getSupabaseRouteHandler } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
 
 const CACHE_DURATION = 60 * 5; // 5 minutes
+const MAX_CACHE_SIZE = 100;
 const cache = new Map();
 
+function cleanupCache() {
+  const now = Date.now();
+  for (const [key, value] of cache.entries()) {
+    if (value.timestamp + CACHE_DURATION * 1000 < now) {
+      cache.delete(key);
+    }
+  }
+
+  // If still too large, remove oldest entries
+  if (cache.size > MAX_CACHE_SIZE) {
+    const entries = Array.from(cache.entries());
+    entries.sort((a, b) => a[1].timestamp - b[1].timestamp);
+    const toRemove = entries.slice(0, cache.size - MAX_CACHE_SIZE);
+    toRemove.forEach(([key]) => cache.delete(key));
+  }
+}
 export async function GET(req: NextRequest) {
+  cleanupCache();
   const { searchParams } = new URL(req.url);
-  const page = parseInt(searchParams.get("page") || "1", 10);
+  const page = Number.parseInt(searchParams.get("page") || "1", 10);
   const limit = 12;
   const offset = (page - 1) * limit;
 
@@ -26,19 +44,26 @@ export async function GET(req: NextRequest) {
   const supabase = await getSupabaseRouteHandler(cookies);
 
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
     if (!user) {
-      return NextResponse.json({ error: 'User not authenticated' }, { status: 401 });
+      return NextResponse.json(
+        { error: "User not authenticated" },
+        { status: 401 },
+      );
     }
 
     let query = supabase
-      .from('transactions')
-      .select('id, created_at, payment_method, status, amount, listings ( id, title )')
-      .eq('user_id', user.id)
+      .from("transactions")
+      .select(
+        "id, created_at, payment_method, status, amount, listings ( id, title )",
+        { count: "exact" },
+      )
+      .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .range(offset, offset + limit - 1);
-
     if (startDate) {
       query = query.gte("created_at", startDate);
     }
@@ -57,8 +82,13 @@ export async function GET(req: NextRequest) {
       );
     }
 
+    const allowedStatuses = ["completed", "pending", "failed"] as const;
+
     const response = {
-      data,
+      data: (data || []).map((tx) => ({
+        ...tx,
+        status: allowedStatuses.includes(tx.status) ? tx.status : "pending", // or throw an error
+      })),
       totalPages: Math.ceil((count || 0) / limit),
     };
 

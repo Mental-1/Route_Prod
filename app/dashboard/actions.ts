@@ -13,9 +13,14 @@ export async function getDashboardData(): Promise<DashboardData> {
   const supabase = await getSupabaseServer();
   const {
     data: { user },
+    error: userError,
   } = await supabase.auth.getUser();
 
-  if (!user) {
+  if (userError || !user) {
+    throw new Error("Authentication required");
+  }
+
+  if (!user.id) {
     return {
       activeListings: [],
       pendingListings: [],
@@ -32,14 +37,21 @@ export async function getDashboardData(): Promise<DashboardData> {
 
   const { data: transactions, error: transactionsError } = await supabase
     .from("transactions")
-    .select("*")
+    .select("*, listings(id, title)")
     .eq("user_id", user.id);
+
+  if (listingsError) {
+    console.error("Failed to fetch listings:", listingsError);
+    throw new Error("Failed to fetch listings data");
+  }
+
+  if (transactionsError) {
+    console.error("Failed to fetch transactions:", transactionsError);
+    throw new Error("Failed to fetch transactions data");
+  }
 
   // This is a placeholder for recent activity
   const recentActivity: RecentActivityItem[] = [];
-
-  if (listingsError) console.error("listingsError", listingsError);
-  if (transactionsError) console.error("transactionsError", transactionsError);
 
   const activeListings =
     allListings?.filter((listing) => listing.status === "active") || [];

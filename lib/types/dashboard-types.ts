@@ -15,9 +15,14 @@ export interface ListingItem {
 
 export interface TransactionItem {
   id: string;
+  created_at: string | number;
+  payment_method: string;
+  status: "completed" | "pending" | "failed";
   amount: number;
-  created_at: string | null;
-  // Add other transaction properties as needed
+  listings?: {
+    id: string;
+    title: string;
+  } | null;
 }
 
 export interface RecentActivityItem {
@@ -25,7 +30,7 @@ export interface RecentActivityItem {
   title: string;
   description: string;
   date: string;
-  icon: React.ReactNode;
+  icon: string; // e.g., 'check', 'clock', 'eye' etc.
   amount?: number;
 }
 

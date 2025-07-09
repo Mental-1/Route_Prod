@@ -15,6 +15,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
 import { Check, Clock, Eye, Plus, Star } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
+import { toast } from "@/components/ui/use-toast";
 
 import {
   ListingItem,
@@ -40,12 +41,21 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const data = await getDashboardData();
-      setActiveListings(data.activeListings);
-      setPendingListings(data.pendingListings);
-      setExpiredListings(data.expiredListings);
-      setTransactions(data.transactions);
-      setRecentActivity(data.recentActivity);
+      try {
+        const data = await getDashboardData();
+        setActiveListings(data.activeListings);
+        setPendingListings(data.pendingListings);
+        setExpiredListings(data.expiredListings);
+        setTransactions(data.transactions);
+        setRecentActivity(data.recentActivity);
+      } catch (error) {
+        console.error("Failed to fetch dashboard data:", error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch dashboard data",
+          variant: "destructive",
+        });
+      }
     };
 
     if (user) {

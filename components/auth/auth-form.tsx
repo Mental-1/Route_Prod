@@ -47,6 +47,13 @@ const signUpSchema = z.object({
     .regex(/^\+?[0-9\- ]+$/, "Invalid phone number"),
 });
 
+interface MFAError extends AuthError {
+  next_step?: {
+    type: string;
+    challenge_id: string;
+    factor_id: string;
+  };
+}
 /**
  * Displays an authentication form supporting both sign-in and sign-up modes with client-side validation and Supabase integration.
  *
@@ -97,13 +104,24 @@ export function AuthForm() {
       });
 
       if (error) {
-        if (error.message === "A multi-factor authentication challenge is required") {
-          const mfaError = error as AuthError & { next_step?: { type: string; challenge_id: string; factor_id: string; } };
-          if (mfaError.next_step && mfaError.next_step.type === "mfa_required" && mfaError.next_step.challenge_id && mfaError.next_step.factor_id) {
+        if (
+          error.message ===
+          "A multi-factor authentication challenge is required"
+        ) {
+          const mfaError: MFAError = error;
+
+          if (
+            mfaError.next_step &&
+            mfaError.next_step.type === "mfa_required" &&
+            mfaError.next_step.challenge_id &&
+            mfaError.next_step.factor_id
+          ) {
             setChallengeId(mfaError.next_step.challenge_id);
             setFactorId(mfaError.next_step.factor_id);
             setShow2FAModal(true);
-            setMessage("Multi-factor authentication required. Please enter your 2FA code.");
+            setMessage(
+              "Multi-factor authentication required. Please enter your 2FA code.",
+            );
             setLoading(false);
             return;
           } else {
@@ -151,10 +169,10 @@ export function AuthForm() {
     }
 
     try {
-      const response = await fetch('/api/auth/verify-2fa', {
-        method: 'POST',
+      const response = await fetch("/api/auth/verify-2fa", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ factorId, challengeId, code: twoFACode }),
       });
@@ -162,14 +180,16 @@ export function AuthForm() {
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || 'Failed to verify 2FA code');
+        throw new Error(result.error || "Failed to verify 2FA code");
       }
 
       if (result.success) {
         setMessage("2FA code verified successfully. Signing in...");
+        await supabase.auth.setSession({
+          access_token: result.session.access_token,
+          refresh_token: result.session.refresh_token,
+        });
         setShow2FAModal(false);
-        // After successful 2FA verification, the user should be signed in.
-        // Supabase's challengeAndVerify should handle the session update.
         router.push("/");
       } else {
         setError("Invalid 2FA code.");
@@ -186,7 +206,7 @@ export function AuthForm() {
     setLoading(true);
     try {
       const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
+        provider: "google",
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,
         },
@@ -536,3 +556,14 @@ export function AuthForm() {
     </Card>
   );
 }
+
+// ToDO: In components/auth/auth-form.tsx around lines 168 to 173, after verifying the
+// 2FA code via the API, the returned session tokens are not applied client-side
+// before redirecting, causing users to land on the home page without an active
+// session. To fix this, first update app/api/auth/verify-2fa/route.ts to include
+// the session tokens from Supabase's response in the JSON returned to the client.
+// Then, in handle2FASubmit in auth-form.tsx, after receiving the API response,
+// call supabase.auth.setSession with the access_token and refresh_token from the
+// returned session data and await its completion. Only after setSession resolves
+// should you call router.push("/") to redirect, ensuring the client holds the
+// authenticated session on navigation.

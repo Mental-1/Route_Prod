@@ -10,15 +10,15 @@ import { toast } from "@/components/ui/use-toast";
 interface MediaBufferInputProps {
   maxImages?: number;
   maxVideos?: number;
-  onChange: (urls: string[]) => void;
+  onChangeAction: (urls: string[]) => void;
   value?: string[];
   className?: string;
 }
 
 export function MediaBufferInput({
-  maxImages = 10,
+  maxImages = 15,
   maxVideos = 2,
-  onChange,
+  onChangeAction,
   value = [],
   className,
 }: MediaBufferInputProps) {
@@ -134,15 +134,20 @@ export function MediaBufferInput({
         if (!allowedImageTypes.includes(file.type)) {
           toast({
             title: "Invalid Image Type",
-            description: `File ${file.name} is not a supported image type.`, 
+            description: `File ${file.name} is not a supported image type.`,
             variant: "destructive",
           });
           continue;
         }
-        if (imageUrls.length + processedUrls.filter(url => url.startsWith("data:image/")).length >= maxImages) {
+        if (
+          imageUrls.length +
+            processedUrls.filter((url) => url.startsWith("data:image/"))
+              .length >=
+          maxImages
+        ) {
           toast({
             title: "Image Limit Reached",
-            description: `Cannot upload more than ${maxImages} images.`, 
+            description: `Cannot upload more than ${maxImages} images.`,
             variant: "destructive",
           });
           continue;
@@ -151,15 +156,19 @@ export function MediaBufferInput({
         if (!allowedVideoTypes.includes(file.type)) {
           toast({
             title: "Invalid Video Type",
-            description: `File ${file.name} is not a supported video type.`, 
+            description: `File ${file.name} is not a supported video type.`,
             variant: "destructive",
           });
           continue;
         }
-        if (videoUrls.length + processedUrls.filter(url => url.startsWith("blob:")).length >= maxVideos) {
+        if (
+          videoUrls.length +
+            processedUrls.filter((url) => url.startsWith("blob:")).length >=
+          maxVideos
+        ) {
           toast({
             title: "Video Limit Reached",
-            description: `Cannot upload more than ${maxVideos} videos.`, 
+            description: `Cannot upload more than ${maxVideos} videos.`,
             variant: "destructive",
           });
           continue;
@@ -167,7 +176,7 @@ export function MediaBufferInput({
       } else {
         toast({
           title: "Unsupported File Type",
-          description: `File ${file.name} is not a supported image or video.`, 
+          description: `File ${file.name} is not a supported image or video.`,
           variant: "destructive",
         });
         continue;
@@ -186,13 +195,13 @@ export function MediaBufferInput({
         });
       }
     }
-    onChange([...value, ...processedUrls]);
+    onChangeAction([...value, ...processedUrls]);
     setProcessing(false);
     setProcessingProgress(0);
   };
 
   const removeFile = (urlToRemove: string) => {
-    onChange(value.filter((url) => url !== urlToRemove));
+    onChangeAction(value.filter((url) => url !== urlToRemove));
   };
 
   const onButtonClick = () => {
@@ -212,6 +221,15 @@ export function MediaBufferInput({
         onDragOver={handleDrag}
         onDrop={handleDrop}
         onClick={onButtonClick}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onButtonClick();
+          }
+        }}
+        tabIndex={0}
+        role="button"
+        aria-label="Click or drag files to upload"
       >
         <input
           ref={inputRef}
@@ -265,12 +283,7 @@ export function MediaBufferInput({
       {value.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
           {value.map((url, index) => {
-            const isVideo =
-              url.split(".").pop()?.toLowerCase() &&
-              ["mp4", "webm", "mov"].includes(
-                url.split(".").pop()!.toLowerCase(),
-              );
-
+            const isVideo = url.startsWith("blob:") && videoUrls.includes(url);
             return (
               <div key={index} className="image-preview group relative">
                 {isVideo ? (
@@ -310,7 +323,7 @@ export function MediaBufferInput({
           <Button
             variant="outline"
             size="sm"
-            onClick={() => onChange([])}
+            onClick={() => onChangeAction([])}
             disabled={processing}
           >
             Clear all

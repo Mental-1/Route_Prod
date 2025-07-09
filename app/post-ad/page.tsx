@@ -98,6 +98,7 @@ export default function PostAdPage() {
   const [allSubcategories, setAllSubcategories] = useState<SubCategory[]>([]);
   const [, setCategoriesLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [transactionInProgress, setTransactionInProgress] = useState(false);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -160,9 +161,9 @@ export default function PostAdPage() {
   }, [formData.category, allSubcategories]);
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(0);
-  const selectedTier = paymentTiers.find(
-    (tier) => tier.id === formData.paymentTier,
-  ) || paymentTiers[0];
+  const selectedTier =
+    paymentTiers.find((tier) => tier.id === formData.paymentTier) ||
+    paymentTiers[0];
 
   const handleAdvanceStep = () => {
     if (currentStep < steps.length - 1) {
@@ -179,10 +180,14 @@ export default function PostAdPage() {
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [isPublishingListing, setIsPublishingListing] = useState(false);
   const [paymentCompleted, setPaymentCompleted] = useState(false);
-  const [currentTransactionId, setCurrentTransactionId] = useState<string | null>(null);
+  const [currentTransactionId, setCurrentTransactionId] = useState<
+    string | null
+  >(null);
 
   const handleSubmit = async () => {
+    if (transactionInProgress) return;
     setIsSubmitted(true);
+    setTransactionInProgress(true);
 
     if (!selectedTier) {
       toast({
@@ -191,6 +196,7 @@ export default function PostAdPage() {
         variant: "destructive",
       });
       setIsSubmitted(false);
+      setTransactionInProgress(false);
       return;
     }
 
@@ -253,7 +259,10 @@ export default function PostAdPage() {
             setIsProcessingPayment(false);
             // Automatically proceed to publishing after successful payment
             // No need to return here, let the rest of handleSubmit execute
-          } else if (transaction.status === "failed" || transaction.status === "cancelled") {
+          } else if (
+            transaction.status === "failed" ||
+            transaction.status === "cancelled"
+          ) {
             toast({
               title: "Payment Failed",
               description: "Your payment was not successful. Please try again.",
@@ -265,7 +274,7 @@ export default function PostAdPage() {
             return; // Stop here, payment failed
           } else {
             // Still pending, poll again after a delay
-            setTimeout(checkPaymentStatus, 3000); // Poll every 3 seconds
+            setTimeout(checkPaymentStatus, 5000); // Poll every 3 seconds
           }
         };
 
@@ -375,7 +384,9 @@ export default function PostAdPage() {
   };
   const processPayment = async (tier: any, paymentMethod: string) => {
     const supabase = getSupabaseClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
     if (!user) {
       return { success: false, error: "User not authenticated." };
@@ -428,7 +439,11 @@ export default function PostAdPage() {
       },
       body: JSON.stringify(paymentData),
     });
-    return { success: true, ...await response.json(), transactionId: transaction.id };
+    return {
+      success: true,
+      ...(await response.json()),
+      transactionId: transaction.id,
+    };
   };
 
   const updateFormData = (data: Partial<typeof formData>) => {
@@ -554,12 +569,18 @@ export default function PostAdPage() {
                   </Button>
                 ) : (
                   <Button
-                    onClick={currentStep === 3 && selectedTier.price > 0 && !paymentCompleted
-                      ? handleSubmit
-                      : handleAdvanceStep}
+                    onClick={
+                      currentStep === 3 &&
+                      selectedTier.price > 0 &&
+                      !paymentCompleted
+                        ? handleSubmit
+                        : handleAdvanceStep
+                    }
                     disabled={isSubmitted}
                   >
-                    {currentStep === 3 && selectedTier.price > 0 && !paymentCompleted
+                    {currentStep === 3 &&
+                    selectedTier.price > 0 &&
+                    !paymentCompleted
                       ? "Pay"
                       : "Next"}
                     <ChevronRight className="h-4 w-4 ml-2" />
@@ -575,7 +596,7 @@ export default function PostAdPage() {
         <DialogContent className="sm:max-w-[425px]">
           <DialogTitle>Processing Payment...</DialogTitle>
           <div className="flex flex-col items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mb-4"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mb-4" />
             <p className="text-muted-foreground">
               Please wait while your payment is being processed.
             </p>
@@ -832,7 +853,10 @@ function MediaUploadStep({
 
   // Show warning if user has uploaded more than their tier allows
   const imageUrls = (formData.mediaUrls || []).filter((url: string) => {
-    return url.startsWith("data:image/") || (url.startsWith("blob:") && !url.includes("video"));
+    return (
+      url.startsWith("data:image/") ||
+      (url.startsWith("blob:") && !url.includes("video"))
+    );
   });
 
   const videoUrls = (formData.mediaUrls || []).filter((url: string) => {
@@ -880,7 +904,7 @@ function MediaUploadStep({
         maxImages={limits.images}
         maxVideos={limits.videos}
         value={formData.mediaUrls || []}
-        onChange={handleFileChange}
+        onChangeAction={handleFileChange}
       />
     </div>
   );
