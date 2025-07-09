@@ -64,7 +64,7 @@ export async function getDashboardData(): Promise<DashboardData> {
     activeListings,
     pendingListings,
     expiredListings,
-    transactions: transactions || [],
+    transactions: (transactions as TransactionItem[]) || [],
     recentActivity,
   };
 }

@@ -82,13 +82,8 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const allowedStatuses = ["completed", "pending", "failed"] as const;
-
     const response = {
-      data: (data || []).map((tx) => ({
-        ...tx,
-        status: allowedStatuses.includes(tx.status) ? tx.status : "pending", // or throw an error
-      })),
+      data,
       totalPages: Math.ceil((count || 0) / limit),
     };
 

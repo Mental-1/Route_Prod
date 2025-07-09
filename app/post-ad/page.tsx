@@ -21,6 +21,7 @@ import { MediaBufferInput } from "@/components/post-ad/media-buffer-input";
 import { toast } from "@/components/ui/use-toast";
 import { uploadBufferedMedia } from "./actions/upload-buffered-media";
 import { getSupabaseClient } from "@/utils/supabase/client";
+import { getPlans, Plan } from "./actions";
 
 import {
   Dialog,
@@ -41,50 +42,6 @@ const steps = [
   { id: "preview", label: "Preview" },
 ];
 
-const paymentTiers = [
-  {
-    id: "free",
-    name: "Free",
-    price: 0,
-    features: ["2 photos", "Basic listing", "7 days duration"],
-  },
-  {
-    id: "basic",
-    name: "Basic",
-    price: 500,
-    features: [
-      "5 photos",
-      "Boosted visibility",
-      "30 days duration",
-      "Priority support",
-    ],
-  },
-  {
-    id: "premium",
-    name: "Premium",
-    price: 1500,
-    features: [
-      "10 photos",
-      "Video upload",
-      "60 days duration",
-      "Top placement",
-      "Analytics",
-    ],
-  },
-  {
-    id: "enterprise",
-    name: "Enterprise",
-    price: 5000,
-    features: [
-      "Unlimited photos",
-      "Multiple videos",
-      "90 days duration",
-      "Premium placement",
-      "Dedicated support",
-    ],
-  },
-];
-
 /**
  * Renders the multi-step ad posting page, managing form state, step navigation, data fetching, payment processing, and submission.
  *
@@ -99,6 +56,7 @@ export default function PostAdPage() {
   const [, setCategoriesLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [transactionInProgress, setTransactionInProgress] = useState(false);
+  const [plans, setPlans] = useState<Plan[]>([]);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -149,6 +107,17 @@ export default function PostAdPage() {
   }, []);
 
   useEffect(() => {
+    const fetchPlans = async () => {
+      const fetchedPlans = await getPlans();
+      setPlans(fetchedPlans);
+      if (fetchedPlans.length > 0) {
+        updateFormData({ paymentTier: fetchedPlans[0].id });
+      }
+    };
+    fetchPlans();
+  }, []);
+
+  useEffect(() => {
     if (formData.category) {
       setSubcategories(
         allSubcategories.filter(
@@ -162,8 +131,7 @@ export default function PostAdPage() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(0);
   const selectedTier =
-    paymentTiers.find((tier) => tier.id === formData.paymentTier) ||
-    paymentTiers[0];
+    plans.find((tier) => tier.id === formData.paymentTier) || plans[0];
 
   const handleAdvanceStep = () => {
     if (currentStep < steps.length - 1) {
@@ -400,7 +368,7 @@ export default function PostAdPage() {
         payment_method: paymentMethod,
         amount: tier.price,
         status: "pending",
-        // Add other relevant transaction details here
+        created_at: new Date().toISOString(),
       })
       .select()
       .single();
@@ -491,6 +459,7 @@ export default function PostAdPage() {
           <MediaUploadStep
             formData={formData}
             updateFormData={updateFormData}
+            plans={plans}
           />
         );
       case 2:
@@ -498,6 +467,7 @@ export default function PostAdPage() {
           <PaymentTierStep
             formData={formData}
             updateFormData={updateFormData}
+            plans={plans}
           />
         );
       case 3:
@@ -505,10 +475,17 @@ export default function PostAdPage() {
           <PaymentMethodStep
             formData={formData}
             updateFormData={updateFormData}
+            plans={plans}
           />
         );
       case 4:
-        return <PreviewStep formData={formData} categories={categories} />;
+        return (
+          <PreviewStep
+            formData={formData}
+            categories={categories}
+            plans={plans}
+          />
+        );
       default:
         return null;
     }
@@ -832,13 +809,14 @@ function AdDetailsStep({
 function MediaUploadStep({
   formData,
   updateFormData,
+  plans,
 }: {
   formData: any;
   updateFormData: (data: any) => void;
+  plans: Plan[];
 }) {
   const selectedTier =
-    paymentTiers.find((tier) => tier.id === formData.paymentTier) ||
-    paymentTiers[0];
+    plans.find((tier) => tier.id === formData.paymentTier) || plans[0];
 
   // Define limits based on tier
   const tierLimits = {
@@ -849,7 +827,8 @@ function MediaUploadStep({
   };
 
   const limits =
-    tierLimits[selectedTier.id as keyof typeof tierLimits] || tierLimits.free;
+    tierLimits[selectedTier?.name.toLowerCase() as keyof typeof tierLimits] ||
+    tierLimits.free;
 
   // Show warning if user has uploaded more than their tier allows
   const imageUrls = (formData.mediaUrls || []).filter((url: string) => {
@@ -876,7 +855,7 @@ function MediaUploadStep({
 
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
         <p className="text-sm text-blue-800">
-          <strong>Current Plan: {selectedTier.name}</strong>
+          <strong>Current Plan: {selectedTier?.name}</strong>
           <br />• Your plan allows: {limits.images} images
           {limits.videos > 0 ? ` and ${limits.videos} videos` : " (no videos)"}
           <br />• Only the allowed number will be published with your listing
@@ -913,16 +892,18 @@ function MediaUploadStep({
 function PaymentTierStep({
   formData,
   updateFormData,
+  plans,
 }: {
   formData: any;
   updateFormData: (data: any) => void;
+  plans: Plan[];
 }) {
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-semibold">Choose Your Plan</h2>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {paymentTiers.map((tier) => (
+        {plans.map((tier) => (
           <Card
             key={tier.id}
             className={`cursor-pointer transition-all ${
@@ -944,7 +925,7 @@ function PaymentTierStep({
                   )}
                 </div>
                 <ul className="text-sm space-y-1 text-left">
-                  {tier.features.map((feature, index) => (
+                  {(tier.features as string[]).map((feature, index) => (
                     <li key={index} className="flex items-center">
                       <span className="text-green-500 mr-2">✓</span>
                       {feature}
@@ -981,13 +962,14 @@ function PaymentTierStep({
 function PaymentMethodStep({
   formData,
   updateFormData,
+  plans,
 }: {
   formData: any;
   updateFormData: (data: any) => void;
+  plans: Plan[];
 }) {
   const selectedTier =
-    paymentTiers.find((tier) => tier.id === formData.paymentTier) ||
-    paymentTiers[0];
+    plans.find((tier) => tier.id === formData.paymentTier) || plans[0];
 
   if (selectedTier.price === 0) {
     return (
@@ -1134,13 +1116,14 @@ function PaymentMethodStep({
 function PreviewStep({
   formData,
   categories,
+  plans,
 }: {
   formData: any;
   categories: any[];
+  plans: Plan[];
 }) {
   const selectedTier =
-    paymentTiers.find((tier) => tier.id === formData.paymentTier) ||
-    paymentTiers[0];
+    plans.find((tier) => tier.id === formData.paymentTier) || plans[0];
   const selectedCategory = categories.find(
     (cat) => cat.id === Number.parseInt(formData.category, 10),
   );
@@ -1205,7 +1188,7 @@ function PreviewStep({
                 <span className="font-medium">Location:</span> {displayLocation}
               </div>
               <div>
-                <span className="font-medium">Plan:</span> {selectedTier.name}
+                <span className="font-medium">Plan:</span> {selectedTier?.name}
               </div>
             </div>
           </div>
