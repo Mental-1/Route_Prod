@@ -3,7 +3,7 @@ import { getSupabaseRouteHandler } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
 import { LRUCache } from "lru-cache";
 import { createRateLimiter, getClientIdentifier } from "@/utils/rate-limiting";
-import { z } from "zod";
+import { z, ZodError } from "zod";
 
 // Define Zod schemas for validation
 const notificationsSchema = z.object({
@@ -187,7 +187,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ message: "Settings updated successfully" });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.errors }, { status: 400 });
+      return NextResponse.json({ error: error.issues }, { status: 400 });
     }
     console.error("Error parsing request body:", error);
     return NextResponse.json(
@@ -246,7 +246,7 @@ export async function PATCH(req: NextRequest) {
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.errors }, { status: 400 });
+      return NextResponse.json({ error: error.issues }, { status: 400 });
     }
     console.error("Error parsing request body:", error);
     return NextResponse.json(
