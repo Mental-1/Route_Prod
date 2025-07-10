@@ -136,6 +136,9 @@ export async function fetchListings({
 
   let filteredData = data || [];
 
+  let data: ListingsItem[] | null = null;
+  let error: any = null;
+
   if (userLocation && filters.maxDistance !== undefined) {
     const { data: rpcData, error: rpcError } = await supabase.rpc(
       "get_filtered_listings",
@@ -148,21 +151,19 @@ export async function fetchListings({
         p_subcategories: filters.subcategories || [],
         p_conditions: filters.conditions || [],
         p_min_price: filters.priceRange?.min || 0,
-        p_max_price: filters.priceRange?.max || 1000000, // Assuming a max price
+        p_max_price: filters.priceRange?.max || 1000000,
         p_user_latitude: userLocation.lat,
         p_user_longitude: userLocation.lon,
         p_radius_km: filters.maxDistance,
       },
     );
-
-    if (rpcError) {
-      console.error("Error fetching filtered listings via RPC:", rpcError.message);
-      throw new Error("Failed to fetch filtered listings");
-    }
-    return rpcData || [];
+    data = rpcData;
+    error = rpcError;
+  } else {
+    const { data: queryData, error: queryError } = await query;
+    data = queryData;
+    error = queryError;
   }
-
-  const { data, error } = await query;
 
   if (error) {
     console.error("Error fetching listings:", error.message);
