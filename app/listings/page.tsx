@@ -181,6 +181,23 @@ export default function ListingsPage() {
     if (loading || !hasMore) return;
     setLoading(true);
     const nextPage = page + 1;
+
+    const currentFilters: any = {
+      categories: selectedCategories.map(Number).filter((n) => !isNaN(n)),
+      subcategories: selectedSubcategories
+        .map(Number)
+        .filter((n) => !isNaN(n)),
+      conditions: selectedConditions,
+      priceRange: {
+        min: priceRange[0],
+        max: priceRange[1],
+      },
+    };
+
+    if (maxDistance[0] !== 5) {
+      currentFilters.maxDistance = maxDistance[0];
+    }
+
     const moreListings = await fetchListings({
       page: nextPage,
       filters: currentFilters,
