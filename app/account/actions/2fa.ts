@@ -7,6 +7,7 @@ export async function enable2FA() {
   const { data, error } = await supabase.auth.mfa.enroll({
     factorType: "totp",
   });
+  console.log("Supabase MFA Enroll Data:", data);
 
   if (error) {
     console.error("Enable 2FA error:", error);
