@@ -1,59 +1,55 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies as nextCookies } from "next/headers";
-import type { Database, DatabaseWithoutInternals } from "@/utils/supabase/database.types";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/utils/supabase/database.types";
 import { serializeCookieHeader } from "@supabase/ssr";
 
+// The correct schema type Supabase now expects
+type Schema = Database["public"];
+
 /**
- * Creates a Supabase client for use in Next.js server components with read-only cookie access.
- *
- * The client is configured using environment variables for the Supabase URL and anon key. Cookie retrieval is supported, but attempts to set cookies are silently ignored if not permitted in the server component context.
- *
- * @returns A Supabase client instance typed with the application database.
+ * SSR client for Server Components (read-only cookies)
  */
-export async function getSupabaseServer() {
+export async function getSupabaseServer(): Promise<SupabaseClient<Schema>> {
   const cookieStore = await nextCookies();
-  return createServerClient<DatabaseWithoutInternals>(
+
+  const client = createServerClient<Schema>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll(cookiesToSet) {
+        getAll: () => cookieStore.getAll(),
+        setAll: (cookiesToSet) => {
           try {
             cookiesToSet.forEach(({ name, value, options }) => {
               cookieStore.set(name, value, options);
             });
           } catch {
-            // The `setAll` method was called from a Server Component.
-            // This can be ignored if you have middleware refreshing
-            // user sessions.
+            // Silent fail in server component context
           }
         },
       },
     },
   );
+
+  return client;
 }
 
 /**
- * Creates a Supabase client for Next.js route handlers and server actions with full cookie read/write access.
- *
- * The client manages authentication and session cookies using the Next.js cookies API, supporting persistent user sessions in server-side contexts.
- *
- * @returns A Supabase client instance typed with the application's database schema.
+ * Supabase client for Route Handlers/Server Actions (read-write cookies)
  */
-export async function getSupabaseRouteHandler(cookiesFn: typeof nextCookies) {
+export async function getSupabaseRouteHandler(
+  cookiesFn: typeof nextCookies,
+): Promise<SupabaseClient<Schema>> {
   const cookieStore = await cookiesFn();
-  return createServerClient<DatabaseWithoutInternals>(
+
+  const client = createServerClient<Schema>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll(cookiesToSet) {
+        getAll: () => cookieStore.getAll(),
+        setAll: (cookiesToSet) => {
           cookiesToSet.forEach(({ name, value, options }) => {
             cookieStore.set(name, value, options);
           });
@@ -61,41 +57,41 @@ export async function getSupabaseRouteHandler(cookiesFn: typeof nextCookies) {
       },
     },
   );
+
+  return client;
 }
 
 /**
- * Creates a Supabase client for Next.js middleware, managing cookies through HTTP request and response headers.
- *
- * Parses cookies from the incoming request and enables setting new cookies by appending `Set-Cookie` headers to the response.
- *
- * @param request - The incoming HTTP request containing cookies in its headers.
- * @returns An object with the configured Supabase client and a response object with updated cookie headers.
+ * Supabase client for Middleware (header-based cookies)
  */
-export function getSupabaseMiddleware(request: Request) {
+export function getSupabaseMiddleware(request: Request): {
+  supabase: SupabaseClient<Schema>;
+  response: Response;
+} {
   const response = new Response();
 
-  const supabase = createServerClient<DatabaseWithoutInternals>(
+  const client = createServerClient<Schema>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll() {
-          const cookies = new Map();
+        getAll: () => {
+          const cookieMap = new Map<string, string>();
           request.headers
             .get("cookie")
             ?.split(";")
             .forEach((cookie) => {
               const [name, value] = cookie.trim().split("=");
               if (name && value) {
-                cookies.set(name, decodeURIComponent(value));
+                cookieMap.set(name, decodeURIComponent(value));
               }
             });
-          return Array.from(cookies.entries()).map(([name, value]) => ({
+          return Array.from(cookieMap.entries()).map(([name, value]) => ({
             name,
             value,
           }));
         },
-        setAll(cookiesToSet) {
+        setAll: (cookiesToSet) => {
           cookiesToSet.forEach(({ name, value, options }) => {
             response.headers.append(
               "Set-Cookie",
@@ -107,23 +103,21 @@ export function getSupabaseMiddleware(request: Request) {
     },
   );
 
-  return { supabase, response };
+  return {
+    supabase: client,
+    response,
+  };
 }
 
 /**
- * Creates a Supabase client with service role privileges for admin-level operations.
- *
- * Throws an error if the service role key environment variable is not set. Cookie handling is disabled for this client.
- * @returns A Supabase client instance with service role access.
+ * Supabase client using Service Role Key (no cookies)
  */
-export function getSupabaseServiceRole() {
+export function getSupabaseServiceRole(): SupabaseClient<Schema> {
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    throw new Error(
-      "SUPABASE_SERVICE_ROLE_KEY environment variable is not set",
-    );
+    throw new Error("SUPABASE_SERVICE_ROLE_KEY is not set");
   }
 
-  return createServerClient<DatabaseWithoutInternals>(
+  const client = createServerClient<Schema>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
     {
@@ -133,4 +127,6 @@ export function getSupabaseServiceRole() {
       },
     },
   );
+
+  return client;
 }
