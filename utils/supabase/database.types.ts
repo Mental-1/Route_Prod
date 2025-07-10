@@ -279,6 +279,7 @@ export type Database = {
           search_vector: unknown | null
           status: string | null
           subcategory_id: number | null
+          tags: string[] | null
           title: string
           updated_at: string | null
           user_id: string | null
@@ -307,6 +308,7 @@ export type Database = {
           search_vector?: unknown | null
           status?: string | null
           subcategory_id?: number | null
+          tags?: string[] | null
           title: string
           updated_at?: string | null
           user_id?: string | null
@@ -335,6 +337,7 @@ export type Database = {
           search_vector?: unknown | null
           status?: string | null
           subcategory_id?: number | null
+          tags?: string[] | null
           title?: string
           updated_at?: string | null
           user_id?: string | null
@@ -839,6 +842,7 @@ export type Database = {
           search_vector: unknown | null
           status: string | null
           subcategory_id: number | null
+          tags: string[] | null
           title: string
           updated_at: string | null
           user_id: string | null
