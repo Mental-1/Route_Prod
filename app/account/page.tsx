@@ -29,17 +29,13 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/auth-context";
-import {
-  getAccount,
-  updateAccount,
-  deleteAccount,
-  updateEmail,
-  updateAvatarUrl,
-  updatePassword,
-  enable2FA,
-  disable2FA,
-  verify2FA,
-} from "./actions/account-actions";
+import { getAccountData } from "./actions";
+import { deleteAccount } from "./actions/delete-account";
+import { updateAccount } from "./actions/update-account";
+import { updatePassword } from "./actions/update-password";
+import { updateEmail } from "./actions/update-email";
+import { updateAvatarUrl } from "./actions/update-avatar-url";
+import { enable2FA, disable2FA, verify2FA } from "./actions/2fa";
 import { useFileUpload } from "@/hooks/useFileUpload";
 import {
   Dialog,
@@ -51,12 +47,12 @@ import {
 
 // Type definitions
 interface FormData {
-  full_name: string;
-  username: string;
-  bio: string;
-  phone_number: string;
-  location: string;
-  website: string;
+  full_name: string | null;
+  username: string | null;
+  bio: string | null;
+  phone_number: string | null;
+  location: string | null;
+  website: string | null;
 }
 
 /**
@@ -70,7 +66,7 @@ export default function AccountPage() {
   const [formData, setFormData] = useState<FormData | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { uploadFile, uploading: isUploading } = useFileUpload({
-    uploadType: "profile",
+    uploadType: "profiles",
   });
 
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -93,7 +89,7 @@ export default function AccountPage() {
     const fetchAccountData = async () => {
       if (user) {
         try {
-          const accountData = await getAccount();
+          const { formData: accountData } = await getAccountData();
           if (accountData) {
             setFormData(accountData);
           }
@@ -425,7 +421,7 @@ export default function AccountPage() {
                     <Label htmlFor="full_name">Full Name</Label>
                     <Input
                       id="full_name"
-                      value={formData.full_name}
+                      value={formData.full_name ?? ""}
                       onChange={(e) =>
                         setFormData((prev: any) => ({
                           ...prev,
@@ -439,7 +435,7 @@ export default function AccountPage() {
                     <Label htmlFor="username">Username</Label>
                     <Input
                       id="username"
-                      value={formData.username}
+                      value={formData.username ?? ""}
                       onChange={(e) =>
                         setFormData((prev: any) => ({
                           ...prev,
@@ -455,7 +451,7 @@ export default function AccountPage() {
                   <Label htmlFor="bio">Bio</Label>
                   <Textarea
                     id="bio"
-                    value={formData.bio}
+                    value={formData.bio ?? ""}
                     onChange={(e) =>
                       setFormData((prev: any) => ({
                         ...prev,
@@ -472,7 +468,7 @@ export default function AccountPage() {
                     <Label htmlFor="phone_number">Phone Number</Label>
                     <Input
                       id="phone_number"
-                      value={formData.phone_number}
+                      value={formData.phone_number ?? ""}
                       onChange={(e) =>
                         setFormData((prev: any) => ({
                           ...prev,
@@ -486,7 +482,7 @@ export default function AccountPage() {
                     <Label htmlFor="location">Location</Label>
                     <Input
                       id="location"
-                      value={formData.location}
+                      value={formData.location ?? ""}
                       onChange={(e) =>
                         setFormData((prev: any) => ({
                           ...prev,
@@ -502,7 +498,7 @@ export default function AccountPage() {
                   <Label htmlFor="website">Website</Label>
                   <Input
                     id="website"
-                    value={formData.website}
+                    value={formData.website ?? ""}
                     onChange={(e) =>
                       setFormData((prev: any) => ({
                         ...prev,

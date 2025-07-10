@@ -14,7 +14,7 @@ interface ImageUploadProps {
   onChangeAction: (urls: string[]) => void;
   value?: string[];
   className?: string;
-  uploadType?: "listing" | "profile";
+  uploadType?: "listings" | "profiles";
 }
 
 /**
@@ -30,7 +30,7 @@ export function ImageUpload({
   onChangeAction,
   value = [],
   className,
-  uploadType = "listing",
+  uploadType = "listings",
 }: ImageUploadProps) {
   const [dragActive, setDragActive] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);

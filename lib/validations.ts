@@ -91,7 +91,13 @@ export const listingSchema = z.object({
 export const mpesaPaymentSchema = z.object({
   phoneNumber: z
     .string()
-    .transform((val) => val.replace(/[^\d]/g, ""))
+    .transform((val) => {
+      let sanitized = val.replace(/[^\d]/g, "");
+      if (sanitized.startsWith("0")) {
+        sanitized = `254${sanitized.substring(1)}`;
+      }
+      return sanitized;
+    })
     .refine(
       (val) => /^254[0-9]{9}$/.test(val),
       "Invalid M-Pesa phone number (format: 254XXXXXXXXX)",

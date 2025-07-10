@@ -1,5 +1,7 @@
 "use client";
 
+import { getDashboardData } from "./actions";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Card,
@@ -13,6 +15,13 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
 import { Check, Clock, Eye, Plus, Star } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
+import { toast } from "@/components/ui/use-toast";
+
+import {
+  ListingItem,
+  TransactionItem,
+  RecentActivityItem,
+} from "@/lib/types/dashboard-types";
 
 /**
  * Renders the authenticated user's dashboard, displaying profile details, statistics, recent activity, and navigation shortcuts.
@@ -20,20 +29,39 @@ import { useAuth } from "@/contexts/auth-context";
  * Redirects unauthenticated users to the sign-in page. Shows loading feedback while authentication state is being determined. All statistics and activity data are currently placeholders and display empty or zero values.
  */
 export default function DashboardPage() {
-  const router = useRouter();
   const { user, profile, isLoading } = useAuth();
+  const [activeListings, setActiveListings] = useState<ListingItem[]>([]);
+  const [pendingListings, setPendingListings] = useState<ListingItem[]>([]);
+  const [expiredListings, setExpiredListings] = useState<ListingItem[]>([]);
+  const [transactions, setTransactions] = useState<TransactionItem[]>([]);
+  const [recentActivity, setRecentActivity] = useState<RecentActivityItem[]>(
+    [],
+  );
+  const router = useRouter();
 
-  // Mock data for listings Use listings API to fetch profile tagged active, pending and expired listings.
-  // Transactions will also be fetched within the same request to reduce number of API calls.
-  const activeListings = [];
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const data = await getDashboardData();
+        setActiveListings(data.activeListings);
+        setPendingListings(data.pendingListings);
+        setExpiredListings(data.expiredListings);
+        setTransactions(data.transactions);
+        setRecentActivity(data.recentActivity);
+      } catch (error) {
+        console.error("Failed to fetch dashboard data:", error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch dashboard data",
+          variant: "destructive",
+        });
+      }
+    };
 
-  const pendingListings = [];
-
-  const expiredListings = [];
-
-  const transactions = [];
-
-  const recentActivity = [];
+    if (user) {
+      fetchData();
+    }
+  }, [user]);
 
   if (isLoading) {
     return (
@@ -60,23 +88,6 @@ export default function DashboardPage() {
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <CardTitle>Dashboard</CardTitle>
-                <Button variant="ghost" size="icon">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="h-4 w-4"
-                  >
-                    <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
-                    <circle cx="12" cy="12" r="3"></circle>
-                  </svg>
-                </Button>
               </div>
               <CardDescription>
                 Welcome back,{" "}
@@ -125,7 +136,6 @@ export default function DashboardPage() {
 
               <div className="grid grid-cols-3 gap-4 text-center mb-6">
                 <div>
-                  {/* TODO: Write function to get the number of items sold, active listings, and saved items */}
                   <p className="text-2xl font-bold text-primary">0</p>
                   <p className="text-xs text-muted-foreground">Items Sold</p>
                 </div>
@@ -288,7 +298,9 @@ export default function DashboardPage() {
               </CardHeader>
               <CardContent>
                 <div className="flex items-center">
-                  <span className="text-muted-foreground mr-2 font-bold">KES</span>
+                  <span className="text-muted-foreground mr-2 font-bold">
+                    KES
+                  </span>
                   <div className="text-2xl font-bold">0</div>
                   <span className="ml-2 text-xs text-green-500">
                     +0% this month
@@ -336,7 +348,7 @@ export default function DashboardPage() {
               <div>
                 <CardTitle>Recent Activity</CardTitle>
                 <CardDescription>
-                  Your latest activity on FoundIt
+                  Your latest activity on RouteMe
                 </CardDescription>
               </div>
               <Button variant="ghost" size="sm">
@@ -369,7 +381,7 @@ export default function DashboardPage() {
                         </p>
                         {activity.amount && (
                           <p className="text-sm font-medium text-green-600">
-                            +KES{activity.amount}
+                            +KES {activity.amount}
                           </p>
                         )}
                       </div>

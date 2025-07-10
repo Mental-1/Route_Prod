@@ -29,8 +29,9 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { toast } from "@/components/ui/use-toast";
 import { Toaster } from "@/components/ui/toaster";
-import { Bell, Shield, Globe, Download, Trash2 } from "lucide-react";
+import { Bell, Shield, Globe, Download, Trash2, ChevronLeft } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
+import Link from "next/link";
 
 const defaultSettings: UserSettings = {
   notifications: {
@@ -181,6 +182,10 @@ export default function SettingsPage() {
 
   return (
     <div className="container px-4 py-8">
+      <Link href="/dashboard" className="flex items-center text-sm text-muted-foreground hover:text-primary mb-4">
+        <ChevronLeft className="h-4 w-4 mr-1" />
+        Back to Dashboard
+      </Link>
       <div className="max-w-4xl mx-auto">
         <div className="mb-8">
           <h1 className="text-3xl font-bold">Settings</h1>
@@ -563,23 +568,6 @@ export default function SettingsPage() {
                 <Button variant="outline" onClick={handleExportData}>
                   <Download className="h-4 w-4 mr-2" />
                   Export
-                </Button>
-              </div>
-
-              <Separator />
-
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="font-medium text-destructive">
-                    Delete Account
-                  </h4>
-                  <p className="text-sm text-muted-foreground">
-                    Permanently delete your account and all data
-                  </p>
-                </div>
-                <Button variant="destructive" onClick={handleDeleteAccount}>
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete
                 </Button>
               </div>
             </CardContent>

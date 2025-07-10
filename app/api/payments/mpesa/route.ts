@@ -22,17 +22,12 @@ export async function POST(request: NextRequest) {
     } = await supabase.auth.getUser();
 
     if (authError || !user) {
+      console.error("Authentication error:", authError);
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Sanitize phone number to 254... format
-    let sanitizedPhoneNumber = validatedData.phoneNumber.trim();
-    if (sanitizedPhoneNumber.startsWith("+")) {
-      sanitizedPhoneNumber = sanitizedPhoneNumber.substring(1);
-    }
-    if (sanitizedPhoneNumber.startsWith("0")) {
-      sanitizedPhoneNumber = `254${sanitizedPhoneNumber.substring(1)}`;
-    }
+    // Sanitize phone number is now handled by Zod schema
+    const sanitizedPhoneNumber = validatedData.phoneNumber;
 
     // M-Pesa STK Push implementation
     const timestamp = new Date()
@@ -108,8 +103,6 @@ export async function POST(request: NextRequest) {
       AccountReference: `RouteMe-${user.id}`,
       TransactionDesc: "RouteMe Payment",
     };
-
-    console.log("M-Pesa STK Push Payload:", stkPayload);
 
     const stkResponse = await fetch(
       "https://api.safaricom.co.ke/mpesa/stkpush/v1/processrequest",

@@ -14,7 +14,7 @@ interface UseFileUploadOptions {
   maxFiles?: number;
   maxSize?: number;
   allowedTypes?: string[];
-  uploadType: "listing" | "profile";
+  uploadType: "listings" | "profiles";
 }
 
 /**

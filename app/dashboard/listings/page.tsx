@@ -7,16 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { getSupabaseClient } from "@/utils/supabase/client";
-import {
-  Edit,
-  Trash2,
-  Eye,
-  Star,
-  Clock,
-  MapPin,
-  Calendar,
-  TrendingUp,
-} from "lucide-react";
+import { ChevronLeft, Edit, Trash2, Eye, Star, Clock, MapPin, Calendar, TrendingUp } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -246,6 +237,10 @@ export default function UserListingsPage() {
 
   return (
     <div className="container px-4 py-8">
+      <Link href="/dashboard" className="flex items-center text-sm text-muted-foreground hover:text-primary mb-4">
+        <ChevronLeft className="h-4 w-4 mr-1" />
+        Back to Dashboard
+      </Link>
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold">My Listings</h1>
