@@ -13,83 +13,47 @@ export async function GET(request: Request) {
   const supabase = await getSupabaseRouteHandler(cookies);
   const { searchParams } = new URL(request.url);
 
-  const id = searchParams.get("id");
   const page = Number.parseInt(searchParams.get("page") || "1", 10);
   const limit = Number.parseInt(searchParams.get("limit") || "8", 10);
 
   try {
-    if (id) {
-      const { data, error } = await supabase
-        .from("listings")
-        .select("*")
-        .eq("id", id)
-        .single();
+    const offset = (page - 1) * limit;
 
-      if (error && error.code === "PGRST116") {
-        // No rows found for .single()
-        return NextResponse.json(
-          { message: "Listing not found" },
-          { status: 404 },
-        );
-      }
-      if (error) {
-        console.error("Error fetching single listing:", error);
-        return NextResponse.json(
-          { error: "Listing not found" },
-          { status: 500 },
-        );
-      }
+    const { data, error, count } = await supabase
+      .from("listings")
+      .select("*", { count: "exact" })
+      .range(offset, offset + limit - 1)
+      .order("created_at", { ascending: false });
 
-      const formattedListing = {
-        ...data,
+    if (error) {
+      console.error("Error fetching listings:", error);
+      return NextResponse.json(
+        { error: "An error occurred while fetching listings" },
+        { status: 500 },
+      );
+    }
+
+    const formattedListings =
+      data?.map((listing) => ({
+        ...listing,
+        id: String(listing.id),
         location: {
-          lat: data.latitude,
-          lng: data.longitude,
+          lat: listing.latitude,
+          lng: listing.longitude,
         },
         rating: 0,
         reviews: 0,
-      };
+      })) || [];
 
-      return NextResponse.json(formattedListing);
-    } else {
-      const offset = (page - 1) * limit;
+    const hasMore = count ? offset + formattedListings.length < count : false;
 
-      const { data, error, count } = await supabase
-        .from("listings")
-        .select("*", { count: "exact" })
-        .range(offset, offset + limit - 1)
-        .order("created_at", { ascending: false });
-
-      if (error) {
-        console.error("Error fetching listings:", error);
-        return NextResponse.json(
-          { error: "An error occurred while fetching listings" },
-          { status: 500 },
-        );
-      }
-
-      const formattedListings =
-        data?.map((listing) => ({
-          ...listing,
-          id: Number(listing.id),
-          location: {
-            lat: listing.latitude,
-            lng: listing.longitude,
-          },
-          rating: 0,
-          reviews: 0,
-        })) || [];
-
-      const hasMore = count ? offset + formattedListings.length < count : false;
-
-      return NextResponse.json({
-        listings: formattedListings,
-        totalCount: count,
-        hasMore,
-        currentPage: page,
-        limit,
-      });
-    }
+    return NextResponse.json({
+      listings: formattedListings,
+      totalCount: count,
+      hasMore,
+      currentPage: page,
+      limit,
+    });
   } catch (err: any) {
     console.error("Server error in GET /api/listings:", err);
     return NextResponse.json(

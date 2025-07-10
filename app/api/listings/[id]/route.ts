@@ -28,6 +28,7 @@ export async function GET(
       `,
       )
       .eq("id", id)
+      .eq("status", "active")
       .single();
 
     if (error || !listing) {
