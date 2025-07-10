@@ -1,6 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies as nextCookies } from "next/headers";
-import type { Database } from "@/utils/supabase/database.types";
+import type { Database, DatabaseWithoutInternals } from "@/utils/supabase/database.types";
 import { serializeCookieHeader } from "@supabase/ssr";
 
 /**
@@ -12,7 +12,7 @@ import { serializeCookieHeader } from "@supabase/ssr";
  */
 export async function getSupabaseServer() {
   const cookieStore = await nextCookies();
-  return createServerClient<Database>(
+  return createServerClient<DatabaseWithoutInternals>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
@@ -45,7 +45,7 @@ export async function getSupabaseServer() {
  */
 export async function getSupabaseRouteHandler(cookiesFn: typeof nextCookies) {
   const cookieStore = await cookiesFn();
-  return createServerClient<Database>(
+  return createServerClient<DatabaseWithoutInternals>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
@@ -74,7 +74,7 @@ export async function getSupabaseRouteHandler(cookiesFn: typeof nextCookies) {
 export function getSupabaseMiddleware(request: Request) {
   const response = new Response();
 
-  const supabase = createServerClient<Database>(
+  const supabase = createServerClient<DatabaseWithoutInternals>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
@@ -123,7 +123,7 @@ export function getSupabaseServiceRole() {
     );
   }
 
-  return createServerClient<Database>(
+  return createServerClient<DatabaseWithoutInternals>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
     {
