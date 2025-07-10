@@ -118,26 +118,46 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
+
+    // 1. Fetch the category ID from the database
+    const categoryName = body.category_id || "Other";
+    const { data: category, error: categoryError } = await supabase
+      .from("categories")
+      .select("id")
+      .eq("name", categoryName)
+      .single();
+
+    if (categoryError || !category) {
+      console.error("Error fetching category:", categoryError);
+      return NextResponse.json(
+        { error: `Category '${categoryName}' not found.` },
+        { status: 400 },
+      );
+    }
+
     const ALLOWED_STATUSES = [
       "active",
       "inactive",
       "pending",
       "expired",
     ] as const;
+
+    // 2. Construct a clean listing data object, ensuring all IDs are numeric
     const listingData = {
-      ...body,
       user_id: user.id,
       created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
       title: String(body.title) || "Untitled Listing",
       description: String(body.description) || "No description provided",
       price: Number(body.price) || 0,
       location: body.location || "Unknown Location",
-      category: body.category || "Other",
+      category_id: category.id, // Use the fetched numeric category ID
+      subcategory_id: body.subcategory_id ? Number(body.subcategory_id) : null,
       status: ALLOWED_STATUSES.includes(body.status) ? body.status : "active",
       images: Array.isArray(body.images) ? body.images : [],
-      tags: body.tags || [],
-      contact_info: body.contact_info || "No contact information provided",
-      updated_at: new Date().toISOString(),
+      tags: Array.isArray(body.tags) ? body.tags : [],
+      condition: body.condition || "used",
+      plan_id: body.plan_id || null,
     };
 
     const { data, error } = await supabase
