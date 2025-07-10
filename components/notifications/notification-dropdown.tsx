@@ -25,7 +25,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { getSupabaseClient } from "@/utils/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
-import { z } from "zod";
+import { z, ZodError } from "zod";
 
 const NotificationSchema = z.object({
   id: z.string(),
@@ -83,7 +83,7 @@ export function NotificationDropdown({
       setNotifications(typedData);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        console.error("Notification data validation failed:", error.errors);
+        console.error("Notification data validation failed:", error.issues);
       } else {
         console.error("Error fetching notifications:", error);
       }
