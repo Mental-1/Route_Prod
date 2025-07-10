@@ -17,7 +17,7 @@ const accountSchema = z.object({
   website: z.string().url("Invalid URL").optional(),
 });
 
-async function getUserId(supabase: SupabaseClient<Database>) {
+async function getUserId(supabase: SupabaseClient<Database, "public", Database["public"]>) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
