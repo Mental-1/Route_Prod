@@ -158,7 +158,7 @@ export async function fetchListings({
 
   const filteredData = result.data || [];
 
-  return filteredData.map((listing) => ({
+  return filteredData.map((listing: ListingsItem) => ({
     id: listing.id,
     title: listing.title,
     description: listing.description,
