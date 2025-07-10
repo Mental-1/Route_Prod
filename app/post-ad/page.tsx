@@ -66,6 +66,7 @@ export default function PostAdPage() {
     negotiable: false,
     condition: "new",
     location: [] as number[],
+    tags: [] as string[],
     mediaUrls: [] as string[],
     paymentTier: "free",
     paymentMethod: "",
@@ -309,13 +310,14 @@ export default function PostAdPage() {
         title: formData.title,
         description: formData.description,
         price: parseFloat(formData.price) || null,
-        category_id: parseInt(formData.category),
+        category_id: formData.category, // Send the category name/slug
         subcategory_id: formData.subcategory
           ? parseInt(formData.subcategory)
           : null,
         location: formData.location,
         condition: formData.condition,
         images: finalMediaUrls, // Use uploaded URLs
+        tags: formData.tags, // Add tags to the payload
         paymentTier: formData.paymentTier,
         paymentStatus: selectedTier.price > 0 ? "paid" : "free",
         paymentMethod: formData.paymentMethod,
@@ -736,6 +738,44 @@ function AdDetailsStep({
               </SelectContent>
             </Select>
           </div>
+        </div>
+
+        <div>
+          <Label htmlFor="tags">Tags</Label>
+          <div className="flex flex-wrap items-center gap-2 p-2 border rounded-md bg-background">
+            {formData.tags.map((tag: string, index: number) => (
+              <div key={index} className="flex items-center gap-1 bg-muted px-2 py-1 rounded-full">
+                <span>{tag}</span>
+                <button
+                  type="button"
+                  className="text-muted-foreground hover:text-foreground"
+                  onClick={() => {
+                    const newTags = [...formData.tags];
+                    newTags.splice(index, 1);
+                    updateFormData({ tags: newTags });
+                  }}
+                >
+                  &times;
+                </button>
+              </div>
+            ))}
+            <Input
+              id="tags-input"
+              placeholder="Add tags (e.g., handmade, vintage)"
+              className="flex-grow bg-transparent border-none focus:ring-0"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ',') {
+                  e.preventDefault();
+                  const newTag = e.currentTarget.value.trim();
+                  if (newTag && !formData.tags.includes(newTag)) {
+                    updateFormData({ tags: [...formData.tags, newTag] });
+                    e.currentTarget.value = '';
+                  }
+                }
+              }}
+            />
+          </div>
+          <p className="text-sm text-muted-foreground mt-1">Press Enter or Comma to add a tag.</p>
         </div>
 
         <div>
