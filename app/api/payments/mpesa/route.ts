@@ -92,7 +92,8 @@ export async function POST(request: NextRequest) {
     // Initiate STK Push
     const stkPayload = {
       BusinessShortCode: process.env.MPESA_BUSINESS_SHORT_CODE,
-      Password: password,
+      Password: process.env.MPESA_PASSKEY,
+      Username: process.env.MPESA_USERNAME,
       Timestamp: timestamp,
       TransactionType: "CustomerBuyGoodsOnline",
       Amount: validatedData.amount,
