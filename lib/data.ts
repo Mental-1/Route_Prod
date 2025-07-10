@@ -36,22 +36,22 @@ export interface ListingsItem {
 export async function getRecentListings(): Promise<DisplayListingItem[]> {
   const supabase = getSupabaseClient();
 
-  const fourDaysAgo = new Date();
-  fourDaysAgo.setDate(fourDaysAgo.getDate() - 4);
+  const threeDaysAgo = new Date();
+  threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
 
-  const { data, error } = await supabase
+  const { data: recentListingsData, error: recentListingsError } = await supabase
     .from("listings")
     .select("id, title, price, location, views, images, condition")
-    .gte("created_at", fourDaysAgo.toISOString())
+    .gte("created_at", threeDaysAgo.toISOString())
     .order("created_at", { ascending: false })
     .limit(8);
 
-  if (error) {
-    console.error("Error fetching recent listings:", error.message);
+  if (recentListingsError) {
+    console.error("Error fetching recent listings:", recentListingsError.message);
     throw new Error("Failed to fetch recent listings");
   }
 
-  const transformedListings: DisplayListingItem[] = data.map((listing) => ({
+  const transformedListings: DisplayListingItem[] = recentListingsData.map((listing) => ({
     id: listing.id,
     title: listing.title,
     price: listing.price,
@@ -127,20 +127,10 @@ export async function fetchListings({
       .lte("price", filters.priceRange.max);
   }
 
-  const { data, error } = await query;
-
-  if (error) {
-    console.error("Error fetching listings:", error.message);
-    throw new Error("Failed to fetch listings");
-  }
-
-  let filteredData = data || [];
-
-  let data: ListingsItem[] | null = null;
-  let error: any = null;
+  let result: any;
 
   if (userLocation && filters.maxDistance !== undefined) {
-    const { data: rpcData, error: rpcError } = await supabase.rpc(
+    result = await supabase.rpc(
       "get_filtered_listings",
       {
         p_page: page,
@@ -157,20 +147,16 @@ export async function fetchListings({
         p_radius_km: filters.maxDistance,
       },
     );
-    data = rpcData;
-    error = rpcError;
   } else {
-    const { data: queryData, error: queryError } = await query;
-    data = queryData;
-    error = queryError;
+    result = await query;
   }
 
-  if (error) {
-    console.error("Error fetching listings:", error.message);
+  if (result.error) {
+    console.error("Error fetching listings:", result.error.message);
     throw new Error("Failed to fetch listings");
   }
 
-  let filteredData = data || [];
+  const filteredData = result.data || [];
 
   return filteredData.map((listing) => ({
     id: listing.id,
