@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
-    return NextResponse.json({ success: true, session: data.access_token });
+    return NextResponse.json({ success: true, session: data });
   } catch (error) {
     console.error("Unexpected error during 2FA verification:", error);
     return NextResponse.json(

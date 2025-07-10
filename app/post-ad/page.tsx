@@ -197,7 +197,23 @@ export default function PostAdPage() {
         });
 
         // Poll for transaction status
+        let pollAttempts = 0;
+        const MAX_POLL_ATTEMPTS = 20; // 100 seconds max with 5-second intervals
+
         const checkPaymentStatus = async () => {
+          pollAttempts++;
+
+          if (pollAttempts > MAX_POLL_ATTEMPTS) {
+            toast({
+              title: "Payment Timeout",
+              description: "Payment verification timed out. Please check your payment status.",
+              variant: "destructive",
+            });
+            setIsProcessingPayment(false);
+            setIsSubmitted(false);
+            return;
+          }
+
           const supabase = getSupabaseClient();
           const { data: transaction, error } = await supabase
             .from("transactions")

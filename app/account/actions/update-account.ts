@@ -1,7 +1,5 @@
 "use server";
 
-import { toast } from "@/components/ui/use-toast";
-
 export async function updateAccount(formData: any) {
   try {
     const response = await fetch("/api/account", {
@@ -15,16 +13,9 @@ export async function updateAccount(formData: any) {
       const errorData = await response.json();
       throw new Error(errorData.error || "Failed to update account");
     }
-    toast({
-      title: "Success",
-      description: "Your account has been updated.",
-    });
+    return { success: true, message: "Your account has been updated." };
   } catch (error) {
     console.error(error);
-    toast({
-      title: "Error",
-      description: (error as Error).message,
-      variant: "destructive",
-    });
+    return { success: false, message: (error as Error).message };
   }
 }

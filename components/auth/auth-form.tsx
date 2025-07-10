@@ -185,10 +185,7 @@ export function AuthForm() {
 
       if (result.success) {
         setMessage("2FA code verified successfully. Signing in...");
-        await supabase.auth.setSession({
-          access_token: result.session.access_token,
-          refresh_token: result.session.refresh_token,
-        });
+        await supabase.auth.setSession(result.session);
         setShow2FAModal(false);
         router.push("/");
       } else {
@@ -556,14 +553,3 @@ export function AuthForm() {
     </Card>
   );
 }
-
-// ToDO: In components/auth/auth-form.tsx around lines 168 to 173, after verifying the
-// 2FA code via the API, the returned session tokens are not applied client-side
-// before redirecting, causing users to land on the home page without an active
-// session. To fix this, first update app/api/auth/verify-2fa/route.ts to include
-// the session tokens from Supabase's response in the JSON returned to the client.
-// Then, in handle2FASubmit in auth-form.tsx, after receiving the API response,
-// call supabase.auth.setSession with the access_token and refresh_token from the
-// returned session data and await its completion. Only after setSession resolves
-// should you call router.push("/") to redirect, ensuring the client holds the
-// authenticated session on navigation.

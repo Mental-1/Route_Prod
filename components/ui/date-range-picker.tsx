@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { CalendarDays } from "lucide-react";
-import { addDays, format } from "date-fns";
+import { format } from "date-fns";
 import { DateRange } from "react-day-picker";
 import { useMediaQuery } from "@/hooks/use-media-query";
 
@@ -71,7 +71,6 @@ export function DatePickerWithRange({
             selected={date}
             onSelect={(range) => {
               setDate(range);
-              onDateChangeAction(range);
             }}
             numberOfMonths={2}
           />

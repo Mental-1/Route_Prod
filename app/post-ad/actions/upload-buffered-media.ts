@@ -27,9 +27,7 @@ export async function uploadBufferedMedia(
     throw new Error("Unauthorized");
   }
 
-  const results: UploadResult[] = [];
-
-  for (const url of mediaUrls) {
+  const uploadPromises = mediaUrls.map(async (url) => {
     try {
       let file: File;
       let processedBuffer: Buffer;
@@ -63,7 +61,13 @@ export async function uploadBufferedMedia(
         );
       } else {
         // Skip already uploaded URLs or invalid ones
-        continue;
+        return {
+          url: url,
+          filename: "",
+          size: 0,
+          type: "",
+          error: "Invalid URL",
+        };
       }
       const ALLOWED_IMAGE_TYPES = [
         "image/jpeg",
@@ -117,28 +121,38 @@ export async function uploadBufferedMedia(
       const {
         data: { publicUrl },
       } = supabase.storage.from(bucket).getPublicUrl(filePath);
-      results.push({
+      return {
         url: publicUrl,
         filename: filePath,
         size: processedBuffer.length,
         type: file.type.startsWith("image/")
           ? `image/${processedExtension}`
           : file.type,
-      });
+      };
     } catch (error) {
       console.error("Error processing/uploading media URL:", url, error);
-      // Continue with other files even if one fails
-      results.push({
+      return {
         url: url,
         filename: "",
         size: 0,
         type: "",
         error: error instanceof Error ? error.message : "Unknown error",
-      });
+      };
     }
-  }
+  });
 
-  return results;
+  const results = await Promise.allSettled(uploadPromises);
+  return results.map((result) =>
+    result.status === "fulfilled"
+      ? result.value
+      : {
+          url: "",
+          filename: "",
+          size: 0,
+          type: "",
+          error: "Processing failed",
+        },
+  );
 }
 // In app/post-ad/actions/upload-buffered-media.ts around lines 34 to 39, the code
 // attempts to fetch a Blob URL on the server side, which is invalid because Blob

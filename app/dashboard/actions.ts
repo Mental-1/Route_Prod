@@ -20,25 +20,10 @@ export async function getDashboardData(): Promise<DashboardData> {
     throw new Error("Authentication required");
   }
 
-  if (!user.id) {
-    return {
-      activeListings: [],
-      pendingListings: [],
-      expiredListings: [],
-      transactions: [],
-      recentActivity: [],
-    };
-  }
-
-  const { data: allListings, error: listingsError } = await supabase
-    .from("listings")
-    .select("*")
-    .eq("user_id", user.id);
-
-  const { data: transactions, error: transactionsError } = await supabase
-    .from("transactions")
-    .select("*, listings(id, title)")
-    .eq("user_id", user.id);
+  const [ { data: allListings, error: listingsError }, { data: transactions, error: transactionsError } ] = await Promise.all([
+    supabase.from("listings").select("id, title, description, price, images, condition, location, views, category_id, subcategory_id, created_at, status").eq("user_id", user.id),
+    supabase.from("transactions").select("id, created_at, payment_method, status, amount, listings(id, title)").eq("user_id", user.id)
+  ]);
 
   if (listingsError) {
     console.error("Failed to fetch listings:", listingsError);

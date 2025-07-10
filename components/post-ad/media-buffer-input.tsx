@@ -1,7 +1,7 @@
 "use client";
 
 import type React from "react";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
@@ -26,9 +26,12 @@ export function MediaBufferInput({
   const inputRef = useRef<HTMLInputElement>(null);
   const [processing, setProcessing] = useState(false);
   const [processingProgress, setProcessingProgress] = useState(0);
+  const [mediaTypes, setMediaTypes] = useState<Map<string, "image" | "video">>(
+    new Map(),
+  );
 
-  const imageUrls = value.filter((url) => url.startsWith("data:image/"));
-  const videoUrls = value.filter((url) => url.startsWith("blob:"));
+  const imageUrls = value.filter((url) => mediaTypes.get(url) === "image");
+  const videoUrls = value.filter((url) => mediaTypes.get(url) === "video");
 
   const processFile = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -66,7 +69,11 @@ export function MediaBufferInput({
                   const reader = new FileReader();
                   reader.readAsDataURL(blob);
                   reader.onloadend = () => {
-                    resolve(reader.result as string); // Resolve with Data URL
+                    const dataUrl = reader.result as string;
+                    setMediaTypes((prev) =>
+                      new Map(prev).set(dataUrl, "image"),
+                    );
+                    resolve(dataUrl);
                   };
                 } else {
                   reject(new Error("Canvas to Blob failed"));
@@ -82,8 +89,9 @@ export function MediaBufferInput({
         reader.onerror = reject;
         reader.readAsDataURL(file);
       } else if (file.type.startsWith("video/")) {
-        // For videos, we'll just create an object URL
-        resolve(URL.createObjectURL(file));
+        const blobUrl = URL.createObjectURL(file);
+        setMediaTypes((prev) => new Map(prev).set(blobUrl, "video"));
+        resolve(blobUrl);
       } else {
         reject(new Error("Unsupported file type"));
       }
@@ -201,8 +209,21 @@ export function MediaBufferInput({
   };
 
   const removeFile = (urlToRemove: string) => {
+    if (urlToRemove.startsWith("blob:")) {
+      URL.revokeObjectURL(urlToRemove);
+    }
     onChangeAction(value.filter((url) => url !== urlToRemove));
   };
+
+  useEffect(() => {
+    return () => {
+      value.forEach((url) => {
+        if (url.startsWith("blob:")) {
+          URL.revokeObjectURL(url);
+        }
+      });
+    };
+  }, [value]);
 
   const onButtonClick = () => {
     inputRef.current?.click();
@@ -283,7 +304,7 @@ export function MediaBufferInput({
       {value.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
           {value.map((url, index) => {
-            const isVideo = url.startsWith("blob:") && videoUrls.includes(url);
+            const isVideo = mediaTypes.get(url) === "video";
             return (
               <div key={index} className="image-preview group relative">
                 {isVideo ? (
@@ -291,7 +312,9 @@ export function MediaBufferInput({
                     src={url}
                     className="w-full h-32 object-cover rounded-lg"
                     controls
-                  />
+                  >
+                    <track kind="captions" />
+                  </video>
                 ) : (
                   <img
                     src={url || "/placeholder.svg"}
