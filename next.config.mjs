@@ -21,6 +21,14 @@ const nextConfig = {
   },
   images: {
     unoptimized: false,
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'cvnertrkcwjjdrnnjswk.supabase.co',
+        port: '',
+        pathname: '/storage/v1/object/public/listings/**',
+      },
+    ],
   },
 
   async headers() {
@@ -64,7 +72,7 @@ const nextConfig = {
           {
             key: "Content-Security-Policy",
             value:
-              "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://api.routteme.com; frame-src 'self' https://www.youtube.com https://player.vimeo.com;",
+              "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://cvnertrkcwjjdrnnjswk.supabase.co; font-src 'self' data:; connect-src 'self' https://api.routteme.com; frame-src 'self' https://www.youtube.com https://player.vimeo.com;",
           },
           {
             key: "Permissions-Policy",

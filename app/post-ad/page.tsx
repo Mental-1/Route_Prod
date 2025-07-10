@@ -120,15 +120,22 @@ export default function PostAdPage() {
 
   useEffect(() => {
     if (formData.category) {
-      setSubcategories(
-        allSubcategories.filter(
-          (sub) => sub.parent_category_id === Number(formData.category),
-        ),
+      const selectedCategory = categories.find(
+        (c) => c.name === formData.category,
       );
+      if (selectedCategory) {
+        setSubcategories(
+          allSubcategories.filter(
+            (sub) => sub.parent_category_id === selectedCategory.id,
+          ),
+        );
+      } else {
+        setSubcategories([]);
+      }
     } else {
       setSubcategories([]);
     }
-  }, [formData.category, allSubcategories]);
+  }, [formData.category, categories, allSubcategories]);
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(0);
   const selectedTier =
@@ -681,7 +688,7 @@ function AdDetailsStep({
               </SelectTrigger>
               <SelectContent>
                 {categories.map((category) => (
-                  <SelectItem key={category.id} value={category.id}>
+                  <SelectItem key={category.id} value={category.name}>
                     {category.name}
                   </SelectItem>
                 ))}
