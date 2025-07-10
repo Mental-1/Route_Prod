@@ -177,7 +177,7 @@ export const notificationSchema = z.object({
   type: z.enum(["listing", "account", "marketing", "message"]),
   title: createSanitizedString({ min: 1, max: 255 }),
   message: createSanitizedString({ min: 1, max: 1000 }),
-  data: z.record(z.any()).default({}),
+  data: z.record(z.string(), z.any()).default({}),
 });
 
 // File upload validation
