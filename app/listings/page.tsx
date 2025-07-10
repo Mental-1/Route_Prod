@@ -131,20 +131,28 @@ export default function ListingsPage() {
   useEffect(() => {
     setLoading(true);
     setListings([]);
+    const currentFilters: any = {
+      categories: selectedCategories.map(Number).filter((n) => !isNaN(n)),
+      subcategories: selectedSubcategories
+        .map(Number)
+        .filter((n) => !isNaN(n)),
+      conditions: selectedConditions,
+      priceRange: {
+        min: priceRange[0],
+        max: priceRange[1],
+      },
+    };
+
+    // Only apply maxDistance filter if it's not the default value (e.g., 5km)
+    // or if the user has explicitly changed it.
+    // Assuming the default maxDistance is 5km as per your slider defaultValue.
+    if (maxDistance[0] !== 5) {
+      currentFilters.maxDistance = maxDistance[0];
+    }
+
     fetchListings({
       page: 1,
-      filters: {
-        categories: selectedCategories.map(Number).filter((n) => !isNaN(n)),
-        subcategories: selectedSubcategories
-          .map(Number)
-          .filter((n) => !isNaN(n)),
-        conditions: selectedConditions,
-        priceRange: {
-          min: priceRange[0],
-          max: priceRange[1],
-        },
-        maxDistance: maxDistance[0],
-      },
+      filters: currentFilters,
       sortBy,
       userLocation,
     })
@@ -175,18 +183,7 @@ export default function ListingsPage() {
     const nextPage = page + 1;
     const moreListings = await fetchListings({
       page: nextPage,
-      filters: {
-        categories: selectedCategories.map(Number).filter((n) => !isNaN(n)),
-        subcategories: selectedSubcategories
-          .map(Number)
-          .filter((n) => !isNaN(n)),
-        conditions: selectedConditions,
-        priceRange: {
-          min: priceRange[0],
-          max: priceRange[1],
-        },
-        maxDistance: maxDistance[0],
-      },
+      filters: currentFilters,
       sortBy,
       userLocation,
     });

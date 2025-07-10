@@ -137,35 +137,39 @@ export async function fetchListings({
   let filteredData = data || [];
 
   if (userLocation && filters.maxDistance !== undefined) {
-    interface ListingInRadius {
-  id: string;
-}
-
-    const { data: listingsInRadius, error: radiusError } = await supabase.rpc(
-      "get_listings_within_radius",
+    const { data: rpcData, error: rpcError } = await supabase.rpc(
+      "get_filtered_listings",
       {
-        user_latitude: userLocation.lat,
-        user_longitude: userLocation.lon,
-        radius_km: filters.maxDistance,
+        p_page: page,
+        p_page_size: pageSize,
+        p_sort_by: sortBy,
+        p_sort_order: sortOrder,
+        p_categories: filters.categories || [],
+        p_subcategories: filters.subcategories || [],
+        p_conditions: filters.conditions || [],
+        p_min_price: filters.priceRange?.min || 0,
+        p_max_price: filters.priceRange?.max || 1000000, // Assuming a max price
+        p_user_latitude: userLocation.lat,
+        p_user_longitude: userLocation.lon,
+        p_radius_km: filters.maxDistance,
       },
-    ) as { data: ListingInRadius[] | null; error: any };
+    );
 
-    if (radiusError) {
-      console.error(
-        "Error fetching listings within radius:",
-        radiusError.message,
-      );
-      throw new Error("Failed to fetch listings within radius");
+    if (rpcError) {
+      console.error("Error fetching filtered listings via RPC:", rpcError.message);
+      throw new Error("Failed to fetch filtered listings");
     }
-
-    // Filter the already fetched data by the IDs returned from the RPC call
-    const listingsInRadiusIds = new Set(
-      listingsInRadius ? listingsInRadius.map((listing) => listing.id) : [],
-    );
-    filteredData = filteredData.filter((listing) =>
-      listingsInRadiusIds.has(listing.id),
-    );
+    return rpcData || [];
   }
+
+  const { data, error } = await query;
+
+  if (error) {
+    console.error("Error fetching listings:", error.message);
+    throw new Error("Failed to fetch listings");
+  }
+
+  let filteredData = data || [];
 
   return filteredData.map((listing) => ({
     id: listing.id,
