@@ -137,6 +137,10 @@ export async function fetchListings({
   let filteredData = data || [];
 
   if (userLocation && filters.maxDistance !== undefined) {
+    interface ListingInRadius {
+  id: string;
+}
+
     const { data: listingsInRadius, error: radiusError } = await supabase.rpc(
       "get_listings_within_radius",
       {
@@ -144,7 +148,7 @@ export async function fetchListings({
         user_longitude: userLocation.lon,
         radius_km: filters.maxDistance,
       },
-    );
+    ) as { data: ListingInRadius[] | null; error: any };
 
     if (radiusError) {
       console.error(
@@ -156,7 +160,7 @@ export async function fetchListings({
 
     // Filter the already fetched data by the IDs returned from the RPC call
     const listingsInRadiusIds = new Set(
-      listingsInRadius.map((listing) => listing.id),
+      listingsInRadius ? listingsInRadius.map((listing) => listing.id) : [],
     );
     filteredData = filteredData.filter((listing) =>
       listingsInRadiusIds.has(listing.id),

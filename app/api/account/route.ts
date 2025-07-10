@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { getSupabaseRouteHandler } from "@/utils/supabase/server";
-import { z } from "zod";
+import { z, ZodError } from "zod";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { Database } from "@/utils/supabase/database.types";
+
+type Schema = Database["public"];
 
 const phoneRegex = new RegExp(
   /^(\+?[1-9]\d{0,3})?[\s.-]?\(?\d{1,4}\)?[\s.-]?\d{1,4}[\s.-]?\d{1,9}$/,
@@ -17,7 +19,7 @@ const accountSchema = z.object({
   website: z.string().url("Invalid URL").optional(),
 });
 
-async function getUserId(supabase: SupabaseClient<Database>) {
+async function getUserId(supabase: SupabaseClient<Schema>) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -98,7 +100,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ message: "Account updated successfully" });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.errors }, { status: 400 });
+      return NextResponse.json({ error: error.issues }, { status: 400 });
     }
     console.error("Error parsing request body:", error);
     return NextResponse.json(
