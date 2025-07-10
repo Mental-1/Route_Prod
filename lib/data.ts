@@ -160,7 +160,7 @@ export async function fetchListings({
 
     // Filter the already fetched data by the IDs returned from the RPC call
     const listingsInRadiusIds = new Set(
-      listingsInRadius.map((listing) => listing.id),
+      listingsInRadius ? listingsInRadius.map((listing) => listing.id) : [],
     );
     filteredData = filteredData.filter((listing) =>
       listingsInRadiusIds.has(listing.id),
