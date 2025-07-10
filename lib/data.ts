@@ -156,7 +156,7 @@ export async function fetchListings({
     throw new Error("Failed to fetch listings");
   }
 
-  const filteredData = result.data || [];
+  const filteredData = (result.data && Array.isArray(result.data.listings) ? result.data.listings : result.data) || [];
 
   return filteredData.map((listing: ListingsItem) => ({
     id: listing.id,

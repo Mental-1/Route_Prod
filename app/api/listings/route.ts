@@ -42,7 +42,6 @@ export async function GET(request: Request) {
 
       const formattedListing = {
         ...data,
-        id: Number(data.id),
         location: {
           lat: data.latitude,
           lng: data.longitude,
