@@ -32,7 +32,12 @@ export function DatePickerWithRange({
     if (date) {
       onDateChangeAction(date);
     }
-  }, [date]);
+  }, [date, onDateChangeAction]);
+
+  // Keep internal state in sync if parent updates `initialRange`
+  React.useEffect(() => {
+    setDate(initialRange);
+  }, [initialRange]);
 
   return (
     <div className={cn("grid gap-2", className)}>
@@ -52,14 +57,14 @@ export function DatePickerWithRange({
               (date?.from ? (
                 date.to ? (
                   <>
-                    {format(date.from, "LLL dd, y")} -{","}
+                    {format(date.from, "LLL dd, y")} -
                     {format(date.to, "LLL dd, y")}
                   </>
                 ) : (
                   format(date.from, "LLL dd, y")
                 )
               ) : (
-                <span>Pick a date</span>
+                <span>{placeholder}</span>
               ))}
           </Button>
         </PopoverTrigger>
