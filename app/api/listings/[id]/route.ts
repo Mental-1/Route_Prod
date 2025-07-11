@@ -22,7 +22,8 @@ export async function GET(
       .select(
         `
         *,
-        category:categories(name)
+        category:categories(name),
+        seller:profiles(id, full_name, user_name, avatar_url)
       `,
       )
       .eq("id", id)
