@@ -748,46 +748,47 @@ export default function ListingsPage() {
                       <ListingCardSkeleton key={i} layout="grid" />
                     ))
                   : sortedListings.map((listing) => (
-                      <Card
-                        key={listing.id}
-                        className="overflow-hidden border-0 hover:shadow-md transition-shadow"
-                      >
-                        <CardContent className="p-0">
-                          <div className="aspect-square bg-muted">
-                            <img
-                              src={
-                                (listing.images && listing.images.length > 0
-                                  ? listing.images[0]
-                                  : null) || "/placeholder.svg"
-                              }
-                              alt={listing.title}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                          <div className="p-3">
-                            <h3 className="font-medium text-base mb-1 truncate">
-                              {listing.title}
-                            </h3>
-                            <p className="text-lg font-bold text-green-600 mb-1">
-                              Ksh{listing.price}
-                            </p>
-                            <p className="text-xs text-muted-foreground mb-2 line-clamp-2">
-                              {listing.description}
-                            </p>
-                            <div className="flex items-center gap-2 mb-1">
-                              <Badge variant="outline" className="text-xs">
-                                {listing.condition}
-                              </Badge>
+                      <Link key={listing.id} href={`/listings/${listing.id}`}>
+                        <Card
+                          className="overflow-hidden border-0 hover:shadow-md transition-shadow"
+                        >
+                          <CardContent className="p-0">
+                            <div className="aspect-square bg-muted">
+                              <img
+                                src={
+                                  (listing.images && listing.images.length > 0
+                                    ? listing.images[0]
+                                    : null) || "/placeholder.svg"
+                                }
+                                alt={listing.title}
+                                className="w-full h-full object-cover"
+                              />
                             </div>
-                            <div className="flex items-center justify-between text-xs text-muted-foreground">
-                              <div className="flex items-center gap-1">
-                                <MapPin className="h-3 w-3" />
-                                {listing.location}
+                            <div className="p-3">
+                              <h3 className="font-medium text-base mb-1 truncate">
+                                {listing.title}
+                              </h3>
+                              <p className="text-lg font-bold text-green-600 mb-1">
+                                Ksh{listing.price}
+                              </p>
+                              <p className="text-xs text-muted-foreground mb-2 line-clamp-2">
+                                {listing.description}
+                              </p>
+                              <div className="flex items-center gap-2 mb-1">
+                                <Badge variant="outline" className="text-xs">
+                                  {listing.condition}
+                                </Badge>
+                              </div>
+                              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                                <div className="flex items-center gap-1">
+                                  <MapPin className="h-3 w-3" />
+                                  {listing.location}
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        </CardContent>
-                      </Card>
+                          </CardContent>
+                        </Card>
+                      </Link>
                     ))}
               </div>
             )}
@@ -800,51 +801,50 @@ export default function ListingsPage() {
                       <ListingCardSkeleton key={i} layout="list" />
                     ))
                   : sortedListings.map((listing) => (
-                      <Card
-                        key={listing.id}
-                        className="overflow-hidden border-0 hover:shadow-md transition-shadow"
-                      >
-                        <CardContent className="p-0">
-                          <div className="flex">
-                            <div className="w-40 h-40 bg-muted">
-                              <img
-                                src={
-                                  (listing.images && listing.images.length > 0
-                                    ? listing.images[0]
-                                    : null) || "/placeholder.svg"
-                                }
-                                alt={listing.title}
-                                className="w-full h-full object-cover"
-                              />
-                            </div>
-                            <div className="p-4 flex-1">
-                              <h3 className="font-medium text-lg mb-1">
-                                {listing.title}
-                              </h3>
-                              <p className="text-xl font-bold text-green-600 mb-2">
-                                Ksh{listing.price}
-                              </p>
-                              <p className="text-sm text-muted-foreground mb-3">
-                                {listing.description}
-                              </p>
-                              <div className="flex items-center gap-2 mb-2">
-                                <Badge variant="outline">
-                                  {listing.condition}
-                                </Badge>
+                      <Link key={listing.id} href={`/listings/${listing.id}`}>
+                        <Card
+                          className="overflow-hidden border-0 hover:shadow-md transition-shadow"
+                        >
+                          <CardContent className="p-0">
+                            <div className="flex">
+                              <div className="w-40 h-40 bg-muted">
+                                <img
+                                  src={
+                                    (listing.images && listing.images.length > 0
+                                      ? listing.images[0]
+                                      : null) || "/placeholder.svg"
+                                  }
+                                  alt={listing.title}
+                                  className="w-full h-full object-cover"
+                                />
                               </div>
-                              <div className="flex items-center justify-between text-sm text-muted-foreground">
-                                <div className="flex items-center gap-1">
-                                  <MapPin className="h-4 w-4" />
-                                  {listing.location}
+                              <div className="p-4 flex-1">
+                                <h3 className="font-medium text-lg mb-1">
+                                  {listing.title}
+                                </h3>
+                                <p className="text-xl font-bold text-green-600 mb-2">
+                                  Ksh{listing.price}
+                                </p>
+                                <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+                                  {listing.description}
+                                </p>
+                                <div className="flex items-center gap-2 mb-2">
+                                  <Badge variant="outline">
+                                    {listing.condition}
+                                  </Badge>
+                                </div>
+                                <div className="flex items-center justify-between text-sm text-muted-foreground">
+                                  <div className="flex items-center gap-1">
+                                    <MapPin className="h-4 w-4" />
+                                    {listing.location}
+                                  </div>
                                 </div>
                               </div>
                             </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-              </div>
-            )}
+                          </CardContent>
+                        </Card>
+                      </Link>
+                    ))}}
             {/* Loading indicator for infinite scroll */}
             {hasMore && (
               <div ref={loadingRef} className="flex justify-center py-8">
