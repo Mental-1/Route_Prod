@@ -23,6 +23,7 @@ export async function GET(
         `
         *,
         category:categories(name),
+        subcategory:subcategories(name),
         seller:profiles(id, full_name, user_name, avatar_url)
       `,
       )
