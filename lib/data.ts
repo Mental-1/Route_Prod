@@ -99,12 +99,14 @@ export async function fetchListings({
 } = {}): Promise<ListingsItem[]> {
   const supabase = getSupabaseClient();
 
+  const actualSortBy = sortBy === "newest" ? "created_at" : sortBy;
+
   let query = supabase
     .from("listings")
     .select(
       "id, title, description, price, images, condition, location, views, category_id, subcategory_id, created_at",
     )
-    .order(sortBy, { ascending: sortOrder === "asc" })
+    .order(actualSortBy, { ascending: sortOrder === "asc" })
     .range((page - 1) * pageSize, page * pageSize - 1);
 
   if (filters.categories && filters.categories.length > 0) {
