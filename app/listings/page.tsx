@@ -29,6 +29,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { fetchListings, ListingsItem } from "@/lib/data";
 import { ListingCardSkeleton } from "@/components/skeletons/listing-card-skeleton";
+import Link from "next/link";
 
 type Subcategory = {
   id: number;
@@ -133,9 +134,7 @@ export default function ListingsPage() {
     setListings([]);
     const currentFilters: any = {
       categories: selectedCategories.map(Number).filter((n) => !isNaN(n)),
-      subcategories: selectedSubcategories
-        .map(Number)
-        .filter((n) => !isNaN(n)),
+      subcategories: selectedSubcategories.map(Number).filter((n) => !isNaN(n)),
       conditions: selectedConditions,
       priceRange: {
         min: priceRange[0],
@@ -184,9 +183,7 @@ export default function ListingsPage() {
 
     const currentFilters: any = {
       categories: selectedCategories.map(Number).filter((n) => !isNaN(n)),
-      subcategories: selectedSubcategories
-        .map(Number)
-        .filter((n) => !isNaN(n)),
+      subcategories: selectedSubcategories.map(Number).filter((n) => !isNaN(n)),
       conditions: selectedConditions,
       priceRange: {
         min: priceRange[0],
@@ -749,9 +746,7 @@ export default function ListingsPage() {
                     ))
                   : sortedListings.map((listing) => (
                       <Link key={listing.id} href={`/listings/${listing.id}`}>
-                        <Card
-                          className="overflow-hidden border-0 hover:shadow-md transition-shadow"
-                        >
+                        <Card className="overflow-hidden border-0 hover:shadow-md transition-shadow">
                           <CardContent className="p-0">
                             <div className="aspect-square bg-muted">
                               <img
@@ -803,6 +798,7 @@ export default function ListingsPage() {
                   : sortedListings.map((listing) => (
                       <Link key={listing.id} href={`/listings/${listing.id}`}>
                         <Card
+                          key={listing.id}
                           className="overflow-hidden border-0 hover:shadow-md transition-shadow"
                         >
                           <CardContent className="p-0">
@@ -826,8 +822,8 @@ export default function ListingsPage() {
                                   Ksh{listing.price}
                                 </p>
                                 <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
-                                  {listing.description}
-                                </p>
+                                {listing.description}
+                              </p>
                                 <div className="flex items-center gap-2 mb-2">
                                   <Badge variant="outline">
                                     {listing.condition}
@@ -844,7 +840,9 @@ export default function ListingsPage() {
                           </CardContent>
                         </Card>
                       </Link>
-                    ))}}
+                    ))}
+              </div>
+            )}
             {/* Loading indicator for infinite scroll */}
             {hasMore && (
               <div ref={loadingRef} className="flex justify-center py-8">
