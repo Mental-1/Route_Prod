@@ -142,7 +142,7 @@ export async function POST(request: Request) {
     // Increment the user's listing count
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
-      .select("listings_count")
+      .select("listing_count")
       .eq("id", user.id)
       .single();
 
@@ -151,11 +151,11 @@ export async function POST(request: Request) {
       // Log the error but don't block the listing creation response
     }
 
-    const currentListingsCount = profile?.listings_count || 0;
+    const currentListingCount = profile?.listing_count || 0;
 
     const { error: updateError } = await supabase
       .from("profiles")
-      .update({ listings_count: currentListingsCount + 1 })
+      .update({ listing_count: currentListingCount + 1 })
       .eq("id", user.id);
 
     if (updateError) {
@@ -325,7 +325,7 @@ export async function DELETE(request: Request) {
     // Decrement the user's listing count
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
-      .select("listings_count")
+      .select("listing_count")
       .eq("id", user.id)
       .single();
 
@@ -334,11 +334,11 @@ export async function DELETE(request: Request) {
       // Log the error but don't block the listing deletion response
     }
 
-    const currentListingsCount = profile?.listings_count || 0;
+    const currentListingCount = profile?.listing_count || 0;
 
     const { error: updateError } = await supabase
       .from("profiles")
-      .update({ listings_count: Math.max(0, currentListingsCount - 1) })
+      .update({ listing_count: Math.max(0, currentListingCount - 1) })
       .eq("id", user.id);
 
     if (updateError) {
