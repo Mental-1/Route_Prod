@@ -114,6 +114,8 @@ export async function POST(request: Request) {
       description: String(body.description) || "No description provided",
       price: Number(body.price) || 0,
       location: body.location || "Unknown Location",
+      latitude: body.latitude || null,
+      longitude: body.longitude || null,
       category_id: category.id, // Use the fetched numeric category ID
       subcategory_id: body.subcategory_id ? Number(body.subcategory_id) : null,
       status: ALLOWED_STATUSES.includes(body.status) ? body.status : "active",
@@ -135,6 +137,30 @@ export async function POST(request: Request) {
         { error: "Internal server error occurred while creating listing" },
         { status: 500 },
       );
+    }
+
+    // Increment the user's listing count
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("listings_count")
+      .eq("id", user.id)
+      .single();
+
+    if (profileError) {
+      console.error("Error fetching user profile for listing count:", profileError);
+      // Log the error but don't block the listing creation response
+    }
+
+    const currentListingsCount = profile?.listings_count || 0;
+
+    const { error: updateError } = await supabase
+      .from("profiles")
+      .update({ listings_count: currentListingsCount + 1 })
+      .eq("id", user.id);
+
+    if (updateError) {
+      console.error("Error updating user listing count:", updateError);
+      // Log the error but don't block the listing creation response
     }
 
     return NextResponse.json(
@@ -294,6 +320,30 @@ export async function DELETE(request: Request) {
     if (error) {
       console.error("Error deleting listing:", error);
       return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    // Decrement the user's listing count
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("listings_count")
+      .eq("id", user.id)
+      .single();
+
+    if (profileError) {
+      console.error("Error fetching user profile for listing count decrement:", profileError);
+      // Log the error but don't block the listing deletion response
+    }
+
+    const currentListingsCount = profile?.listings_count || 0;
+
+    const { error: updateError } = await supabase
+      .from("profiles")
+      .update({ listings_count: Math.max(0, currentListingsCount - 1) })
+      .eq("id", user.id);
+
+    if (updateError) {
+      console.error("Error updating user listing count after deletion:", updateError);
+      // Log the error but don't block the listing deletion response
     }
 
     // Supabase delete operation doesn't return data by default,

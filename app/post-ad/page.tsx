@@ -313,6 +313,10 @@ export default function PostAdPage() {
       );
       const finalMediaUrls = uploadedMediaResults.map((res) => res.url);
 
+      const finalLocation = Array.isArray(formData.location) && formData.location.length === 2
+        ? `Lat: ${formData.location[0]}, Lng: ${formData.location[1]}`
+        : formData.location;
+
       const listingData = {
         title: formData.title,
         description: formData.description,
@@ -321,7 +325,9 @@ export default function PostAdPage() {
         subcategory_id: formData.subcategory
           ? parseInt(formData.subcategory)
           : null,
-        location: formData.location,
+        location: finalLocation,
+        latitude: Array.isArray(formData.location) && formData.location.length === 2 ? formData.location[0] : null,
+        longitude: Array.isArray(formData.location) && formData.location.length === 2 ? formData.location[1] : null,
         condition: formData.condition,
         images: finalMediaUrls, // Use uploaded URLs
         tags: formData.tags, // Add tags to the payload
