@@ -36,22 +36,22 @@ export interface ListingsItem {
 export async function getRecentListings(): Promise<DisplayListingItem[]> {
   const supabase = getSupabaseClient();
 
-  const fourDaysAgo = new Date();
-  fourDaysAgo.setDate(fourDaysAgo.getDate() - 4);
+  const threeDaysAgo = new Date();
+  threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
 
-  const { data, error } = await supabase
+  const { data: recentListingsData, error: recentListingsError } = await supabase
     .from("listings")
     .select("id, title, price, location, views, images, condition")
-    .gte("created_at", fourDaysAgo.toISOString())
+    .gte("created_at", threeDaysAgo.toISOString())
     .order("created_at", { ascending: false })
     .limit(8);
 
-  if (error) {
-    console.error("Error fetching recent listings:", error.message);
+  if (recentListingsError) {
+    console.error("Error fetching recent listings:", recentListingsError.message);
     throw new Error("Failed to fetch recent listings");
   }
 
-  const transformedListings: DisplayListingItem[] = data.map((listing) => ({
+  const transformedListings: DisplayListingItem[] = recentListingsData.map((listing) => ({
     id: listing.id,
     title: listing.title,
     price: listing.price,
@@ -99,12 +99,14 @@ export async function fetchListings({
 } = {}): Promise<ListingsItem[]> {
   const supabase = getSupabaseClient();
 
+  const actualSortBy = sortBy === "newest" ? "created_at" : sortBy;
+
   let query = supabase
     .from("listings")
     .select(
       "id, title, description, price, images, condition, location, views, category_id, subcategory_id, created_at",
     )
-    .order(sortBy, { ascending: sortOrder === "asc" })
+    .order(actualSortBy, { ascending: sortOrder === "asc" })
     .range((page - 1) * pageSize, page * pageSize - 1);
 
   if (filters.categories && filters.categories.length > 0) {
@@ -127,47 +129,38 @@ export async function fetchListings({
       .lte("price", filters.priceRange.max);
   }
 
-  const { data, error } = await query;
+  let result: any;
 
-  if (error) {
-    console.error("Error fetching listings:", error.message);
+  if (userLocation && filters.maxDistance !== undefined) {
+    result = await supabase.rpc(
+      "get_filtered_listings",
+      {
+        p_page: page,
+        p_page_size: pageSize,
+        p_sort_by: sortBy,
+        p_sort_order: sortOrder,
+        p_categories: filters.categories || [],
+        p_subcategories: filters.subcategories || [],
+        p_conditions: filters.conditions || [],
+        p_min_price: filters.priceRange?.min || 0,
+        p_max_price: filters.priceRange?.max || 1000000,
+        p_user_latitude: userLocation.lat,
+        p_user_longitude: userLocation.lon,
+        p_radius_km: filters.maxDistance,
+      },
+    );
+  } else {
+    result = await query;
+  }
+
+  if (result.error) {
+    console.error("Error fetching listings:", result.error.message);
     throw new Error("Failed to fetch listings");
   }
 
-  let filteredData = data || [];
+  const filteredData = (result.data && Array.isArray(result.data.listings) ? result.data.listings : result.data) || [];
 
-  if (userLocation && filters.maxDistance !== undefined) {
-    interface ListingInRadius {
-  id: string;
-}
-
-    const { data: listingsInRadius, error: radiusError } = await supabase.rpc(
-      "get_listings_within_radius",
-      {
-        user_latitude: userLocation.lat,
-        user_longitude: userLocation.lon,
-        radius_km: filters.maxDistance,
-      },
-    ) as { data: ListingInRadius[] | null; error: any };
-
-    if (radiusError) {
-      console.error(
-        "Error fetching listings within radius:",
-        radiusError.message,
-      );
-      throw new Error("Failed to fetch listings within radius");
-    }
-
-    // Filter the already fetched data by the IDs returned from the RPC call
-    const listingsInRadiusIds = new Set(
-      listingsInRadius ? listingsInRadius.map((listing) => listing.id) : [],
-    );
-    filteredData = filteredData.filter((listing) =>
-      listingsInRadiusIds.has(listing.id),
-    );
-  }
-
-  return filteredData.map((listing) => ({
+  return filteredData.map((listing: ListingsItem) => ({
     id: listing.id,
     title: listing.title,
     description: listing.description,

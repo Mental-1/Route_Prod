@@ -13,84 +13,47 @@ export async function GET(request: Request) {
   const supabase = await getSupabaseRouteHandler(cookies);
   const { searchParams } = new URL(request.url);
 
-  const id = searchParams.get("id");
   const page = Number.parseInt(searchParams.get("page") || "1", 10);
   const limit = Number.parseInt(searchParams.get("limit") || "8", 10);
 
   try {
-    if (id) {
-      const { data, error } = await supabase
-        .from("listings")
-        .select("*")
-        .eq("id", id)
-        .single();
+    const offset = (page - 1) * limit;
 
-      if (error && error.code === "PGRST116") {
-        // No rows found for .single()
-        return NextResponse.json(
-          { message: "Listing not found" },
-          { status: 404 },
-        );
-      }
-      if (error) {
-        console.error("Error fetching single listing:", error);
-        return NextResponse.json(
-          { error: "Listing not found" },
-          { status: 500 },
-        );
-      }
+    const { data, error, count } = await supabase
+      .from("listings")
+      .select("*", { count: "exact" })
+      .range(offset, offset + limit - 1)
+      .order("created_at", { ascending: false });
 
-      const formattedListing = {
-        ...data,
-        id: Number(data.id),
+    if (error) {
+      console.error("Error fetching listings:", error);
+      return NextResponse.json(
+        { error: "An error occurred while fetching listings" },
+        { status: 500 },
+      );
+    }
+
+    const formattedListings =
+      data?.map((listing) => ({
+        ...listing,
+        id: String(listing.id),
         location: {
-          lat: data.latitude,
-          lng: data.longitude,
+          lat: listing.latitude,
+          lng: listing.longitude,
         },
         rating: 0,
         reviews: 0,
-      };
+      })) || [];
 
-      return NextResponse.json(formattedListing);
-    } else {
-      const offset = (page - 1) * limit;
+    const hasMore = count ? offset + formattedListings.length < count : false;
 
-      const { data, error, count } = await supabase
-        .from("listings")
-        .select("*", { count: "exact" })
-        .range(offset, offset + limit - 1)
-        .order("created_at", { ascending: false });
-
-      if (error) {
-        console.error("Error fetching listings:", error);
-        return NextResponse.json(
-          { error: "An error occurred while fetching listings" },
-          { status: 500 },
-        );
-      }
-
-      const formattedListings =
-        data?.map((listing) => ({
-          ...listing,
-          id: Number(listing.id),
-          location: {
-            lat: listing.latitude,
-            lng: listing.longitude,
-          },
-          rating: 0,
-          reviews: 0,
-        })) || [];
-
-      const hasMore = count ? offset + formattedListings.length < count : false;
-
-      return NextResponse.json({
-        listings: formattedListings,
-        totalCount: count,
-        hasMore,
-        currentPage: page,
-        limit,
-      });
-    }
+    return NextResponse.json({
+      listings: formattedListings,
+      totalCount: count,
+      hasMore,
+      currentPage: page,
+      limit,
+    });
   } catch (err: any) {
     console.error("Server error in GET /api/listings:", err);
     return NextResponse.json(
@@ -151,6 +114,8 @@ export async function POST(request: Request) {
       description: String(body.description) || "No description provided",
       price: Number(body.price) || 0,
       location: body.location || "Unknown Location",
+      latitude: body.latitude || null,
+      longitude: body.longitude || null,
       category_id: category.id, // Use the fetched numeric category ID
       subcategory_id: body.subcategory_id ? Number(body.subcategory_id) : null,
       status: ALLOWED_STATUSES.includes(body.status) ? body.status : "active",
@@ -172,6 +137,30 @@ export async function POST(request: Request) {
         { error: "Internal server error occurred while creating listing" },
         { status: 500 },
       );
+    }
+
+    // Increment the user's listing count
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("listing_count")
+      .eq("id", user.id)
+      .single();
+
+    if (profileError) {
+      console.error("Error fetching user profile for listing count:", profileError);
+      // Log the error but don't block the listing creation response
+    }
+
+    const currentListingCount = profile?.listing_count || 0;
+
+    const { error: updateError } = await supabase
+      .from("profiles")
+      .update({ listing_count: currentListingCount + 1 })
+      .eq("id", user.id);
+
+    if (updateError) {
+      console.error("Error updating user listing count:", updateError);
+      // Log the error but don't block the listing creation response
     }
 
     return NextResponse.json(
@@ -331,6 +320,30 @@ export async function DELETE(request: Request) {
     if (error) {
       console.error("Error deleting listing:", error);
       return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    // Decrement the user's listing count
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("listing_count")
+      .eq("id", user.id)
+      .single();
+
+    if (profileError) {
+      console.error("Error fetching user profile for listing count decrement:", profileError);
+      // Log the error but don't block the listing deletion response
+    }
+
+    const currentListingCount = profile?.listing_count || 0;
+
+    const { error: updateError } = await supabase
+      .from("profiles")
+      .update({ listing_count: Math.max(0, currentListingCount - 1) })
+      .eq("id", user.id);
+
+    if (updateError) {
+      console.error("Error updating user listing count after deletion:", updateError);
+      // Log the error but don't block the listing deletion response
     }
 
     // Supabase delete operation doesn't return data by default,

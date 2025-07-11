@@ -392,7 +392,7 @@ export default function AccountPage() {
                     <p className="text-xs text-muted-foreground">Items Sold</p>
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-primary">0</p>
+                    <p className="text-2xl font-bold text-primary">{profile?.listing_count || 0}</p>
                     <p className="text-xs text-muted-foreground">
                       Active Listings
                     </p>
