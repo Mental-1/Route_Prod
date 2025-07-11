@@ -19,7 +19,12 @@ export async function GET(
 
     const { data: listing, error } = await supabase
       .from("listings")
-      .select("*")
+      .select(
+        `
+        *,
+        category:categories(name)
+      `,
+      )
       .eq("id", id)
       .eq("status", "active")
       .single();
