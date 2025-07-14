@@ -53,3 +53,14 @@ export async function updateListingStatus(listingId: string, status: string) {
 
   return { success: "Listing status updated." };
 }
+export async function approveListing(formData: FormData) {
+  const id = formData.get("id") as string;
+  if (!id) return;
+  await updateListingStatus(id, "approved");
+}
+
+export async function rejectListing(formData: FormData) {
+  const id = formData.get("id") as string;
+  if (!id) return;
+  await updateListingStatus(id, "rejected");
+}

@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import React from "react";
 import { updateListingStatus } from "./actions";
 import { Listing } from "@/lib/types/listing";
+import { approveListing, rejectListing } from "./actions";
 
 async function getAllListings(): Promise<Listing[]> {
   const cookieStore = await cookies();
@@ -29,16 +30,10 @@ async function getAllListings(): Promise<Listing[]> {
 }
 
 const ListingActions = ({ listing }: { listing: Listing }) => {
-  const approveAction = async () => {
-    await updateListingStatus(listing.id, "approved");
-  };
-  const rejectAction = async () => {
-    await updateListingStatus(listing.id, "rejected");
-  };
-
   return (
     <div className="flex gap-2">
-      <form action={approveAction}>
+      <form action={approveListing}>
+        <input type="hidden" name="id" value={listing.id} />
         <button
           type="submit"
           className="bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-3 rounded"
@@ -46,7 +41,8 @@ const ListingActions = ({ listing }: { listing: Listing }) => {
           Approve
         </button>
       </form>
-      <form action={rejectAction}>
+      <form action={rejectListing}>
+        <input type="hidden" name="id" value={listing.id} />
         <button
           type="submit"
           className="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded"

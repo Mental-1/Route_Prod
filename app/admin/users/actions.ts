@@ -3,9 +3,11 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
+import { PostHog } from "posthog-node";
 
-// NOTE: You must set the SUPABASE_SERVICE_ROLE_KEY in your .env.local
-// to use these admin functions.
+const posthogClient = new PostHog(process.env.NEXT_PUBLIC_POSTHOG_KEY!, {
+  host: process.env.NEXT_PUBLIC_POSTHOG_HOST || "https://app.posthog.com",
+});
 
 async function getSupabaseAdmin() {
   const cookieStore = await cookies();
@@ -28,7 +30,7 @@ async function getSupabaseAdmin() {
 export async function banUser(userId: string) {
   const supabase = await getSupabaseAdmin();
   const { error } = await supabase.auth.admin.updateUserById(userId, {
-    ban_duration: "none", // 'none' means permanent ban
+    ban_duration: "none",
   });
 
   if (error) {
@@ -39,10 +41,17 @@ export async function banUser(userId: string) {
   revalidatePath("/admin/users");
 
   // Track event with PostHog
-  if (typeof window !== "undefined" && posthog) {
-    posthog.capture("user_banned", {
-      banned_user_id: userId,
-      admin_id: user?.id, // Assuming user is available in context
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (user) {
+    posthogClient.capture({
+      distinctId: user.id,
+      event: "user_banned",
+      properties: {
+        banned_user_id: userId,
+        admin_id: user.id,
+      },
     });
   }
 
@@ -63,10 +72,17 @@ export async function unbanUser(userId: string) {
   revalidatePath("/admin/users");
 
   // Track event with PostHog
-  if (typeof window !== "undefined" && posthog) {
-    posthog.capture("user_unbanned", {
-      unbanned_user_id: userId,
-      admin_id: user?.id, // Assuming user is available in context
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (user) {
+    posthogClient.capture({
+      distinctId: user.id,
+      event: "user_unbanned",
+      properties: {
+        unbanned_user_id: userId,
+        admin_id: user.id,
+      },
     });
   }
 

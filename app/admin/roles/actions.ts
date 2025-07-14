@@ -23,7 +23,8 @@ async function getSupabaseAdmin() {
   );
 }
 
-export async function updateUserRole(userId: string, formData: FormData) {
+export async function updateUserRole(formData: FormData) {
+  const userId = formData.get("userId") as string;
   const role = formData.get("role") as string;
   const supabase = await getSupabaseAdmin();
   const posthog = new PostHog(process.env.NEXT_PUBLIC_POSTHOG_KEY!)

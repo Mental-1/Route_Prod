@@ -25,5 +25,5 @@ export type Listing = {
   created_at: string;
   updated_at: string;
   expiry_date: string;
-  seller: Profile;
+  profiles: Profile;
 };

@@ -13,7 +13,7 @@ interface ListingCategoryData {
 
 interface ListingAnalyticsData {
   created_at: string;
-  categories: ListingCategoryData | null;
+  categories: ListingCategoryData[];
 }
 
 interface AnalyticsDataSuccess {

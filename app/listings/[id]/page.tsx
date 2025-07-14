@@ -365,6 +365,17 @@ export default function ListingDetailPage() {
                     <Button variant="outline" size="icon" onClick={handleShare}>
                       <Share2 className="h-4 w-4" />
                     </Button>
+                    {listing.latitude && listing.longitude && (
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={getDirections}
+                        disabled={gettingDirections}
+                        title="Get Directions"
+                      >
+                        <Navigation className="h-4 w-4" />
+                      </Button>
+                    )}
                   </div>
                 </div>
 

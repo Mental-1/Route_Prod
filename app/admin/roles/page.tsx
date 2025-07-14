@@ -35,12 +35,9 @@ async function getUsersWithRoles(): Promise<User[]> {
 }
 
 const RoleManagementForm = ({ userId, currentRole }: { userId: string, currentRole: string }) => {
-  const action = async (formData: FormData) => {
-    await updateUserRole(userId, formData);
-  };
-
   return (
-    <form action={action} className="flex items-center gap-2">
+    <form action={updateUserRole} className="flex items-center gap-2">
+      <input type="hidden" name="userId" value={userId} />
       <select
         name="role"
         defaultValue={currentRole}

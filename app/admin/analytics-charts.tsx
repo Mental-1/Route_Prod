@@ -14,6 +14,7 @@ import {
   ArcElement,
 } from "chart.js";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { getAnalyticsData } from "./actions";
 
 ChartJS.register(
@@ -114,7 +115,34 @@ export default function AnalyticsCharts() {
   }, []);
 
   if (loading) {
-    return <div>Loading charts...</div>;
+    return (
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-6 w-1/2" />
+          </CardHeader>
+          <CardContent>
+            <Skeleton className="h-64 w-full" />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-6 w-1/2" />
+          </CardHeader>
+          <CardContent>
+            <Skeleton className="h-64 w-full" />
+          </CardContent>
+        </Card>
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <Skeleton className="h-6 w-1/3" />
+          </CardHeader>
+          <CardContent className="flex justify-center items-center h-80">
+            <Skeleton className="h-64 w-64 rounded-full" />
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   if (!chartData) {

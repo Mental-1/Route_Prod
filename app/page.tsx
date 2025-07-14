@@ -126,8 +126,7 @@ export default function HomePage() {
               Find Everything You Need
             </h1>
             <p className="text-lg md:text-xl mb-6 text-blue-100">
-              Buy, sell, and discover amazing deals in your neighborhood and get
-              directed to the spot.
+              Deals don’t wait. Neither should you.
             </p>
 
             {/* Search Bar */}
@@ -164,7 +163,7 @@ export default function HomePage() {
             </Button>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {loading ? (
               <div className="col-span-full text-center py-8">
                 Loading recent listings...

@@ -14,7 +14,7 @@ export async function GET(
   { params }: { params: { id: string } },
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
     console.log("Attempting to fetch listing with ID:", id);
     const supabase = await getSupabaseRouteHandler(cookies);
 
