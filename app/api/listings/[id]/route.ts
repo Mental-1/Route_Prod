@@ -23,6 +23,8 @@ export async function GET(
       .select(
         `
         *,
+        latitude,
+        longitude,
         category:categories(name),
         subcategory:subcategories(name),
         seller:profiles(id, full_name, username, avatar_url)

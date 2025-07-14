@@ -4,6 +4,7 @@ import { Toast } from "@/components/ui/toast";
 export interface DisplayListingItem {
   id: string;
   title: string;
+  description: string | null;
   price: number | null;
   location: string | null;
   views: number | null;
@@ -59,6 +60,7 @@ export async function getRecentListings(page = 1, pageSize = 20): Promise<Displa
     views: listing.views,
     images: listing.images && listing.images.length > 0 ? listing.images : null,
     condition: listing.condition,
+    description: listing.description,
   }));
 
   return transformedListings;
