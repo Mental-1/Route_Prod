@@ -11,10 +11,11 @@ import { cookies } from "next/headers";
  */
 export async function GET(
   request: NextRequest,
-  context: { params: { id: string } },
+  { params }: { params: { id: string } },
 ) {
   try {
-    const { id } = context.params;
+    const { id } = params;
+    console.log("Attempting to fetch listing with ID:", id);
     const supabase = await getSupabaseRouteHandler(cookies);
 
     const { data: listing, error } = await supabase
@@ -24,12 +25,16 @@ export async function GET(
         *,
         category:categories(name),
         subcategory:subcategories(name),
-        seller:profiles(id, full_name, user_name, avatar_url)
+        seller:profiles(id, full_name, username, avatar_url)
       `,
       )
       .eq("id", id)
       .eq("status", "active")
       .single();
+
+    if (error) {
+      console.error("Supabase error fetching listing:", error);
+    }
 
     if (error || !listing) {
       return NextResponse.json({ error: "Listing not found" }, { status: 404 });

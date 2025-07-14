@@ -1,5 +1,7 @@
 "use client";
 
+import { reportUser } from "./actions";
+
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
@@ -25,29 +27,12 @@ import {
   Navigation,
   ExternalLink,
 } from "lucide-react";
+import { ListingMediaGallery } from "@/components/listing-media-gallery";
+import posthog from "posthog-js";
 
-interface Listing {
-  id: string;
-  title: string;
-  description: string;
-  price: number;
-  location: string;
-  latitude?: number;
-  longitude?: number;
-  condition: string;
-  images: string[];
-  views: number;
-  created_at: string;
-  seller: {
-    id: string;
-    full_name: string;
-    user_name: string;
-    avatar_url?: string;
-  };
-  category: {
-    name: string;
-  };
-}
+// ... (rest of the file)
+
+import { Listing } from "@/lib/types/listing";
 
 /**
  * Displays a detailed view of a specific listing, including images, description, location, seller information, and interactive actions.
@@ -62,7 +47,6 @@ export default function ListingDetailPage() {
   const { toast } = useToast();
   const [listing, setListing] = useState<Listing | null>(null);
   const [loading, setLoading] = useState(true);
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isSaved, setIsSaved] = useState(false);
   const [gettingDirections, setGettingDirections] = useState(false);
 
@@ -79,6 +63,16 @@ export default function ListingDetailPage() {
 
         // Increment view count
         await fetch(`/api/listings/${params.id}/view`, { method: "POST" });
+
+        // Track event with PostHog
+        if (typeof window !== "undefined" && posthog) {
+          posthog.capture("listing_viewed", {
+            listing_id: data.id,
+            listing_title: data.title,
+            listing_category: data.category.name,
+            seller_id: data.seller.id,
+          });
+        }
       } else {
         toast({
           title: "Error",
@@ -242,22 +236,6 @@ export default function ListingDetailPage() {
     });
   };
 
-  const nextImage = () => {
-    if (listing) {
-      setCurrentImageIndex((prev) =>
-        prev === listing.images.length - 1 ? 0 : prev + 1,
-      );
-    }
-  };
-
-  const prevImage = () => {
-    if (listing) {
-      setCurrentImageIndex((prev) =>
-        prev === 0 ? listing.images.length - 1 : prev - 1,
-      );
-    }
-  };
-
   const handleSave = async () => {
     try {
       const response = await fetch(`/api/listings/${params.id}/save`, {
@@ -351,75 +329,7 @@ export default function ListingDetailPage() {
             {/* Image gallery */}
             <Card>
               <CardContent className="p-0">
-                <div className="relative">
-                  <div className="aspect-square bg-muted rounded-t-lg overflow-hidden">
-                    <img
-                      src={
-                        listing.images[currentImageIndex] || "/placeholder.svg"
-                      }
-                      alt={listing.title}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-
-                  {listing.images.length > 1 && (
-                    <>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="absolute left-2 top-1/2 -translate-y-1/2 bg-background/80 backdrop-blur-sm"
-                        onClick={prevImage}
-                      >
-                        <ChevronLeft className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="absolute right-2 top-1/2 -translate-y-1/2 bg-background/80 backdrop-blur-sm"
-                        onClick={nextImage}
-                      >
-                        <ChevronRight className="h-4 w-4" />
-                      </Button>
-
-                      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex space-x-2">
-                        {listing.images.map((_, index) => (
-                          <button
-                            key={index}
-                            className={`w-2 h-2 rounded-full ${
-                              index === currentImageIndex
-                                ? "bg-white"
-                                : "bg-white/50"
-                            }`}
-                            onClick={() => setCurrentImageIndex(index)}
-                          />
-                        ))}
-                      </div>
-                    </>
-                  )}
-                </div>
-
-                {/* Thumbnail strip */}
-                {listing.images.length > 1 && (
-                  <div className="p-4 flex space-x-2 overflow-x-auto">
-                    {listing.images.map((image, index) => (
-                      <button
-                        key={index}
-                        className={`flex-shrink-0 w-16 h-16 rounded-md overflow-hidden border-2 ${
-                          index === currentImageIndex
-                            ? "border-primary"
-                            : "border-transparent"
-                        }`}
-                        onClick={() => setCurrentImageIndex(index)}
-                      >
-                        <img
-                          src={image || "/placeholder.svg"}
-                          alt={`${listing.title} ${index + 1}`}
-                          className="w-full h-full object-cover"
-                        />
-                      </button>
-                    ))}
-                  </div>
-                )}
+                <ListingMediaGallery images={listing.images} />
               </CardContent>
             </Card>
 
@@ -540,7 +450,7 @@ export default function ListingDetailPage() {
                       {listing.seller.full_name}
                     </h3>
                     <p className="text-sm text-muted-foreground">
-                      @{listing.seller.user_name}
+                      @{listing.seller.username}
                     </p>
                   </div>
                 </div>
@@ -579,26 +489,37 @@ export default function ListingDetailPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <ul className="space-y-2">
+                <ul className="space-y-2 text-sm text-muted-foreground">
                   <li className="flex items-start">
-                    <span className="text-green-500 mr-2">•</span>
-                    <span className="text-sm">Meet in a public place</span>
+                    <span className="text-green-500 mr-2 mt-1">•</span>
+                    <span>Meet in a public place</span>
                   </li>
                   <li className="flex items-start">
-                    <span className="text-green-500 mr-2">•</span>
-                    <span className="text-sm">
-                      Inspect the item before payment
-                    </span>
+                    <span className="text-green-500 mr-2 mt-1">•</span>
+                    <span>Inspect the item before payment</span>
                   </li>
                   <li className="flex items-start">
-                    <span className="text-green-500 mr-2">•</span>
-                    <span className="text-sm">Use secure payment methods</span>
+                    <span className="text-green-500 mr-2 mt-1">•</span>
+                    <span>Use secure payment methods</span>
                   </li>
                   <li className="flex items-start">
-                    <span className="text-green-500 mr-2">•</span>
-                    <span className="text-sm">Trust your instincts</span>
+                    <span className="text-green-500 mr-2 mt-1">•</span>
+                    <span>Trust your instincts</span>
                   </li>
                 </ul>
+                <form
+                  action={async () => {
+                    await reportUser(listing.id, listing.seller.id);
+                  }}
+                  className="mt-4"
+                >
+                  <Button
+                    variant="outline"
+                    className="w-full text-destructive hover:bg-destructive/10"
+                  >
+                    Report Ad
+                  </Button>
+                </form>
               </CardContent>
             </Card>
           </div>

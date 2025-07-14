@@ -24,11 +24,12 @@ export async function POST(
   { params }: { params: { id: string } },
 ) {
   try {
+    const { id } = params;
     const supabase = await getSupabaseRouteHandler(cookies);
 
     // Increment view count using RPC function
     const { data, error } = await supabase.rpc("increment_listing_views", {
-      listing_uuid: params.id,
+      listing_uuid: id,
     });
 
     if (error) {

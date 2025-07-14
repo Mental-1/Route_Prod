@@ -14,7 +14,7 @@ export async function getSupabaseServer(): Promise<SupabaseClient<Schema>> {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll: () => cookieStore.getAll(),
+        getAll: async () => await cookieStore.getAll(),
         setAll: (cookiesToSet) => {
           try {
             cookiesToSet.forEach(({ name, value, options }) =>
@@ -39,7 +39,7 @@ export async function getSupabaseRouteHandler(
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll: () => cookieStore.getAll(),
+        getAll: async () => await cookieStore.getAll(),
         setAll: (c) =>
           c.forEach(({ name, value, options }) =>
             cookieStore.set(name, value, options),

@@ -2,6 +2,11 @@ import { type NextRequest, NextResponse } from "next/server";
 import { getSupabaseRouteHandler } from "@/utils/supabase/server";
 import crypto from "node:crypto";
 import { cookies } from "next/headers";
+import pino from "pino";
+
+const logger = pino({
+  level: process.env.NODE_ENV === "production" ? "info" : "debug",
+});
 
 /**
  * Handles M-Pesa payment callback POST requests, verifies request authenticity, updates transaction status, and sends user notifications.
@@ -12,35 +17,35 @@ import { cookies } from "next/headers";
  * @returns A JSON response indicating success or an error with the appropriate HTTP status code
  */
 export async function POST(request: NextRequest) {
-  console.log("--- M-Pesa Callback Received ---");
+  logger.info("--- M-Pesa Callback Received ---");
   try {
     const signature = request.headers.get("x-mpesa-signature");
-    console.log("Callback Signature:", signature);
+    logger.debug({ signature }, "Callback Signature:");
 
     const body = await request.text();
-    console.log("Raw Callback Body:", body);
+    logger.debug({ body }, "Raw Callback Body:");
 
     const expectedSignature = crypto
       .createHmac("sha256", process.env.MPESA_SECRET_KEY!)
       .update(body)
       .digest("hex");
 
-    console.log("Expected Signature:", expectedSignature);
+    logger.debug({ expectedSignature }, "Expected Signature:");
 
     if (!signature || signature !== expectedSignature) {
-      console.error("Signature validation failed.");
+      logger.error("Signature validation failed.");
       return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
     }
 
-    console.log("Signature validation successful.");
+    logger.info("Signature validation successful.");
 
     const parsedBody = JSON.parse(body);
-    console.log("Parsed Callback Body:", JSON.stringify(parsedBody, null, 2));
+    logger.debug({ parsedBody }, "Parsed Callback Body:");
 
     const { Body } = parsedBody;
 
     if (!Body?.stkCallback) {
-      console.error("Invalid callback data: 'stkCallback' missing.");
+      logger.error("Invalid callback data: 'stkCallback' missing.");
       return NextResponse.json(
         { error: "Invalid callback data" },
         { status: 400 },
@@ -50,19 +55,26 @@ export async function POST(request: NextRequest) {
     const { CheckoutRequestID, ResultCode, ResultDesc, CallbackMetadata } =
       Body.stkCallback;
 
-    console.log("CheckoutRequestID:", CheckoutRequestID);
-    console.log("ResultCode:", ResultCode);
-    console.log("ResultDesc:", ResultDesc);
-    console.log(
-      "CallbackMetadata:",
-      JSON.stringify(CallbackMetadata, null, 2),
-    );
+    logger.info({ CheckoutRequestID, ResultCode, ResultDesc }, "M-Pesa Callback Details:");
+    logger.debug({ CallbackMetadata }, "CallbackMetadata:");
 
     const supabase = await getSupabaseRouteHandler(cookies);
 
+    // Check for duplicate callbacks (idempotency)
+    const { data: existingTransaction, error: fetchError } = await supabase
+      .from("transactions")
+      .select("status")
+      .eq("checkout_request_id", CheckoutRequestID)
+      .single();
+
+    if (existingTransaction && existingTransaction.status === "completed") {
+      logger.warn({ CheckoutRequestID }, "Duplicate M-Pesa callback received for already completed transaction.");
+      return NextResponse.json({ success: true });
+    }
+
     // Update transaction status
     const status = ResultCode === 0 ? "completed" : "failed";
-    console.log(`Transaction status determined as: ${status}`);
+    logger.info(`Transaction status determined as: ${status}`);
 
     let reference = null;
     if (CallbackMetadata?.Item) {
@@ -71,9 +83,9 @@ export async function POST(request: NextRequest) {
       );
       if (mpesaReceiptNumberItem) {
         reference = mpesaReceiptNumberItem.Value;
-        console.log("MpesaReceiptNumber found:", reference);
+        logger.info({ reference }, "MpesaReceiptNumber found:");
       } else {
-        console.log("MpesaReceiptNumber not found in CallbackMetadata.");
+        logger.warn("MpesaReceiptNumber not found in CallbackMetadata.");
       }
     }
 
@@ -87,16 +99,16 @@ export async function POST(request: NextRequest) {
       .eq("checkout_request_id", CheckoutRequestID);
 
     if (error) {
-      console.error("Failed to update transaction:", error);
+      logger.error({ error }, "Failed to update transaction:");
     } else {
-      console.log(
+      logger.info(
         `Transaction with CheckoutRequestID ${CheckoutRequestID} updated successfully.`,
       );
     }
 
     // Send notification to user
     if (status === "completed") {
-      console.log("Payment completed. Preparing to send notification.");
+      logger.info("Payment completed. Preparing to send notification.");
       const { data: transaction } = await supabase
         .from("transactions")
         .select("user_id, amount")
@@ -104,25 +116,25 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (transaction?.user_id) {
-        console.log(`Sending notification to user ${transaction.user_id}`);
+        logger.info(`Sending notification to user ${transaction.user_id}`);
         await supabase.from("notifications").insert({
           user_id: transaction.user_id,
           title: "Payment Successful",
           message: `Your payment of KES ${transaction.amount} has been processed successfully.`,
           type: "payment",
         });
-        console.log("Notification sent.");
+        logger.info("Notification sent.");
       } else {
-        console.error(
+        logger.warn(
           "Could not find user to send notification for transaction.",
         );
       }
     }
 
-    console.log("--- M-Pesa Callback Processing Finished ---");
+    logger.info("--- M-Pesa Callback Processing Finished ---");
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("M-Pesa callback error:", error);
+    logger.error({ error }, "M-Pesa callback error:");
     return NextResponse.json(
       { error: "Callback processing failed" },
       { status: 500 },

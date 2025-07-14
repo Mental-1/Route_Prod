@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { Search, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -37,6 +37,10 @@ export default function HomePage() {
   );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const loadingRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
   const handleSearch = (e: React.FormEvent) => {
@@ -46,17 +50,15 @@ export default function HomePage() {
     }
   };
 
+  // Initial fetch for the first page
   useEffect(() => {
-    /**
-     * Fetches recent marketplace listings and updates the component state with the results.
-     */
-    async function fetchRecentListings() {
+    async function initialFetch() {
       try {
         setLoading(true);
         setError(null);
-
-        const listings = await getRecentListings();
+        const listings = await getRecentListings(1);
         setRecentListings(listings);
+        setHasMore(listings.length === 20);
       } catch (error) {
         setError("Failed to fetch recent listings");
         console.error("Error fetching recent listings", error);
@@ -64,8 +66,55 @@ export default function HomePage() {
         setLoading(false);
       }
     }
-    fetchRecentListings();
+    initialFetch();
   }, []);
+
+  // Fetch more listings when page changes (triggered by IntersectionObserver)
+  useEffect(() => {
+    async function fetchMoreListings() {
+      if (page === 1) return;
+      try {
+        setLoading(true);
+        setError(null);
+        const listings = await getRecentListings(page);
+        setRecentListings((prevListings) => {
+          const newUniqueListings = listings.filter(
+            (listing) => !prevListings.some((prev) => prev.id === listing.id),
+          );
+          return [...prevListings, ...newUniqueListings];
+        });
+        setHasMore(listings.length === 20);
+      } catch (error) {
+        setError("Failed to fetch recent listings");
+        console.error("Error fetching recent listings", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchMoreListings();
+  }, [page]);
+
+  // Intersection Observer setup
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loading) {
+          setPage((prevPage) => prevPage + 1);
+        }
+      },
+      { threshold: 1.0 },
+    );
+
+    if (loadingRef.current) {
+      observer.observe(loadingRef.current);
+    }
+
+    return () => {
+      if (loadingRef.current) {
+        observer.unobserve(loadingRef.current);
+      }
+    };
+  }, [hasMore, loading]);
 
   return (
     <div className="min-h-screen bg-background">

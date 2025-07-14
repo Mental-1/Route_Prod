@@ -6,7 +6,8 @@ import { ChevronLeft } from "lucide-react";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { MessageEncryption } from "@/lib/encryption";
 import { useAuth } from "@/contexts/auth-context";
-import Image from "next/image";
+import { ConversationListSkeleton } from "@/components/skeletons/conversations-skeleton";
+import { ChatSkeleton } from "@/components/skeletons/chat-skeleton";
 
 interface Conversation {
   id: string;
@@ -105,43 +106,57 @@ export default function MessagesPage() {
     }
   };
 
-  const renderConversationList = () => (
-    <ul>
-      {conversations.map((convo) => {
-        const otherUser =
-          user?.id === convo.seller.id ? convo.buyer : convo.seller;
-        return (
-          <li
-            key={convo.id}
-            onClick={() => handleConversationClick(convo)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                handleConversationClick(convo);
-              }
-            }}
-            tabIndex={0}
-            role="button"
-            className="p-4 border-b cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800"
-          >
-            <div className="flex items-center">
-              <Image
-                src={otherUser.avatar_url || "/placeholder-user.jpg"}
-                alt={otherUser.username}
-                className="w-10 h-10 rounded-full mr-4"
-              />
-              <div>
-                <p className="font-semibold">{otherUser.username}</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  {convo.listing.title}
-                </p>
+  const renderConversationList = () => {
+    if (loading) return <ConversationListSkeleton />;
+    if (error) return <p className="text-red-500 p-4">{error}</p>;
+    if (conversations.length === 0) {
+      return (
+        <div className="flex items-center justify-center h-full">
+          <p className="text-gray-500 dark:text-gray-400">
+            You have no conversations.
+          </p>
+        </div>
+      );
+    }
+
+    return (
+      <ul>
+        {conversations.map((convo) => {
+          const otherUser =
+            user?.id === convo.seller.id ? convo.buyer : convo.seller;
+          return (
+            <li
+              key={convo.id}
+              onClick={() => handleConversationClick(convo)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  handleConversationClick(convo);
+                }
+              }}
+              tabIndex={0}
+              role="button"
+              className="p-4 border-b cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800"
+            >
+              <div className="flex items-center">
+                <img
+                  src={otherUser.avatar_url || "/placeholder-user.jpg"}
+                  alt={otherUser.username}
+                  className="w-10 h-10 rounded-full mr-4"
+                />
+                <div>
+                  <p className="font-semibold">{otherUser.username}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    {convo.listing.title}
+                  </p>
+                </div>
               </div>
-            </div>
-          </li>
-        );
-      })}
-    </ul>
-  );
+            </li>
+          );
+        })}
+      </ul>
+    );
+  };
 
   const renderChatView = () => {
     if (!selectedConversation) {
@@ -153,6 +168,9 @@ export default function MessagesPage() {
         </div>
       );
     }
+
+    if (loading) return <ChatSkeleton />;
+
     const otherUser =
       user?.id === selectedConversation.seller.id
         ? selectedConversation.buyer
@@ -169,7 +187,7 @@ export default function MessagesPage() {
               Back
             </button>
           )}
-          <Image
+          <img
             src={otherUser.avatar_url || "/placeholder-user.jpg"}
             alt={otherUser.username}
             className="w-10 h-10 rounded-full mr-4"

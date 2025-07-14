@@ -33,7 +33,7 @@ export interface ListingsItem {
  *
  * @returns An array of recent listings formatted for display.
  */
-export async function getRecentListings(): Promise<DisplayListingItem[]> {
+export async function getRecentListings(page = 1, pageSize = 20): Promise<DisplayListingItem[]> {
   const supabase = getSupabaseClient();
 
   const threeDaysAgo = new Date();
@@ -41,10 +41,10 @@ export async function getRecentListings(): Promise<DisplayListingItem[]> {
 
   const { data: recentListingsData, error: recentListingsError } = await supabase
     .from("listings")
-    .select("id, title, price, location, views, images, condition")
+    .select("id, title, price, location, views, images, condition, description")
     .gte("created_at", threeDaysAgo.toISOString())
     .order("created_at", { ascending: false })
-    .limit(8);
+    .range((page - 1) * pageSize, page * pageSize - 1);
 
   if (recentListingsError) {
     console.error("Error fetching recent listings:", recentListingsError.message);

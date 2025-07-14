@@ -12,6 +12,7 @@ import { handleActionError, AppError } from "@/utils/errorhandler";
 import { createAuditLogger } from "@/utils/audit-logger";
 import { createListingLimiter } from "@/utils/rate-limiting";
 import { checkUserPlanLimit } from "@/utils/subscriptions/check_user_limits";
+import { PostHog } from "posthog-node";
 
 import type {
   AdDetailsFormData,
@@ -237,7 +238,7 @@ export async function createListingAction(
       negotiable: validatedData.negotiable,
       images: processedImages,
       user_id: user.id,
-      status: "active",
+      status: "pending",
       payment_status: plan === "free" ? "unpaid" : "paid",
       plan: plan,
       views: 0,
@@ -288,6 +289,21 @@ export async function createListingAction(
     revalidatePath("/listings");
     revalidatePath(`/listings/${listing.id}`);
     revalidatePath("/dashboard");
+
+    // Track event with PostHog
+    const posthog = new PostHog(process.env.NEXT_PUBLIC_POSTHOG_KEY!)
+    posthog.capture({
+      distinctId: user.id,
+      event: 'listing_created',
+      properties: {
+        listing_id: listing.id,
+        listing_title: listingData.title,
+        listing_category_id: listingData.category_id,
+        listing_price: listingData.price,
+        listing_plan: listingData.plan,
+      }
+    });
+    await posthog.shutdown();
 
     return {
       success: true,

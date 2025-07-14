@@ -71,7 +71,9 @@ export default function CategoriesSection() {
                 <Card className="hover:shadow-md transition-shadow cursor-pointer border-3 border-muted bg-muted/50">
                   <CardContent className="p-3 text-center">
                     <div className="text-2xl mb-1">{category.icon || "📦"}</div>
-                    <h3 className="text-xs font-medium">{category.name}</h3>
+                    <h3 className="text-xs font-medium truncate">
+                      {category.name}
+                    </h3>
                   </CardContent>
                 </Card>
               </Link>

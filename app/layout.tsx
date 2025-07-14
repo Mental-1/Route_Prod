@@ -9,6 +9,11 @@ import { Footer } from "@/components/footer";
 import { Toaster } from "@/components/ui/toaster";
 import ReactQueryClientProvider from "@/components/reactQueryClientProvider";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { PostHogProvider } from "./providers";
+import {
+  PostHogPageview,
+  PostHogAuthWrapper,
+} from "@/components/posthog-provider";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -34,24 +39,33 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <ReactQueryClientProvider>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-          >
-            <AuthProvider>
-              <div className="flex min-h-screen flex-col">
-                <Navigation />
-                <main className="flex-1">{children}</main>
-                <Footer />
-              </div>
-              <Toaster />
-            </AuthProvider>
-          </ThemeProvider>
-        </ReactQueryClientProvider>
-        <SpeedInsights />
+        <PostHogProvider>
+          {" "}
+          {/* Use the new PostHogProvider */}
+          <PostHogPageview />
+          <ReactQueryClientProvider>
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="system"
+              enableSystem
+              disableTransitionOnChange
+            >
+              <AuthProvider>
+                <PostHogAuthWrapper>
+                  {" "}
+                  {/* Keep this for user identification */}
+                  <div className="flex min-h-screen flex-col">
+                    <Navigation />
+                    <main className="flex-1">{children}</main>
+                    <Footer />
+                  </div>
+                  <Toaster />
+                </PostHogAuthWrapper>
+              </AuthProvider>
+            </ThemeProvider>
+          </ReactQueryClientProvider>
+          <SpeedInsights />
+        </PostHogProvider>
       </body>
     </html>
   );

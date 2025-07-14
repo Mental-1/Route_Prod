@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import Link from "next/link";
 import { useAuth } from "@/contexts/auth-context";
+import { requestReReview } from "@/app/dashboard/actions";
 
 interface Listing {
   id: string;
@@ -299,15 +300,10 @@ export default function UserListingsPage() {
               </CardHeader>
 
               <CardContent className="space-y-4">
-                <div className="flex items-center text-sm text-muted-foreground">
-                  <MapPin className="h-4 w-4 mr-1" />
-                  {listing.location}
-                </div>
-
                 <div className="flex items-center justify-between text-sm text-muted-foreground">
                   <div className="flex items-center">
                     <Eye className="h-4 w-4 mr-1" />
-                    {listing.views} views
+                    {listing.views} Impressions
                   </div>
                   <div className="flex items-center">
                     <Calendar className="h-4 w-4 mr-1" />
@@ -335,19 +331,43 @@ export default function UserListingsPage() {
                     </Link>
                   </Button>
 
-                  {canEdit(listing) && (
+                  {(listing.status === 'pending' || listing.status === 'rejected') && (
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => handleEdit(listing.id)}
                     >
-                      <Edit className="h-4 w-4" />
+                      <Edit className="h-4 w-4 mr-1" />
+                      Edit
                     </Button>
+                  )}
+
+                  {listing.status === 'rejected' && (
+                    <form action={async () => {
+                      const result = await requestReReview(listing.id);
+                      if (result.success) {
+                        toast({
+                          title: "Success",
+                          description: result.success,
+                        });
+                        fetchUserListings();
+                      } else if (result.error) {
+                        toast({
+                          title: "Error",
+                          description: result.error,
+                          variant: "destructive",
+                        });
+                      }
+                    }}>
+                      <Button variant="outline" size="sm" className="w-full">
+                        Request Re-review
+                      </Button>
+                    </form>
                   )}
 
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
-                      <Button variant="outline" size="sm">
+                      <Button variant="destructive" size="sm">
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </AlertDialogTrigger>

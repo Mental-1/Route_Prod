@@ -1,6 +1,7 @@
 "use server";
 
 import { getSupabaseServer } from "@/utils/supabase/server";
+import { revalidatePath } from "next/cache";
 
 import {
   DashboardData,
@@ -52,4 +53,20 @@ export async function getDashboardData(): Promise<DashboardData> {
     transactions: (transactions as TransactionItem[]) || [],
     recentActivity,
   };
+}
+
+export async function requestReReview(listingId: string) {
+  const supabase = await getSupabaseServer();
+  const { error } = await supabase
+    .from("listings")
+    .update({ status: "pending" })
+    .eq("id", listingId);
+
+  if (error) {
+    console.error("Error requesting re-review:", error);
+    return { error: "Failed to request re-review." };
+  }
+
+  revalidatePath("/dashboard/listings");
+  return { success: "Re-review requested successfully." };
 }
