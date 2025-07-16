@@ -14,6 +14,11 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
       console.log(`PostHog key found, initializing with key: ${posthogKey.substring(0, 8)}...`);
     }
 
+    if (!posthogKey) {
+      console.error("NEXT_PUBLIC_POSTHOG_KEY is not defined. PostHog will not be initialized.");
+      return;
+    }
+
     try {
       posthog.init(posthogKey, {
         api_host:
