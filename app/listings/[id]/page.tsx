@@ -65,7 +65,7 @@ export default function ListingDetailPage() {
         await fetch(`/api/listings/${params.id}/view`, { method: "POST" });
 
         // Track event with PostHog
-        if (typeof window !== "undefined" && posthog && process.env.NEXT_PUBLIC_POSTHOG_KEY) {
+        if (typeof window !== "undefined" && posthog) {
           posthog.capture("listing_viewed", {
             listing_id: data.id,
             listing_title: data.title,
