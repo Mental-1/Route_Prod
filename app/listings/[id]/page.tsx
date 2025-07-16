@@ -70,7 +70,7 @@ export default function ListingDetailPage() {
             listing_id: data.id,
             listing_title: data.title,
             listing_category: data.category.name,
-            seller_id: listing.profiles.id,
+            seller_id: data.profiles.id,
           });
         }
       } else {
