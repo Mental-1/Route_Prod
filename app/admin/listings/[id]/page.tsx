@@ -162,7 +162,7 @@ export default function ListingPreviewPage({
                 <div className="flex justify-between">
                   <span className="font-medium">Author:</span>
                   <span>
-                    {listing.seller?.full_name || listing.seller?.email}
+                    {listing.profiles?.full_name || listing.profiles?.email}
                   </span>
                 </div>
               </div>

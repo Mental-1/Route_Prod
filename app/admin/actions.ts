@@ -7,7 +7,7 @@ interface UserAnalyticsData {
   users: Array<{ created_at: string }>;
 }
 
-interface ListingCategoryData {
+export interface ListingCategoryData {
   name: string;
 }
 
@@ -25,7 +25,9 @@ interface AnalyticsDataError {
   error: { usersError: any; listingsError: any };
 }
 
-export async function getAnalyticsData(): Promise<AnalyticsDataSuccess | AnalyticsDataError> {
+export async function getAnalyticsData(): Promise<
+  AnalyticsDataSuccess | AnalyticsDataError
+> {
   const cookieStore = await cookies();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

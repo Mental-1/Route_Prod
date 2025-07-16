@@ -1,7 +1,10 @@
+"use client";
+
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { updateUserRole } from "./actions";
+import { useToast } from "@/hooks/use-toast";
 
 type User = {
   id: string;
@@ -21,7 +24,6 @@ async function getUsersWithRoles(): Promise<User[]> {
     },
   );
 
-  // Fetch users and their roles from the profiles table
   const { data, error } = await supabase
     .from("profiles")
     .select("id, email, role");
@@ -34,9 +36,38 @@ async function getUsersWithRoles(): Promise<User[]> {
   return data as User[];
 }
 
-const RoleManagementForm = ({ userId, currentRole }: { userId: string, currentRole: string }) => {
+const RoleManagementForm = ({
+  userId,
+  currentRole,
+}: {
+  userId: string;
+  currentRole: string;
+}) => {
+  const { toast } = useToast();
+  const formRef = useRef<HTMLFormElement>(null);
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    const result = await updateUserRole(formData);
+
+    if (result.success) {
+      toast({
+        title: "Success",
+        description: result.success,
+      });
+      formRef.current?.reset();
+    } else if (result.error) {
+      toast({
+        title: "Error",
+        description: result.error,
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
-    <form action={updateUserRole} className="flex items-center gap-2">
+    <form ref={formRef} onSubmit={handleSubmit} className="flex items-center gap-2">
       <input type="hidden" name="userId" value={userId} />
       <select
         name="role"
@@ -57,8 +88,12 @@ const RoleManagementForm = ({ userId, currentRole }: { userId: string, currentRo
   );
 };
 
-export default async function RoleManagementPage() {
-  const users = await getUsersWithRoles();
+const RoleManagementView = ({ users: initialUsers }: { users: User[] }) => {
+  const [users, setUsers] = useState<User[]>(initialUsers);
+
+  useEffect(() => {
+    setUsers(initialUsers);
+  }, [initialUsers]);
 
   return (
     <div>
@@ -104,4 +139,10 @@ export default async function RoleManagementPage() {
       </div>
     </div>
   );
+};
+
+export default async function RoleManagementPage() {
+  const users = await getUsersWithRoles();
+
+  return <RoleManagementView users={users} />;
 }

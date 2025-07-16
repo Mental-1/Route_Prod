@@ -16,6 +16,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getAnalyticsData } from "./actions";
+import { ListingCategoryData } from "./actions";
 
 ChartJS.register(
   CategoryScale,
@@ -95,8 +96,14 @@ export default function AnalyticsCharts() {
 
       const categoryCounts: Record<string, number> = listingsData.reduce(
         (acc: Record<string, number>, listing) => {
-          const categoryName = listing.categories?.name || "Uncategorized";
-          acc[categoryName] = (acc[categoryName] || 0) + 1;
+          if (listing.categories && listing.categories.length > 0) {
+            listing.categories.forEach((category) => {
+              const categoryName = category.name || "Uncategorized";
+              acc[categoryName] = (acc[categoryName] || 0) + 1;
+            });
+          } else {
+            acc["Uncategorized"] = (acc["Uncategorized"] || 0) + 1;
+          }
           return acc;
         },
         {},

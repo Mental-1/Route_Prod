@@ -142,9 +142,6 @@ export default function ListingsPage() {
       },
     };
 
-    // Only apply maxDistance filter if it's not the default value (e.g., 5km)
-    // or if the user has explicitly changed it.
-    // Assuming the default maxDistance is 5km as per your slider defaultValue.
     if (maxDistance[0] !== 5) {
       currentFilters.maxDistance = maxDistance[0];
     }
@@ -502,7 +499,11 @@ export default function ListingsPage() {
                   <SheetTitle>Filters</SheetTitle>
                 </SheetHeader>
                 <div className="py-4">
-                  <Accordion type="single" collapsible className="w-full space-y-4">
+                  <Accordion
+                    type="single"
+                    collapsible
+                    className="w-full space-y-4"
+                  >
                     <AccordionItem value="categories" className="border-b pb-4">
                       <AccordionTrigger>Categories</AccordionTrigger>
                       <AccordionContent className="pt-4">
@@ -537,7 +538,10 @@ export default function ListingsPage() {
                     </AccordionItem>
 
                     {selectedCategories.length === 1 && (
-                      <AccordionItem value="subcategories" className="border-b pb-4">
+                      <AccordionItem
+                        value="subcategories"
+                        className="border-b pb-4"
+                      >
                         <AccordionTrigger>Subcategories</AccordionTrigger>
                         <AccordionContent className="pt-4">
                           <div className="space-y-2">

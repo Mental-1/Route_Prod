@@ -7,7 +7,7 @@ export interface AdFormData {
   subcategory: string;
   price: string;
   negotiable: boolean;
-  condition: "new" | "used" | "like_new" | "refurbished" | "";
+  condition: "new" | "used" | "like-new" | "refurbished" | "";
   location: string;
   latitude?: number;
   longitude?: number;
@@ -25,7 +25,7 @@ export interface AdDetailsFormData {
   subcategory: string;
   price: string;
   negotiable: boolean;
-  condition: "new" | "used" | "like_new" | "refurbished" | "";
+  condition: "new" | "used" | "like-new" | "refurbished" | "";
   location: string | number[];
   latitude?: number;
   longitude?: number;
@@ -68,7 +68,7 @@ export interface ValidatedListingData {
   price: number;
   category: string;
   subcategory?: string;
-  condition: "new" | "used" | "like_new" | "refurbished";
+  condition: "new" | "used" | "like-new" | "refurbished";
   location: string;
   latitude?: number;
   longitude?: number;
