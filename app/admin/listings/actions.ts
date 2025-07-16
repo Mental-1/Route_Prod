@@ -35,8 +35,10 @@ async function getSupabaseAdmin() {
   );
 }
 
+type ActionResponse = { success: string } | { error: string };
+
 // Example: Update a listing's status (e.g., to 'approved' or 'rejected')
-export async function updateListingStatus(listingId: string, status: string) {
+export async function updateListingStatus(listingId: string, status: string): Promise<ActionResponse> {
   const posthogKey = process.env.NEXT_PUBLIC_POSTHOG_KEY;
   if (!posthogKey) {
     logger.error('NEXT_PUBLIC_POSTHOG_KEY is required for analytics');
@@ -74,12 +76,12 @@ export async function updateListingStatus(listingId: string, status: string) {
 }
 export async function approveListing(formData: FormData) {
   const id = formData.get("id") as string;
-  if (!id) return;
-  await updateListingStatus(id, "approved");
+  if (!id) return { error: "Missing listing ID" };
+  return await updateListingStatus(id, "approved");
 }
 
 export async function rejectListing(formData: FormData) {
   const id = formData.get("id") as string;
-  if (!id) return;
-  await updateListingStatus(id, "rejected");
+  if (!id) return { error: "Missing listing ID" };
+  return await updateListingStatus(id, "rejected");
 }
