@@ -30,7 +30,7 @@ const createListingSchema = z.object({
   }),
   category: z.number().min(1),
   subcategory: z.number().optional(),
-  condition: z.enum(["new", "used", "like-new", "refurbished"]),
+  condition: z.enum(["new", "used", "refurbished"]),
   location: createSanitizedString({ min: 2, max: 100 }),
   latitude: z.number().min(-90).max(90).optional(),
   longitude: z.number().min(-180).max(180).optional(),

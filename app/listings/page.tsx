@@ -148,7 +148,7 @@ export default function ListingsPage() {
 
     fetchListings({
       page: 1,
-      limit: 20,
+      pageSize: 20,
       filters: currentFilters,
       sortBy,
       userLocation,
@@ -195,7 +195,7 @@ export default function ListingsPage() {
 
     const moreListings = await fetchListings({
       page: nextPage,
-      limit: 20,
+      pageSize: 20,
       filters: currentFilters,
       sortBy,
       userLocation,

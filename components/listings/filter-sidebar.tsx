@@ -30,7 +30,7 @@ interface FilterSidebarProps {
     condition?: string[];
     rating?: string;
   };
-  onFilterChange: (filters: any) => void;
+  onFilterChangeAction: (filters: any) => void;
   className?: string;
 }
 
@@ -48,7 +48,7 @@ interface FilterSidebarProps {
 export function FilterSidebar({
   categories,
   initialFilters = {},
-  onFilterChange,
+  onFilterChangeAction,
   className = "",
 }: FilterSidebarProps) {
   const router = useRouter();
@@ -85,10 +85,8 @@ export function FilterSidebar({
   // Conditions options
   const conditions = [
     { id: "new", label: "New" },
-    { id: "like-new", label: "Like New" },
-    { id: "good", label: "Good" },
-    { id: "fair", label: "Fair" },
-    { id: "poor", label: "Poor" },
+    { id: "used", label: "Used" },
+    { id: "refurbished", label: "Refurbished" },
   ];
 
   // Update active filters
@@ -124,7 +122,7 @@ export function FilterSidebar({
       rating: rating > 0 ? rating.toString() : undefined,
     };
 
-    onFilterChange(filters);
+    onFilterChangeAction(filters);
 
     // Update URL with filters
     const params = new URLSearchParams(searchParams.toString());
@@ -152,7 +150,7 @@ export function FilterSidebar({
     setSelectedConditions([]);
     setRating(0);
 
-    onFilterChange({});
+    onFilterChangeAction({});
     router.push("/listings");
   };
 

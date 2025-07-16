@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { ChevronRight } from "lucide-react";
 
-export const MapLayout = ({ sidebar, children }) => {
+export const MapLayout = ({ sidebar, children }: { sidebar: React.ReactElement; children: React.ReactNode }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   const toggleSidebar = () => {
