@@ -37,13 +37,13 @@ export interface ListingsItem {
 export async function getRecentListings(page = 1, pageSize = 20): Promise<DisplayListingItem[]> {
   const supabase = getSupabaseClient();
 
-  const threeDaysAgo = new Date();
-  threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(threeDaysAgo.getDate() - 7);
 
   const { data: recentListingsData, error: recentListingsError } = await supabase
     .from("listings")
     .select("id, title, price, location, views, images, condition, description")
-    .gte("created_at", threeDaysAgo.toISOString())
+    .gte("created_at", sevenDaysAgo.toISOString())
     .order("created_at", { ascending: false })
     .range((page - 1) * pageSize, page * pageSize - 1);
 

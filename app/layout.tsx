@@ -1,4 +1,4 @@
-import type React from "react";
+import React, { Suspense } from "react";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
@@ -42,7 +42,9 @@ export default function RootLayout({
         <PostHogProvider>
           {" "}
           {/* Use the new PostHogProvider */}
-          <PostHogPageview />
+          <Suspense fallback={null}>
+            <PostHogPageview />
+          </Suspense>
           <ReactQueryClientProvider>
             <ThemeProvider
               attribute="class"
