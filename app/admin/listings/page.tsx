@@ -37,10 +37,46 @@ async function getAllListings(): Promise<Listing[]> {
   return data as Listing[];
 }
 
+import { useToast } from "@/hooks/use-toast";
+
 const ListingActions = ({ listing }: { listing: Listing }) => {
+  const { toast } = useToast();
+
+  const handleApprove = async (formData: FormData) => {
+    const result = await approveListing(formData);
+    if (result?.success) {
+      toast({
+        title: "Success",
+        description: result.success,
+      });
+    } else if (result?.error) {
+      toast({
+        title: "Error",
+        description: result.error,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleReject = async (formData: FormData) => {
+    const result = await rejectListing(formData);
+    if (result?.success) {
+      toast({
+        title: "Success",
+        description: result.success,
+      });
+    } else if (result?.error) {
+      toast({
+        title: "Error",
+        description: result.error,
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="flex gap-2">
-      <form action={approveListing}>
+      <form action={handleApprove}>
         <input type="hidden" name="id" value={listing.id} />
         <button
           type="submit"
@@ -49,7 +85,7 @@ const ListingActions = ({ listing }: { listing: Listing }) => {
           Approve
         </button>
       </form>
-      <form action={rejectListing}>
+      <form action={handleReject}>
         <input type="hidden" name="id" value={listing.id} />
         <button
           type="submit"

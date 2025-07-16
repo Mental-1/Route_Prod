@@ -74,12 +74,12 @@ export async function updateListingStatus(listingId: string, status: string) {
 }
 export async function approveListing(formData: FormData) {
   const id = formData.get("id") as string;
-  if (!id) return { error: "Missing listing ID" };
-  return await updateListingStatus(id, "approved");
+  if (!id) return;
+  await updateListingStatus(id, "approved");
 }
 
 export async function rejectListing(formData: FormData) {
   const id = formData.get("id") as string;
-  if (!id) return { error: "Missing listing ID" };
-  return await updateListingStatus(id, "rejected");
+  if (!id) return;
+  await updateListingStatus(id, "rejected");
 }
