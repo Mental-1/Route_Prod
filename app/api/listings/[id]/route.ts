@@ -27,7 +27,7 @@ export async function GET(
         longitude,
         category:categories(name),
         subcategory:subcategories(name),
-        seller:profiles(id, full_name, username, avatar_url)
+        profiles!user_id(id, full_name, username, avatar_url)
       `,
       )
       .eq("id", id)
