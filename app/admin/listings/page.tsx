@@ -44,32 +44,32 @@ const ListingActions = ({ listing }: { listing: Listing }) => {
 
   const handleApprove = async (formData: FormData) => {
     const result = await approveListing(formData);
-    if (result?.success) {
-      toast({
-        title: "Success",
-        description: result.success,
-      });
-    } else if (result?.error) {
+    if (result && 'error' in result) {
       toast({
         title: "Error",
         description: result.error,
         variant: "destructive",
+      });
+    } else if (result && 'success' in result) {
+      toast({
+        title: "Success",
+        description: result.success,
       });
     }
   };
 
   const handleReject = async (formData: FormData) => {
     const result = await rejectListing(formData);
-    if (result?.success) {
-      toast({
-        title: "Success",
-        description: result.success,
-      });
-    } else if (result?.error) {
+    if (result && 'error' in result) {
       toast({
         title: "Error",
         description: result.error,
         variant: "destructive",
+      });
+    } else if (result && 'success' in result) {
+      toast({
+        title: "Success",
+        description: result.success,
       });
     }
   };
