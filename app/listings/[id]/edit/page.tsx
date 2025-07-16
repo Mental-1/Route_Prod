@@ -230,7 +230,7 @@ export default function EditListingPage() {
         } else {
           toast({
             title: "Data Error",
-            description: `The listing data is invalid. ${validation.error.message}`
+            description: `The listing data is invalid. ${validation.error.message}`,
             variant: "destructive",
           });
           router.push("/dashboard/listings");
