@@ -449,19 +449,19 @@ export default function ListingDetailPage() {
                 <div className="flex items-center space-x-3">
                   <Avatar className="h-12 w-12">
                     <AvatarImage
-                      src={listing.seller.avatar_url || "/placeholder.svg"}
-                      alt={listing.seller.full_name}
+                      src={listing.profiles.avatar_url || "/placeholder.svg"}
+                      alt={listing.profiles.full_name}
                     />
                     <AvatarFallback>
-                      {listing.seller.full_name?.charAt(0) || "U"}
+                      {listing.profiles.full_name?.charAt(0) || "U"}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1">
                     <h3 className="font-semibold">
-                      {listing.seller.full_name}
+                      {listing.profiles.full_name}
                     </h3>
                     <p className="text-sm text-muted-foreground">
-                      @{listing.seller.username}
+                      @{listing.profiles.username}
                     </p>
                   </div>
                 </div>
@@ -484,7 +484,7 @@ export default function ListingDetailPage() {
                 </div>
 
                 <Button variant="ghost" className="w-full" asChild>
-                  <Link href={`/sellers/${listing.seller.id}`}>
+                  <Link href={`/sellers/${listing.profiles.id}`}>
                     View Seller Profile
                   </Link>
                 </Button>
@@ -520,7 +520,7 @@ export default function ListingDetailPage() {
                 </ul>
                 <form
                   action={async () => {
-                    await reportUser(listing.id, listing.seller.id);
+                    await reportUser(listing.id, listing.profiles.id);
                   }}
                   className="mt-4"
                 >
