@@ -21,7 +21,24 @@ export async function GET(request: Request) {
 
     const { data, error, count } = await supabase
       .from("listings")
-      .select("*", { count: "exact" })
+      .select(
+        `
+        id,
+        title,
+        price,
+        location,
+        latitude,
+        longitude,
+        condition,
+        status,
+        featured,
+        images,
+        created_at,
+        category:categories (name)
+      `,
+        { count: "exact" },
+      )
+      .eq("status", "approved") // Only show approved listings
       .range(offset, offset + limit - 1)
       .order("created_at", { ascending: false });
 
@@ -147,7 +164,10 @@ export async function POST(request: Request) {
       .single();
 
     if (profileError) {
-      console.error("Error fetching user profile for listing count:", profileError);
+      console.error(
+        "Error fetching user profile for listing count:",
+        profileError,
+      );
       // Log the error but don't block the listing creation response
     }
 
@@ -330,7 +350,10 @@ export async function DELETE(request: Request) {
       .single();
 
     if (profileError) {
-      console.error("Error fetching user profile for listing count decrement:", profileError);
+      console.error(
+        "Error fetching user profile for listing count decrement:",
+        profileError,
+      );
       // Log the error but don't block the listing deletion response
     }
 
@@ -342,7 +365,10 @@ export async function DELETE(request: Request) {
       .eq("id", user.id);
 
     if (updateError) {
-      console.error("Error updating user listing count after deletion:", updateError);
+      console.error(
+        "Error updating user listing count after deletion:",
+        updateError,
+      );
       // Log the error but don't block the listing deletion response
     }
 

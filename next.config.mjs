@@ -19,6 +19,12 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: false,
   },
+
+  env: {
+    NEXT_PUBLIC_POSTHOG_KEY: process.env.NEXT_PUBLIC_POSTHOG_KEY,
+    NEXT_PUBLIC_POSTHOG_HOST: process.env.NEXT_PUBLIC_POSTHOG_HOST,
+  },
+
   images: {
     unoptimized: false,
     remotePatterns: [
@@ -88,7 +94,6 @@ const nextConfig = {
   },
 
   webpack(config, { isServer }) {
-    // Webpack cache optimization
     config.cache = {
       type: "filesystem",
       compression: false,

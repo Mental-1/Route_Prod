@@ -2,6 +2,12 @@ import { type NextRequest, NextResponse } from "next/server";
 import { getSupabaseRouteHandler } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
 
+import pino from "pino";
+
+const logger = pino({
+  level: process.env.NODE_ENV === "production" ? "info" : "debug",
+});
+
 /**
  * Retrieves a single active listing by its ID, including related category, subcategory, and seller details.
  *
@@ -11,10 +17,11 @@ import { cookies } from "next/headers";
  */
 export async function GET(
   request: NextRequest,
-  context: { params: { id: string } },
+  { params }: { params: { id: string } },
 ) {
   try {
-    const { id } = context.params;
+    const { id } = await params;
+    logger.debug(`Attempting to fetch listing with ID: ${id}`);
     const supabase = await getSupabaseRouteHandler(cookies);
 
     const { data: listing, error } = await supabase
@@ -22,14 +29,20 @@ export async function GET(
       .select(
         `
         *,
+        latitude,
+        longitude,
         category:categories(name),
         subcategory:subcategories(name),
-        seller:profiles(id, full_name, user_name, avatar_url)
+        profiles!user_id(id, full_name, username, avatar_url)
       `,
       )
       .eq("id", id)
       .eq("status", "active")
       .single();
+
+    if (error) {
+      logger.error("Supabase error fetching listing:", error);
+    }
 
     if (error || !listing) {
       return NextResponse.json({ error: "Listing not found" }, { status: 404 });
@@ -37,7 +50,7 @@ export async function GET(
 
     return NextResponse.json(listing);
   } catch (error) {
-    console.error("Error fetching listing:", error);
+    logger.error("Error fetching listing:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 },

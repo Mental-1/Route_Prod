@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { Search, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -37,6 +37,10 @@ export default function HomePage() {
   );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const loadingRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
   const handleSearch = (e: React.FormEvent) => {
@@ -46,17 +50,15 @@ export default function HomePage() {
     }
   };
 
+  // Initial fetch for the first page
   useEffect(() => {
-    /**
-     * Fetches recent marketplace listings and updates the component state with the results.
-     */
-    async function fetchRecentListings() {
+    async function initialFetch() {
       try {
         setLoading(true);
         setError(null);
-
-        const listings = await getRecentListings();
+        const listings = await getRecentListings(1);
         setRecentListings(listings);
+        setHasMore(listings.length === 20);
       } catch (error) {
         setError("Failed to fetch recent listings");
         console.error("Error fetching recent listings", error);
@@ -64,8 +66,58 @@ export default function HomePage() {
         setLoading(false);
       }
     }
-    fetchRecentListings();
+    initialFetch();
   }, []);
+
+  // Fetch more listings when page changes (triggered by IntersectionObserver)
+  useEffect(() => {
+    async function fetchMoreListings() {
+      if (page === 1) return;
+      try {
+        setLoading(true);
+        setError(null);
+        const listings = await getRecentListings(page);
+        setRecentListings((prevListings) => {
+          const newUniqueListings = listings.filter(
+            (listing) => !prevListings.some((prev) => prev.id === listing.id),
+          );
+          return [...prevListings, ...newUniqueListings];
+        });
+        setHasMore(listings.length === 20);
+      } catch (error) {
+        setError("Failed to fetch recent listings");
+        console.error("Error fetching recent listings", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchMoreListings();
+  }, [page]);
+
+  // Intersection Observer setup
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loading) {
+          setPage((prevPage) => prevPage + 1);
+        }
+      },
+      { threshold: 1.0 },
+    );
+
+    if (loadingRef.current) {
+      observer.observe(loadingRef.current);
+    }
+
+    observerRef.current = observer;
+
+    return () => {
+      if (loadingRef.current && observerRef.current) {
+        observerRef.current.unobserve(loadingRef.current);
+      }
+      observerRef.current?.disconnect();
+    };
+  }, [hasMore, loading]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -77,8 +129,7 @@ export default function HomePage() {
               Find Everything You Need
             </h1>
             <p className="text-lg md:text-xl mb-6 text-blue-100">
-              Buy, sell, and discover amazing deals in your neighborhood and get
-              directed to the spot.
+              Deals don’t wait. Neither should you.
             </p>
 
             {/* Search Bar */}
@@ -115,7 +166,7 @@ export default function HomePage() {
             </Button>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {loading ? (
               <div className="col-span-full text-center py-8">
                 Loading recent listings...
@@ -147,6 +198,9 @@ export default function HomePage() {
                         <p className="text-lg font-bold text-green-600 mb-1">
                           Ksh {listing.price ?? "N/A"}
                         </p>
+                        <p className="text-sm text-muted-foreground line-clamp-2 mb-1">
+                          {listing.description}
+                        </p>
                         <div className="flex items-center gap-2 mb-1">
                           <Badge variant="outline" className="text-xs">
                             {listing.condition}
@@ -155,7 +209,7 @@ export default function HomePage() {
                         <div className="flex items-center justify-between text-xs text-muted-foreground">
                           <div className="flex items-center gap-1">
                             <MapPin className="h-3 w-3" />
-                            {listing.distance}
+                            {listing.location}
                           </div>
                           <div className="flex items-center gap-1">
                             <div className="h-3 w-3 text-white" />

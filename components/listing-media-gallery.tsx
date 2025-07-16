@@ -30,9 +30,9 @@ export function ListingMediaGallery({ images, videos = [], className }: MediaGal
 
   return (
     <div className={cn("space-y-2", className)}>
-      <div className="relative aspect-square overflow-hidden rounded-lg bg-muted">
+      <div className="relative aspect-square overflow-hidden rounded-lg bg-muted max-w-full mx-auto max-h-[70vh]">
         {currentMedia.type === "image" ? (
-          <Image src={currentMedia.src || "/placeholder.svg"} alt="Listing image" fill className="object-cover" />
+          <Image src={currentMedia.src || "/placeholder.svg"} alt="Listing image" fill className="object-contain" />
         ) : (
           <video src={currentMedia.src} controls className="w-full h-full object-cover" />
         )}
@@ -121,14 +121,13 @@ export function ListingMediaGallery({ images, videos = [], className }: MediaGal
             <X className="h-6 w-6" />
           </Button>
 
-          <div className="relative max-w-4xl w-full max-h-[80vh]">
+          <div className="relative max-w-4xl w-full h-full max-h-[80vh]">
             {currentMedia.type === "image" ? (
               <Image
                 src={currentMedia.src || "/placeholder.svg"}
                 alt="Listing image"
-                width={1200}
-                height={800}
-                className="object-contain w-full h-full"
+                fill
+                className="object-contain"
               />
             ) : (
               <video src={currentMedia.src} controls className="w-full h-full object-contain" />

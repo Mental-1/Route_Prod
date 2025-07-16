@@ -33,6 +33,28 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const path = request.nextUrl.pathname;
+
+  // Admin route protection
+  if (path.startsWith("/admin")) {
+    if (!user) {
+      const redirectUrl = new URL("/auth", request.url);
+      redirectUrl.searchParams.set("redirectTo", path);
+      return NextResponse.redirect(redirectUrl);
+    }
+
+    // Check for admin role
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    if (profile?.role !== "admin") {
+      // Redirect non-admins to the home page
+      return NextResponse.redirect(new URL("/", request.url));
+    }
+  }
+
   const protectedRoutes = ["/dashboard", "/account", "/messages", "/settings"];
 
   if (protectedRoutes.some((r) => path.startsWith(r)) && !user) {

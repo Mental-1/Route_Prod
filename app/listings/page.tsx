@@ -29,6 +29,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { fetchListings, ListingsItem } from "@/lib/data";
 import { ListingCardSkeleton } from "@/components/skeletons/listing-card-skeleton";
+import Link from "next/link";
 
 type Subcategory = {
   id: number;
@@ -133,9 +134,7 @@ export default function ListingsPage() {
     setListings([]);
     const currentFilters: any = {
       categories: selectedCategories.map(Number).filter((n) => !isNaN(n)),
-      subcategories: selectedSubcategories
-        .map(Number)
-        .filter((n) => !isNaN(n)),
+      subcategories: selectedSubcategories.map(Number).filter((n) => !isNaN(n)),
       conditions: selectedConditions,
       priceRange: {
         min: priceRange[0],
@@ -143,22 +142,20 @@ export default function ListingsPage() {
       },
     };
 
-    // Only apply maxDistance filter if it's not the default value (e.g., 5km)
-    // or if the user has explicitly changed it.
-    // Assuming the default maxDistance is 5km as per your slider defaultValue.
     if (maxDistance[0] !== 5) {
       currentFilters.maxDistance = maxDistance[0];
     }
 
     fetchListings({
       page: 1,
+      pageSize: 20,
       filters: currentFilters,
       sortBy,
       userLocation,
     })
       .then((data) => {
         setListings(data);
-        setHasMore(data.length > 10);
+        setHasMore(data.length === 20);
         setPage(1);
       })
       .catch((error) => {
@@ -184,9 +181,7 @@ export default function ListingsPage() {
 
     const currentFilters: any = {
       categories: selectedCategories.map(Number).filter((n) => !isNaN(n)),
-      subcategories: selectedSubcategories
-        .map(Number)
-        .filter((n) => !isNaN(n)),
+      subcategories: selectedSubcategories.map(Number).filter((n) => !isNaN(n)),
       conditions: selectedConditions,
       priceRange: {
         min: priceRange[0],
@@ -200,12 +195,13 @@ export default function ListingsPage() {
 
     const moreListings = await fetchListings({
       page: nextPage,
+      pageSize: 20,
       filters: currentFilters,
       sortBy,
       userLocation,
     });
     setListings((prev) => [...prev, ...moreListings]);
-    setHasMore(moreListings.length > 0);
+    setHasMore(moreListings.length === 20);
     setPage(nextPage);
     setLoading(false);
   }, [
@@ -329,12 +325,12 @@ export default function ListingsPage() {
       <div className="container px-4 py-6">
         <div className="flex flex-col md:flex-row gap-6">
           {/* Filter Sidebar - Desktop */}
-          <div className="hidden md:block w-64 space-y-6 overflow-y-auto">
+          <div className="hidden md:block w-64 space-y-6 overflow-y-auto pr-6 border-r">
             <div className="font-medium text-lg">Filters</div>
 
-            <div className="space-y-4">
-              <div>
-                <h3 className="font-medium mb-2">Categories</h3>
+            <div className="space-y-6">
+              <div className="border-b pb-6">
+                <h3 className="font-medium mb-4">Categories</h3>
                 <div className="space-y-2">
                   {categories.map((category) => (
                     <div
@@ -365,8 +361,8 @@ export default function ListingsPage() {
               </div>
 
               {selectedCategories.length === 1 && (
-                <div>
-                  <h3 className="font-medium mb-2">Subcategories</h3>
+                <div className="border-b pb-6">
+                  <h3 className="font-medium mb-4">Subcategories</h3>
                   <div className="space-y-2">
                     {subcategories
                       .filter(
@@ -403,8 +399,8 @@ export default function ListingsPage() {
                 </div>
               )}
 
-              <div>
-                <h3 className="font-medium mb-2">Price Range</h3>
+              <div className="border-b pb-6">
+                <h3 className="font-medium mb-4">Price Range</h3>
                 <div className="space-y-4">
                   <Slider
                     defaultValue={[0, 1000000]}
@@ -420,8 +416,8 @@ export default function ListingsPage() {
                 </div>
               </div>
 
-              <div>
-                <h3 className="font-medium mb-2">Condition</h3>
+              <div className="border-b pb-6">
+                <h3 className="font-medium mb-4">Condition</h3>
                 <div className="space-y-2">
                   <div className="flex items-center space-x-2">
                     <Checkbox
@@ -472,7 +468,7 @@ export default function ListingsPage() {
               </div>
 
               <div>
-                <h3 className="font-medium mb-2">Distance</h3>
+                <h3 className="font-medium mb-4">Distance</h3>
                 <div className="space-y-4">
                   <Slider
                     defaultValue={[10]}
@@ -503,10 +499,14 @@ export default function ListingsPage() {
                   <SheetTitle>Filters</SheetTitle>
                 </SheetHeader>
                 <div className="py-4">
-                  <Accordion type="single" collapsible className="w-full">
-                    <AccordionItem value="categories">
+                  <Accordion
+                    type="single"
+                    collapsible
+                    className="w-full space-y-4"
+                  >
+                    <AccordionItem value="categories" className="border-b pb-4">
                       <AccordionTrigger>Categories</AccordionTrigger>
-                      <AccordionContent>
+                      <AccordionContent className="pt-4">
                         <div className="space-y-2">
                           {categories.map((category) => (
                             <div
@@ -538,9 +538,12 @@ export default function ListingsPage() {
                     </AccordionItem>
 
                     {selectedCategories.length === 1 && (
-                      <AccordionItem value="subcategories">
+                      <AccordionItem
+                        value="subcategories"
+                        className="border-b pb-4"
+                      >
                         <AccordionTrigger>Subcategories</AccordionTrigger>
-                        <AccordionContent>
+                        <AccordionContent className="pt-4">
                           <div className="space-y-2">
                             {subcategories
                               .filter(
@@ -578,9 +581,9 @@ export default function ListingsPage() {
                       </AccordionItem>
                     )}
 
-                    <AccordionItem value="price">
+                    <AccordionItem value="price" className="border-b pb-4">
                       <AccordionTrigger>Price Range</AccordionTrigger>
-                      <AccordionContent>
+                      <AccordionContent className="pt-4">
                         <div className="space-y-4">
                           <Slider
                             defaultValue={[0]}
@@ -597,9 +600,9 @@ export default function ListingsPage() {
                       </AccordionContent>
                     </AccordionItem>
 
-                    <AccordionItem value="condition">
+                    <AccordionItem value="condition" className="border-b pb-4">
                       <AccordionTrigger>Condition</AccordionTrigger>
-                      <AccordionContent>
+                      <AccordionContent className="pt-4">
                         <div className="space-y-2">
                           <div className="flex items-center space-x-2">
                             <Checkbox
@@ -660,7 +663,7 @@ export default function ListingsPage() {
 
                     <AccordionItem value="distance">
                       <AccordionTrigger>Distance</AccordionTrigger>
-                      <AccordionContent>
+                      <AccordionContent className="pt-4">
                         <div className="space-y-4">
                           <Slider
                             defaultValue={[5]}
@@ -748,46 +751,45 @@ export default function ListingsPage() {
                       <ListingCardSkeleton key={i} layout="grid" />
                     ))
                   : sortedListings.map((listing) => (
-                      <Card
-                        key={listing.id}
-                        className="overflow-hidden border-0 hover:shadow-md transition-shadow"
-                      >
-                        <CardContent className="p-0">
-                          <div className="aspect-square bg-muted">
-                            <img
-                              src={
-                                (listing.images && listing.images.length > 0
-                                  ? listing.images[0]
-                                  : null) || "/placeholder.svg"
-                              }
-                              alt={listing.title}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                          <div className="p-3">
-                            <h3 className="font-medium text-base mb-1 truncate">
-                              {listing.title}
-                            </h3>
-                            <p className="text-lg font-bold text-green-600 mb-1">
-                              Ksh{listing.price}
-                            </p>
-                            <p className="text-xs text-muted-foreground mb-2 line-clamp-2">
-                              {listing.description}
-                            </p>
-                            <div className="flex items-center gap-2 mb-1">
-                              <Badge variant="outline" className="text-xs">
-                                {listing.condition}
-                              </Badge>
+                      <Link key={listing.id} href={`/listings/${listing.id}`}>
+                        <Card className="overflow-hidden border-0 hover:shadow-md transition-shadow">
+                          <CardContent className="p-0">
+                            <div className="aspect-square bg-muted">
+                              <img
+                                src={
+                                  (listing.images && listing.images.length > 0
+                                    ? listing.images[0]
+                                    : null) || "/placeholder.svg"
+                                }
+                                alt={listing.title}
+                                className="w-full h-full object-cover"
+                              />
                             </div>
-                            <div className="flex items-center justify-between text-xs text-muted-foreground">
-                              <div className="flex items-center gap-1">
-                                <MapPin className="h-3 w-3" />
-                                {listing.location}
+                            <div className="p-3">
+                              <h3 className="font-medium text-base mb-1 truncate">
+                                {listing.title}
+                              </h3>
+                              <p className="text-lg font-bold text-green-600 mb-1">
+                                Ksh{listing.price}
+                              </p>
+                              <p className="text-xs text-muted-foreground mb-2 line-clamp-2">
+                                {listing.description}
+                              </p>
+                              <div className="flex items-center gap-2 mb-1">
+                                <Badge variant="outline" className="text-xs">
+                                  {listing.condition}
+                                </Badge>
+                              </div>
+                              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                                <div className="flex items-center gap-1">
+                                  <MapPin className="h-3 w-3" />
+                                  {listing.location}
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        </CardContent>
-                      </Card>
+                          </CardContent>
+                        </Card>
+                      </Link>
                     ))}
               </div>
             )}
@@ -800,48 +802,52 @@ export default function ListingsPage() {
                       <ListingCardSkeleton key={i} layout="list" />
                     ))
                   : sortedListings.map((listing) => (
-                      <Card
-                        key={listing.id}
-                        className="overflow-hidden border-0 hover:shadow-md transition-shadow"
-                      >
-                        <CardContent className="p-0">
-                          <div className="flex">
-                            <div className="w-40 h-40 bg-muted">
-                              <img
-                                src={
-                                  (listing.images && listing.images.length > 0
-                                    ? listing.images[0]
-                                    : null) || "/placeholder.svg"
-                                }
-                                alt={listing.title}
-                                className="w-full h-full object-cover"
-                              />
-                            </div>
-                            <div className="p-4 flex-1">
-                              <h3 className="font-medium text-lg mb-1">
-                                {listing.title}
-                              </h3>
-                              <p className="text-xl font-bold text-green-600 mb-2">
-                                Ksh{listing.price}
-                              </p>
-                              <p className="text-sm text-muted-foreground mb-3">
-                                {listing.description}
-                              </p>
-                              <div className="flex items-center gap-2 mb-2">
-                                <Badge variant="outline">
-                                  {listing.condition}
-                                </Badge>
+                      <Link key={listing.id} href={`/listings/${listing.id}`}>
+                        <Card
+                          key={listing.id}
+                          className="overflow-hidden border-0 hover:shadow-md transition-shadow"
+                        >
+                          <CardContent className="p-0">
+                            <div className="flex">
+                              <div className="w-40 h-40 bg-muted">
+                                <img
+                                  src={
+                                    (listing.images && listing.images.length > 0
+                                      ? listing.images[0]
+                                      : null) || "/placeholder.svg"
+                                  }
+                                  alt={listing.title}
+                                  className="w-full h-full object-cover"
+                                />
                               </div>
-                              <div className="flex items-center justify-between text-sm text-muted-foreground">
-                                <div className="flex items-center gap-1">
-                                  <MapPin className="h-4 w-4" />
-                                  {listing.location}
+                              <div className="p-4 flex-1 relative">
+                                <div className="flex justify-between items-start mb-1">
+                                  <h3 className="font-medium text-lg truncate">
+                                    {listing.title}
+                                  </h3>
+                                  <p className="text-xl font-bold text-green-600">
+                                    Ksh{listing.price}
+                                  </p>
+                                </div>
+                                <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+                                  {listing.description}
+                                </p>
+                                <div className="flex items-center gap-2 mb-2">
+                                  <Badge variant="outline">
+                                    {listing.condition}
+                                  </Badge>
+                                </div>
+                                <div className="flex items-center justify-between text-sm text-muted-foreground">
+                                  <div className="flex items-center gap-1">
+                                    <MapPin className="h-4 w-4" />
+                                    {listing.location}
+                                  </div>
                                 </div>
                               </div>
                             </div>
-                          </div>
-                        </CardContent>
-                      </Card>
+                          </CardContent>
+                        </Card>
+                      </Link>
                     ))}
               </div>
             )}

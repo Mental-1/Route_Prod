@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
         await supabase.from("notifications").insert({
           user_id: transaction.user_id,
           title: "Payment Successful",
-          message: `Your PayPal payment of $${transaction.amount} has been processed successfully.`,
+          message: `Your PayPal payment of $ ${transaction.amount} has been processed successfully.`,
           type: "payment",
         });
       }

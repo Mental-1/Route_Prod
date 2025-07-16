@@ -25,46 +25,48 @@ const userIcon = L.icon({
 })
 
 interface MapComponentProps {
-  userLocation: [number, number]
+  userLocation: { lat: number; lng: number; };
   listings: {
-    id: number
-    title: string
-    price: number
-    lat: number
-    lng: number
-    distance: string
-  }[]
-  selectedListing: number | null
+    id: number;
+    title: string;
+    price: number;
+    lat: number;
+    lng: number;
+    image_url: string;
+    distance_km: number;
+  }[];
+  selectedListingId: number | null;
+  onMarkerClick: (id: number) => void;
 }
 
 // Component to handle map view updates
 function MapUpdater({
   userLocation,
-  selectedListing,
+  selectedListingId,
   listings,
 }: {
-  userLocation: [number, number]
-  selectedListing: number | null
-  listings: MapComponentProps["listings"]
+  userLocation: { lat: number; lng: number; };
+  selectedListingId: number | null;
+  listings: MapComponentProps["listings"];
 }) {
-  const map = useMap()
+  const map = useMap();
 
   useEffect(() => {
     if (userLocation) {
-      map.setView(userLocation, 14)
+      map.setView([userLocation.lat, userLocation.lng], 14);
     }
-  }, [map, userLocation[0], userLocation[1]]) // Only depend on actual coordinates
+  }, [map, userLocation]);
 
   useEffect(() => {
-    if (selectedListing) {
-      const listing = listings.find((l) => l.id === selectedListing)
+    if (selectedListingId) {
+      const listing = listings.find((l) => l.id === selectedListingId);
       if (listing) {
-        map.setView([listing.lat, listing.lng], 16, { animate: true })
+        map.setView([listing.lat, listing.lng], 16, { animate: true });
       }
     }
-  }, [selectedListing]) // Remove map and listings from dependencies
+  }, [selectedListingId, listings, map]);
 
-  return null
+  return null;
 }
 
 /**
@@ -74,18 +76,19 @@ function MapUpdater({
  *
  * @param userLocation - The latitude and longitude of the user's current position
  * @param listings - An array of listing objects to display as markers on the map
- * @param selectedListing - The ID of the currently selected listing, or null if none is selected
+ * @param selectedListingId - The ID of the currently selected listing, or null if none is selected
+ * @param onMarkerClick - Callback function when a marker is clicked
  */
-export default function MapComponent({ userLocation, listings, selectedListing }: MapComponentProps) {
+export default function MapComponent({ userLocation, listings, selectedListingId, onMarkerClick }: MapComponentProps) {
   return (
-    <MapContainer center={userLocation} zoom={14} style={{ height: "100%", width: "100%" }} zoomControl={true} scrollWheelZoom={true}>
+    <MapContainer center={[userLocation.lat, userLocation.lng]} zoom={14} style={{ height: "100%", width: "100%" }} zoomControl={true} scrollWheelZoom={true}>
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
 
       {/* User location marker */}
-      <Marker position={userLocation} icon={userIcon}>
+      <Marker position={[userLocation.lat, userLocation.lng]} icon={userIcon}>
         <Popup>Your location</Popup>
       </Marker>
 
@@ -95,20 +98,25 @@ export default function MapComponent({ userLocation, listings, selectedListing }
           key={`listing-${listing.id}`}
           position={[listing.lat, listing.lng]}
           icon={markerIcon}
-          opacity={selectedListing === null || selectedListing === listing.id ? 1 : 0.7}
-          zIndexOffset={selectedListing === listing.id ? 1000 : 0}
+          opacity={selectedListingId === null || selectedListingId === listing.id ? 1 : 0.7}
+          zIndexOffset={selectedListingId === listing.id ? 1000 : 0}
+          eventHandlers={{
+            click: () => {
+              onMarkerClick(listing.id);
+            },
+          }}
         >
           <Popup>
             <div className="text-sm min-w-[150px]">
               <p className="font-medium mb-1">{listing.title}</p>
-              <p className="font-bold text-green-600 mb-1">${listing.price}</p>
-              <p className="text-gray-500 text-xs">{listing.distance}</p>
+              <p className="font-bold text-green-600 mb-1">Ksh {listing.price}</p>
+              <p className="text-gray-500 text-xs">{listing.distance_km.toFixed(2)} km away</p>
             </div>
           </Popup>
         </Marker>
       ))}
 
-      <MapUpdater userLocation={userLocation} selectedListing={selectedListing} listings={listings} />
+      <MapUpdater userLocation={userLocation} selectedListingId={selectedListingId} listings={listings} />
     </MapContainer>
-  )
+  );
 }

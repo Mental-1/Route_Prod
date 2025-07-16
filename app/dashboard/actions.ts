@@ -1,6 +1,7 @@
 "use server";
 
 import { getSupabaseServer } from "@/utils/supabase/server";
+import { revalidatePath } from "next/cache";
 
 import {
   DashboardData,
@@ -53,3 +54,5 @@ export async function getDashboardData(): Promise<DashboardData> {
     recentActivity,
   };
 }
+
+
