@@ -10,7 +10,7 @@ import { PostHogProvider as PHProvider } from "posthog-js/react";
 export function PostHogProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const posthogKey = process.env.NEXT_PUBLIC_POSTHOG_KEY;
-    if (process.env.NODE_ENV === "development") {
+    if (process.env.NODE_ENV === "development" && posthogKey) {
       console.log(`PostHog key found, initializing with key: ${posthogKey.substring(0, 8)}...`);
     }
 
