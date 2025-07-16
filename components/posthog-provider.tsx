@@ -12,10 +12,7 @@ export function PostHogPageview() {
 
   useEffect(() => {
     if (pathname) {
-      let url = window.origin + pathname;
-      if (searchParams.toString()) {
-        url = url + `?${searchParams.toString()}`;
-      }
+      const url = `${window.origin}${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
       posthog.capture('$pageview', { url });
     }
   }, [pathname, searchParams]);

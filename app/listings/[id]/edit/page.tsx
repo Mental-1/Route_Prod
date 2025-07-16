@@ -18,15 +18,18 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { getSupabaseClient } from "@/utils/supabase/client";
+import { listingSchema } from "@/lib/validations";
 
-const listingSchema = z.object({
-  title: z.string().min(5, "Title must be at least 5 characters"),
-  description: z.string().min(20, "Description must be at least 20 characters"),
-  price: z.number().positive("Price must be a positive number"),
+// Create a specific schema for editing with only the fields we need
+const editListingSchema = listingSchema.pick({
+  title: true,
+  description: true,
+  price: true,
+}).extend({
   condition: z.enum(["new", "used", "refurbished"]),
 });
 
-type ListingFormData = z.infer<typeof listingSchema>;
+type ListingFormData = z.infer<typeof editListingSchema>;
 
 function EditListingForm({
   listing,
@@ -45,7 +48,7 @@ function EditListingForm({
     control,
     formState: { errors, isSubmitting },
   } = useForm<ListingFormData>({
-    resolver: zodResolver(listingSchema),
+    resolver: zodResolver(editListingSchema),
     defaultValues: {
       ...listing,
       price: Number(listing.price),
@@ -53,10 +56,22 @@ function EditListingForm({
   });
 
   const onSubmit: SubmitHandler<ListingFormData> = async (formData) => {
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to update a listing.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const { error } = await supabase
       .from("listings")
       .update({ ...formData, status: "pending" })
-      .eq("id", listingId);
+      .eq("id", listingId)
+      .eq("user_id", user.id);
 
     if (error) {
       toast({
@@ -180,10 +195,24 @@ export default function EditListingPage() {
 
     const fetchListing = async () => {
       setIsLoading(true);
+
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (!user) {
+        toast({
+          title: "Error",
+          description: "You must be logged in to edit a listing.",
+          variant: "destructive",
+        });
+        router.push("/auth");
+        return;
+      }
+
       const { data, error } = await supabase
         .from("listings")
-        .select("title, description, price, condition")
+        .select("title, description, price, condition, user_id")
         .eq("id", listingId)
+        .eq("user_id", user.id)
         .single();
 
       if (error || !data) {
@@ -195,14 +224,13 @@ export default function EditListingPage() {
         });
         router.push("/dashboard/listings");
       } else {
-        const validation = listingSchema.safeParse(data);
+        const validation = editListingSchema.safeParse(data);
         if (validation.success) {
           setListing(validation.data);
         } else {
           toast({
             title: "Data Error",
-            description:
-              "The listing data is invalid. " + validation.error.message,
+            description: `The listing data is invalid. ${validation.error.message}`
             variant: "destructive",
           });
           router.push("/dashboard/listings");

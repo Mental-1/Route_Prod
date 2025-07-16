@@ -23,8 +23,6 @@ const nextConfig = {
   env: {
     NEXT_PUBLIC_POSTHOG_KEY: process.env.NEXT_PUBLIC_POSTHOG_KEY,
     NEXT_PUBLIC_POSTHOG_HOST: process.env.NEXT_PUBLIC_POSTHOG_HOST,
-    POSTHOG_API_KEY: process.env.POSTHOG_API_KEY,
-    POSTHOG_HOST: process.env.POSTHOG_HOST,
   },
 
   images: {

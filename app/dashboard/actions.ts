@@ -55,18 +55,4 @@ export async function getDashboardData(): Promise<DashboardData> {
   };
 }
 
-export async function requestReReview(listingId: string) {
-  const supabase = await getSupabaseServer();
-  const { error } = await supabase
-    .from("listings")
-    .update({ status: "pending" })
-    .eq("id", listingId);
 
-  if (error) {
-    console.error("Error requesting re-review:", error);
-    return { error: "Failed to request re-review." };
-  }
-
-  revalidatePath("/dashboard/listings");
-  return { success: "Re-review requested successfully." };
-}

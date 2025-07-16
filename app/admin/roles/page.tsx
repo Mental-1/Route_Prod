@@ -8,11 +8,18 @@ export type User = {
   role: string;
 };
 
-async function getUsersWithRoles(): Promise<User[]> {
+async function getUsersWithRoles(): Promise<{ users?: User[]; error?: string }> {
   const cookieStore = await cookies();
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !supabaseKey) {
+    return { error: "Supabase URL or service role key is not defined." };
+  }
+
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    supabaseUrl,
+    supabaseKey,
     {
       cookies: {
         getAll: () => cookieStore.getAll(),
@@ -26,14 +33,23 @@ async function getUsersWithRoles(): Promise<User[]> {
 
   if (error) {
     console.error("Error fetching users with roles:", error);
-    return [];
+    return { error: "Failed to fetch users with roles." };
   }
 
-  return data as User[];
+  return { users: data as User[] };
 }
 
 export default async function RoleManagementPage() {
-  const users = await getUsersWithRoles();
+  const result = await getUsersWithRoles();
 
-  return <RoleManagementView users={users} />;
+  if (result.error) {
+    return (
+      <div className="container mx-auto py-10">
+        <h1 className="text-2xl font-bold text-red-500 mb-4">Error</h1>
+        <p className="text-muted-foreground">{result.error}</p>
+      </div>
+    );
+  }
+
+  return <RoleManagementView users={result.users || []} />;
 }

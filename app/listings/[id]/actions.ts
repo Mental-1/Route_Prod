@@ -4,6 +4,11 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { PostHog } from "posthog-node";
+import pino from "pino";
+
+const logger = pino({
+  level: process.env.NODE_ENV === "production" ? "info" : "debug",
+});
 
 export async function reportUser(listingId: string, ownerId: string) {
   const cookieStore = await cookies();
@@ -32,7 +37,7 @@ export async function reportUser(listingId: string, ownerId: string) {
     .eq("id", ownerId);
 
   if (error) {
-    console.error("Error flagging user:", error);
+    logger.error({ error, ownerId, listingId }, "Error flagging user");
     return { error: "Failed to report user." };
   }
 
@@ -41,17 +46,20 @@ export async function reportUser(listingId: string, ownerId: string) {
   revalidatePath(`/listings/${listingId}`);
 
   // Track event with PostHog
-  const posthog = new PostHog(process.env.NEXT_PUBLIC_POSTHOG_KEY!)
-  posthog.capture({
-    distinctId: user.id,
-    event: 'user_reported',
-    properties: {
-      reported_user_id: ownerId,
-      reporting_user_id: user.id,
-      listing_id: listingId,
-    },
-  });
-  await posthog.shutdown();
+  const posthog = new PostHog(process.env.NEXT_PUBLIC_POSTHOG_KEY!);
+  try {
+    posthog.capture({
+      distinctId: user.id,
+      event: 'user_reported',
+      properties: {
+        reported_user_id: ownerId,
+        reporting_user_id: user.id,
+        listing_id: listingId,
+      },
+    });
+  } finally {
+    await posthog.shutdown();
+  }
 
   return { success: "User has been reported for review." };
 }

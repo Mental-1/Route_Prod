@@ -9,9 +9,20 @@ type Schema = Database["public"];
 /** SSR client for Server Components (read-only cookies) */
 export async function getSupabaseServer(): Promise<SupabaseClient<Schema>> {
   const cookieStore = await nextCookies();
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl) {
+    throw new Error("NEXT_PUBLIC_SUPABASE_URL is not set");
+  }
+  if (!supabaseAnonKey) {
+    throw new Error("NEXT_PUBLIC_SUPABASE_ANON_KEY is not set");
+  }
+
   const client = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl,
+    supabaseAnonKey,
     {
       cookies: {
         getAll: async () => await cookieStore.getAll(),
@@ -34,9 +45,20 @@ export async function getSupabaseRouteHandler(
   cookiesFn: typeof nextCookies,
 ): Promise<SupabaseClient<Schema>> {
   const cookieStore = await cookiesFn();
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl) {
+    throw new Error("NEXT_PUBLIC_SUPABASE_URL is not set");
+  }
+  if (!supabaseAnonKey) {
+    throw new Error("NEXT_PUBLIC_SUPABASE_ANON_KEY is not set");
+  }
+
   const client = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl,
+    supabaseAnonKey,
     {
       cookies: {
         getAll: async () => await cookieStore.getAll(),

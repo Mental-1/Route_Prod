@@ -125,32 +125,32 @@ export default function MessagesPage() {
           const otherUser =
             user?.id === convo.seller.id ? convo.buyer : convo.seller;
           return (
-            <li
-              key={convo.id}
-              onClick={() => handleConversationClick(convo)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  handleConversationClick(convo);
-                }
-              }}
-              tabIndex={0}
-              role="button"
-              className="p-4 border-b cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800"
-            >
-              <div className="flex items-center">
-                <img
-                  src={otherUser.avatar_url || "/placeholder-user.jpg"}
-                  alt={otherUser.username}
-                  className="w-10 h-10 rounded-full mr-4"
-                />
-                <div>
-                  <p className="font-semibold">{otherUser.username}</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {convo.listing.title}
-                  </p>
+            <li key={convo.id}>
+              <button
+                type="button"
+                onClick={() => handleConversationClick(convo)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    handleConversationClick(convo);
+                  }
+                }}
+                className="w-full p-4 border-b cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 text-left"
+              >
+                <div className="flex items-center">
+                  <img
+                    src={otherUser.avatar_url || "/placeholder-user.jpg"}
+                    alt={otherUser.username}
+                    className="w-10 h-10 rounded-full mr-4"
+                  />
+                  <div>
+                    <p className="font-semibold">{otherUser.username}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      {convo.listing.title}
+                    </p>
+                  </div>
                 </div>
-              </div>
+              </button>
             </li>
           );
         })}

@@ -28,10 +28,13 @@ interface AnalyticsDataError {
 export async function getAnalyticsData(): Promise<
   AnalyticsDataSuccess | AnalyticsDataError
 > {
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    throw new Error("Missing required environment variables: NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
+  }
   const cookieStore = await cookies();
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY,
     {
       cookies: {
         getAll: () => cookieStore.getAll(),
@@ -41,9 +44,14 @@ export async function getAnalyticsData(): Promise<
 
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  // Ensure consistent UTC time for database queries
+  sevenDaysAgo.setUTCHours(0, 0, 0, 0);
 
   const { data: usersData, error: usersError } =
-    await supabase.auth.admin.listUsers();
+    await supabase.auth.admin.listUsers({
+      page: 1,
+      perPage: 1000, // Assuming 1000 users per page is sufficient for analytics over 7 days. Adjust as needed.
+    });
   const { data: listingsData, error: listingsError } = await supabase
     .from("listings")
     .select("created_at, categories (name)")

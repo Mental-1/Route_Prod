@@ -36,6 +36,13 @@
 
         --sidebar-primary: 221 65% 54%;
         --sidebar-primary-foreground: 0 0% 100%;
+
+        --chart-1: 348 100% 69%;
+        --chart-2: 205 82% 58%;
+        --chart-3: 45 100% 67%;
+        --chart-4: 180 50% 58%;
+        --chart-5: 255 100% 70%;
+        --chart-6: 36 100% 62%;
     }
 
     .dark {
@@ -69,6 +76,13 @@
 
         --sidebar-primary: 221 65% 64%;
         --sidebar-primary-foreground: 0 0% 100%;
+
+        --chart-1: 348 90% 65%;
+        --chart-2: 205 75% 55%;
+        --chart-3: 45 90% 65%;
+        --chart-4: 180 45% 55%;
+        --chart-5: 255 90% 65%;
+        --chart-6: 36 90% 60%;
     }
 }
 

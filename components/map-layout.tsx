@@ -2,7 +2,11 @@ import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { ChevronRight } from "lucide-react";
 
-export const MapLayout = ({ sidebar, children }: { sidebar: React.ReactElement; children: React.ReactNode }) => {
+export const MapLayout = ({ sidebar, children, buttonText }: {
+  sidebar: React.ReactElement | ((props: { isOpen: boolean; onToggle: () => void }) => React.ReactNode);
+  children: React.ReactNode;
+  buttonText: string;
+}) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   const toggleSidebar = () => {
@@ -11,8 +15,10 @@ export const MapLayout = ({ sidebar, children }: { sidebar: React.ReactElement; 
 
   return (
     <div className="relative h-screen w-screen overflow-hidden">
-      {React.cloneElement(sidebar, { isOpen: isSidebarOpen, onToggle: toggleSidebar })}
-      <main className={`transition-all duration-300 ease-in-out h-full ${isSidebarOpen ? 'ml-80 md:ml-96' : 'ml-0'}`}>
+      {typeof sidebar === 'function'
+        ? sidebar({ isOpen: isSidebarOpen, onToggle: toggleSidebar })
+        : React.cloneElement(sidebar, { isOpen: isSidebarOpen, onToggle: toggleSidebar })}
+      <main className={`transition-all duration-300 ease-in-out h-full ${isSidebarOpen ? 'ml-80' : 'ml-0'}`}>
         {children}
       </main>
       {!isSidebarOpen && (
@@ -22,7 +28,7 @@ export const MapLayout = ({ sidebar, children }: { sidebar: React.ReactElement; 
          onClick={toggleSidebar}
        >
          <ChevronRight className="h-5 w-5 mr-1" />
-         Show Nearby Listings
+         {buttonText}
        </Button>
       )}
     </div>

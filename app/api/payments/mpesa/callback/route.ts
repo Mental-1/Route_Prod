@@ -26,7 +26,10 @@ export async function POST(request: NextRequest) {
     logger.debug({ body }, "Raw Callback Body:");
 
     const expectedSignature = crypto
-      .createHmac("sha256", process.env.MPESA_SECRET_KEY!)
+      .createHmac("sha256", process.env.MPESA_SECRET_KEY || (() => {
+        logger.error("MPESA_SECRET_KEY environment variable is required");
+        throw new Error("Configuration error");
+      })())
       .update(body)
       .digest("hex");
 

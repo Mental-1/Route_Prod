@@ -15,9 +15,18 @@ interface User {
 
 async function getAllUsers(): Promise<User[]> {
   const cookieStore = await cookies();
+  
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  
+  if (!supabaseUrl || !serviceRoleKey) {
+    console.error("Missing required environment variables");
+    return [];
+  }
+  
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    supabaseUrl,
+    serviceRoleKey,
     {
       cookies: {
         getAll: () => cookieStore.getAll(),
@@ -104,7 +113,7 @@ export default async function UsersPage() {
                       <span
                         aria-hidden
                         className={`absolute inset-0 ${user.banned_until && new Date(user.banned_until) > new Date() ? "bg-red-200" : "bg-green-200"} opacity-50 rounded-full`}
-                      ></span>
+                      />
                       <span className="relative">
                         {user.banned_until &&
                         new Date(user.banned_until) > new Date()

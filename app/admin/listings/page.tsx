@@ -1,15 +1,23 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import React from "react";
-import { updateListingStatus } from "./actions";
 import { Listing } from "@/lib/types/listing";
 import { approveListing, rejectListing } from "./actions";
 
 async function getAllListings(): Promise<Listing[]> {
   const cookieStore = await cookies();
+  
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  
+  if (!supabaseUrl || !serviceRoleKey) {
+    console.error("Missing required environment variables");
+    return [];
+  }
+  
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    supabaseUrl,
+    serviceRoleKey,
     {
       cookies: {
         getAll: () => cookieStore.getAll(),

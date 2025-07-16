@@ -291,19 +291,32 @@ export async function createListingAction(
     revalidatePath("/dashboard");
 
     // Track event with PostHog
-    const posthog = new PostHog(process.env.NEXT_PUBLIC_POSTHOG_KEY!)
-    posthog.capture({
-      distinctId: user.id,
-      event: 'listing_created',
-      properties: {
-        listing_id: listing.id,
-        listing_title: listingData.title,
-        listing_category_id: listingData.category_id,
-        listing_price: listingData.price,
-        listing_plan: listingData.plan,
-      }
-    });
-    await posthog.shutdown();
+    const posthogKey = process.env.NEXT_PUBLIC_POSTHOG_KEY;
+    if (!posthogKey) {
+      console.warn("PostHog key not configured, skipping event tracking");
+      return {
+        success: true,
+        data: { id: listing.id, slug },
+        message: "Listing created successfully!",
+      };
+    }
+    
+    const posthog = new PostHog(posthogKey);
+    try {
+      posthog.capture({
+        distinctId: user.id,
+        event: 'listing_created',
+        properties: {
+          listing_id: listing.id,
+          listing_title: listingData.title,
+          listing_category_id: listingData.category_id,
+          listing_price: listingData.price,
+          listing_plan: listingData.plan,
+        }
+      });
+    } finally {
+      await posthog.shutdown();
+    }
 
     return {
       success: true,

@@ -34,24 +34,13 @@ const nearbyListings: MapListing[] = [
  *
  * The sidebar allows users to search and filter listings by distance, select a listing, and toggle its visibility. The map displays the user's current location (or a default location if unavailable) and highlights the selected listing.
  */
-interface MapListing {
-  id: number;
-  title: string;
-  price: number;
-  image_url: string;
-  distance_km: number;
-  lat: number;
-  lng: number;
-}
+import { MapListing, UserLocation } from "@/lib/types/map";
+import { debounce } from "@/utils/debounce";
 
 export default function MapViewPage() {
   const [listings, setListings] = useState<MapListing[]>([]);
   const [filteredListings, setFilteredListings] = useState<MapListing[]>([]);
   const [selectedListing, setSelectedListing] = useState<number | null>(null);
-  interface UserLocation {
-    lat: number;
-    lng: number;
-  }
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
   const [distance, setDistance] = useState(5);
   const [debouncedDistance, setDebouncedDistance] = useState(5);
@@ -60,17 +49,6 @@ export default function MapViewPage() {
 
   const handleToggleSidebar = () => {
     setIsOpen(!isOpen);
-  };
-
-  const debounce = <T extends (...args: any[]) => void>(
-    func: T,
-    delay: number,
-  ) => {
-    let timeout: NodeJS.Timeout | undefined;
-    return (...args: Parameters<T>) => {
-      clearTimeout(timeout);
-      timeout = setTimeout(() => func(...args), delay);
-    };
   };
 
   const debouncedSetDistance = useCallback(
@@ -115,7 +93,8 @@ export default function MapViewPage() {
 
   return (
     <MapLayout
-      sidebar={
+      buttonText="Show Nearby Listings"
+      sidebar={({ isOpen, onToggle }) => (
         <MapSidebar
           listings={filteredListings}
           selectedListing={selectedListing}
@@ -125,9 +104,9 @@ export default function MapViewPage() {
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           isOpen={isOpen}
-          onToggle={handleToggleSidebar}
+          onToggle={onToggle}
         />
-      }
+      )}
     >
       {userLocation ? (
         <MapComponent
@@ -139,7 +118,7 @@ export default function MapViewPage() {
       ) : (
         <div className="w-full h-full bg-muted flex items-center justify-center">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2" />
             <p className="text-sm text-muted-foreground">Loading map...</p>
           </div>
         </div>

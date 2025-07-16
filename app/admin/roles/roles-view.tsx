@@ -16,10 +16,22 @@ const RoleManagementForm = ({
   const { toast } = useToast();
   const formRef = useRef<HTMLFormElement>(null);
   const router = useRouter();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
+    const newRole = formData.get("role") as string;
+
+    if (newRole === currentRole) {
+      toast({
+        title: "No Change",
+        description: "The selected role is the same as the current role.",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
     const result = await updateUserRole(formData);
 
     if (result.success) {
@@ -36,6 +48,7 @@ const RoleManagementForm = ({
         variant: "destructive",
       });
     }
+    setIsSubmitting(false);
   };
 
   return (
@@ -45,6 +58,8 @@ const RoleManagementForm = ({
         name="role"
         defaultValue={currentRole}
         className="bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white rounded-md px-2 py-1"
+        aria-label={`Change role for user ${userId}`}
+        disabled={isSubmitting}
       >
         <option value="user">User</option>
         <option value="admin">Admin</option>
@@ -52,21 +67,16 @@ const RoleManagementForm = ({
       </select>
       <button
         type="submit"
-        className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-3 rounded"
+        className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-3 rounded disabled:opacity-50"
+        disabled={isSubmitting}
       >
-        Update
+        {isSubmitting ? "Updating..." : "Update"}
       </button>
     </form>
   );
 };
 
-export const RoleManagementView = ({ users: initialUsers }: { users: User[] }) => {
-  const [users, setUsers] = useState<User[]>(initialUsers);
-
-  useEffect(() => {
-    setUsers(initialUsers);
-  }, [initialUsers]);
-
+export const RoleManagementView = ({ users }: { users: User[] }) => {
   return (
     <div>
       <h1 className="text-3xl font-bold mb-6">User Role Management</h1>

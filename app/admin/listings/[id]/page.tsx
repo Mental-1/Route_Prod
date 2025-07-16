@@ -10,15 +10,31 @@ import { Listing } from "@/lib/types/listing";
 
 const ListingModerationActions = ({ listing }: { listing: Listing }) => {
   const router = useRouter();
+  const [isApproving, setIsApproving] = useState(false);
+  const [isRejecting, setIsRejecting] = useState(false);
 
   const handleApprove = async () => {
-    await updateListingStatus(listing.id, "approved");
-    router.push("/admin/listings");
+    setIsApproving(true);
+    try {
+      await updateListingStatus(listing.id, "approved");
+      router.push("/admin/listings");
+    } catch (error) {
+      console.error("Failed to approve listing:", error);
+    } finally {
+      setIsApproving(false);
+    }
   };
 
   const handleReject = async () => {
-    await updateListingStatus(listing.id, "rejected");
-    router.push("/admin/listings");
+    setIsRejecting(true);
+    try {
+      await updateListingStatus(listing.id, "rejected");
+      router.push("/admin/listings");
+    } catch (error) {
+      console.error("Failed to reject listing:", error);
+    } finally {
+      setIsRejecting(false);
+    }
   };
 
   return (
@@ -28,16 +44,18 @@ const ListingModerationActions = ({ listing }: { listing: Listing }) => {
         size="lg"
         className="bg-green-600 hover:bg-green-700"
         onClick={handleApprove}
+        disabled={isApproving || isRejecting}
       >
-        (A)pprove
+        {isApproving ? "Approving..." : "(A)pprove"}
       </Button>
       <Button
         id="reject-button"
         size="lg"
         variant="destructive"
         onClick={handleReject}
+        disabled={isApproving || isRejecting}
       >
-        (R)eject
+        {isRejecting ? "Rejecting..." : "(R)eject"}
       </Button>
     </div>
   );
@@ -74,6 +92,17 @@ export default function ListingPreviewPage({
   }, [params.id, router]);
 
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
+    // Check if the event target is an input, textarea, or contenteditable element
+    const target = event.target as HTMLElement;
+    if (
+      target.tagName === "INPUT" ||
+      target.tagName === "TEXTAREA" ||
+      target.isContentEditable ||
+      target.getAttribute("contenteditable") === "true"
+    ) {
+      return; // Don't trigger shortcuts when typing in form elements
+    }
+
     if (event.key.toLowerCase() === "a") {
       document.getElementById("approve-button")?.click();
     }

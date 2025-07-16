@@ -52,6 +52,8 @@ const getLast7DaysLabels = () => {
 export default function AnalyticsCharts() {
   const [chartData, setChartData] = useState<ChartData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   useEffect(() => {
     const fetchAnalyticsData = async () => {
       const labels = getLast7DaysLabels();
@@ -59,40 +61,35 @@ export default function AnalyticsCharts() {
 
       if ("error" in analyticsResult) {
         console.error("Error fetching chart data:", analyticsResult.error);
+        setError("Failed to load analytics data. Please try again later.");
         setLoading(false);
         return;
       }
 
       const { usersData, listingsData } = analyticsResult;
 
-      // Process data for charts
-      const newUsersByDay = Array(7).fill(0);
-      const sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      const processDataByDay = (items: Array<{ created_at: string }>) => {
+        const dataByDay = Array(7).fill(0);
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        sevenDaysAgo.setUTCHours(0, 0, 0, 0); // Ensure consistent timezone
 
-      usersData.users.forEach((user) => {
-        const userDate = new Date(user.created_at);
-        if (userDate >= sevenDaysAgo) {
-          const diffDays = Math.floor(
-            (new Date().getTime() - userDate.getTime()) / (1000 * 60 * 60 * 24),
-          );
-          if (diffDays < 7) {
-            newUsersByDay[6 - diffDays]++;
+        items.forEach((item) => {
+          const itemDate = new Date(item.created_at);
+          if (itemDate >= sevenDaysAgo) {
+            const diffDays = Math.floor(
+              (new Date().getTime() - itemDate.getTime()) / (1000 * 60 * 60 * 24)
+            );
+            if (diffDays < 7) {
+              dataByDay[6 - diffDays]++;
+            }
           }
-        }
-      });
+        });
+        return dataByDay;
+      };
 
-      const newListingsByDay = Array(7).fill(0);
-      listingsData.forEach((listing) => {
-        const listingDate = new Date(listing.created_at);
-        const diffDays = Math.floor(
-          (new Date().getTime() - listingDate.getTime()) /
-            (1000 * 60 * 60 * 24),
-        );
-        if (diffDays < 7) {
-          newListingsByDay[6 - diffDays]++;
-        }
-      });
+      const newUsersByDay = processDataByDay(usersData.users);
+      const newListingsByDay = processDataByDay(listingsData);
 
       const categoryCounts: Record<string, number> = listingsData.reduce(
         (acc: Record<string, number>, listing) => {
@@ -153,7 +150,11 @@ export default function AnalyticsCharts() {
   }
 
   if (!chartData) {
-    return <div>Could not load chart data.</div>;
+    return (
+      <div className="text-center py-8">
+        <p className="text-destructive">{error || "Could not load chart data."}</p>
+      </div>
+    );
   }
 
   const userGrowthData = {
@@ -189,12 +190,12 @@ export default function AnalyticsCharts() {
         label: "Listings",
         data: Object.values(chartData.categoryCounts),
         backgroundColor: [
-          "#FF6384",
-          "#36A2EB",
-          "#FFCE56",
-          "#4BC0C0",
-          "#9966FF",
-          "#FF9F40",
+          "hsl(var(--chart-1))",
+          "hsl(var(--chart-2))",
+          "hsl(var(--chart-3))",
+          "hsl(var(--chart-4))",
+          "hsl(var(--chart-5))",
+          "hsl(var(--chart-6))",
         ],
       },
     ],

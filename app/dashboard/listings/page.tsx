@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import Link from "next/link";
 import { useAuth } from "@/contexts/auth-context";
-import { requestReReview } from "@/app/dashboard/actions";
+import { requestReReview } from "@/app/dashboard/listings/actions";
 
 interface Listing {
   id: string;

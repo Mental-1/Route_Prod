@@ -4,12 +4,24 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { PostHog } from "posthog-node";
+import pino from "pino";
+
+const logger = pino({
+  level: process.env.NODE_ENV === "production" ? "info" : "debug",
+});
 
 async function getSupabaseAdmin() {
   const cookieStore = await cookies();
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !supabaseKey) {
+    throw new Error("Missing required Supabase environment variables");
+  }
+
   return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    supabaseUrl,
+    supabaseKey,
     {
       cookies: {
         getAll: () => cookieStore.getAll(),
@@ -25,7 +37,12 @@ async function getSupabaseAdmin() {
 
 // Example: Update a listing's status (e.g., to 'approved' or 'rejected')
 export async function updateListingStatus(listingId: string, status: string) {
-  const posthog = new PostHog(process.env.NEXT_PUBLIC_POSTHOG_KEY!);
+  const posthogKey = process.env.NEXT_PUBLIC_POSTHOG_KEY;
+  if (!posthogKey) {
+    logger.error('NEXT_PUBLIC_POSTHOG_KEY is required for analytics');
+    return { error: "Configuration error." };
+  }
+  const posthog = new PostHog(posthogKey);
   const supabase = await getSupabaseAdmin();
   const { error } = await supabase
     .from("listings")
@@ -33,34 +50,36 @@ export async function updateListingStatus(listingId: string, status: string) {
     .eq("id", listingId);
 
   if (error) {
-    console.error("Error updating listing status:", error);
+    logger.error({ error, listingId, status }, "Error updating listing status");
     return { error: "Failed to update listing." };
   }
 
   revalidatePath("/admin/listings");
 
   // Track event with PostHog
-  posthog.capture({
-    distinctId: "system",
-    event: "listing_moderated",
-    properties: {
-      listing_id: listingId,
-      status: status,
-    },
-  });
-
-  await posthog.shutdown();
+  try {
+    posthog.capture({
+      distinctId: "system",
+      event: "listing_moderated",
+      properties: {
+        listing_id: listingId,
+        status: status,
+      },
+    });
+  } finally {
+    await posthog.shutdown();
+  }
 
   return { success: "Listing status updated." };
 }
 export async function approveListing(formData: FormData) {
   const id = formData.get("id") as string;
-  if (!id) return;
-  await updateListingStatus(id, "approved");
+  if (!id) return { error: "Missing listing ID" };
+  return await updateListingStatus(id, "approved");
 }
 
 export async function rejectListing(formData: FormData) {
   const id = formData.get("id") as string;
-  if (!id) return;
-  await updateListingStatus(id, "rejected");
+  if (!id) return { error: "Missing listing ID" };
+  return await updateListingStatus(id, "rejected");
 }

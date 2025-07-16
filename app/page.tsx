@@ -109,12 +109,14 @@ export default function HomePage() {
       observer.observe(loadingRef.current);
     }
 
+    observerRef.current = observer;
+
     return () => {
-      if (loadingRef.current) {
-        observer.unobserve(loadingRef.current);
+      if (loadingRef.current && observerRef.current) {
+        observerRef.current.unobserve(loadingRef.current);
       }
+      observerRef.current?.disconnect();
     };
-  }, [hasMore, loading]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -163,7 +165,7 @@ export default function HomePage() {
             </Button>
           </div>
 
-          <div className="grid sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {loading ? (
               <div className="col-span-full text-center py-8">
                 Loading recent listings...
