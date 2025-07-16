@@ -117,6 +117,7 @@ export default function HomePage() {
       }
       observerRef.current?.disconnect();
     };
+  }, [hasMore, loading]);
 
   return (
     <div className="min-h-screen bg-background">
