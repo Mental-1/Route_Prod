@@ -34,34 +34,46 @@ export interface ListingsItem {
  *
  * @returns An array of recent listings formatted for display.
  */
-export async function getRecentListings(page = 1, pageSize = 20): Promise<DisplayListingItem[]> {
+export async function getRecentListings(
+  page = 1,
+  pageSize = 20,
+): Promise<DisplayListingItem[]> {
   const supabase = getSupabaseClient();
 
   const sevenDaysAgo = new Date();
-  sevenDaysAgo.setDate(threeDaysAgo.getDate() - 7);
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-  const { data: recentListingsData, error: recentListingsError } = await supabase
-    .from("listings")
-    .select("id, title, price, location, views, images, condition, description")
-    .gte("created_at", sevenDaysAgo.toISOString())
-    .order("created_at", { ascending: false })
-    .range((page - 1) * pageSize, page * pageSize - 1);
+  const { data: recentListingsData, error: recentListingsError } =
+    await supabase
+      .from("listings")
+      .select(
+        "id, title, price, location, views, images, condition, description",
+      )
+      .gte("created_at", sevenDaysAgo.toISOString())
+      .order("created_at", { ascending: false })
+      .range((page - 1) * pageSize, page * pageSize - 1);
 
   if (recentListingsError) {
-    console.error("Error fetching recent listings:", recentListingsError.message);
+    console.error(
+      "Error fetching recent listings:",
+      recentListingsError.message,
+    );
     throw new Error("Failed to fetch recent listings");
   }
 
-  const transformedListings: DisplayListingItem[] = recentListingsData.map((listing) => ({
-    id: listing.id,
-    title: listing.title,
-    price: listing.price,
-    location: listing.location,
-    views: listing.views,
-    images: listing.images && listing.images.length > 0 ? listing.images : null,
-    condition: listing.condition,
-    description: listing.description,
-  }));
+  const transformedListings: DisplayListingItem[] = recentListingsData.map(
+    (listing) => ({
+      id: listing.id,
+      title: listing.title,
+      price: listing.price,
+      location: listing.location,
+      views: listing.views,
+      images:
+        listing.images && listing.images.length > 0 ? listing.images : null,
+      condition: listing.condition,
+      description: listing.description,
+    }),
+  );
 
   return transformedListings;
 }
@@ -134,23 +146,20 @@ export async function fetchListings({
   let result: any;
 
   if (userLocation && filters.maxDistance !== undefined) {
-    result = await supabase.rpc(
-      "get_filtered_listings",
-      {
-        p_page: page,
-        p_page_size: pageSize,
-        p_sort_by: sortBy,
-        p_sort_order: sortOrder,
-        p_categories: filters.categories || [],
-        p_subcategories: filters.subcategories || [],
-        p_conditions: filters.conditions || [],
-        p_min_price: filters.priceRange?.min || 0,
-        p_max_price: filters.priceRange?.max || 1000000,
-        p_user_latitude: userLocation.lat,
-        p_user_longitude: userLocation.lon,
-        p_radius_km: filters.maxDistance,
-      },
-    );
+    result = await supabase.rpc("get_filtered_listings", {
+      p_page: page,
+      p_page_size: pageSize,
+      p_sort_by: sortBy,
+      p_sort_order: sortOrder,
+      p_categories: filters.categories || [],
+      p_subcategories: filters.subcategories || [],
+      p_conditions: filters.conditions || [],
+      p_min_price: filters.priceRange?.min || 0,
+      p_max_price: filters.priceRange?.max || 1000000,
+      p_user_latitude: userLocation.lat,
+      p_user_longitude: userLocation.lon,
+      p_radius_km: filters.maxDistance,
+    });
   } else {
     result = await query;
   }
@@ -160,7 +169,10 @@ export async function fetchListings({
     throw new Error("Failed to fetch listings");
   }
 
-  const filteredData = (result.data && Array.isArray(result.data.listings) ? result.data.listings : result.data) || [];
+  const filteredData =
+    (result.data && Array.isArray(result.data.listings)
+      ? result.data.listings
+      : result.data) || [];
 
   return filteredData.map((listing: ListingsItem) => ({
     id: listing.id,
