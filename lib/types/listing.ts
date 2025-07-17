@@ -1,4 +1,3 @@
-
 import { Profile } from "./profile";
 
 export type Listing = {

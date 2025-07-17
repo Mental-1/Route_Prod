@@ -97,6 +97,7 @@ export async function fetchListings({
   sortBy = "created_at",
   sortOrder = "desc",
   userLocation = null,
+  searchQuery,
 }: {
   page?: number;
   pageSize?: number;
@@ -110,6 +111,7 @@ export async function fetchListings({
   sortBy?: string;
   sortOrder?: "asc" | "desc";
   userLocation?: { lat: number; lon: number } | null;
+  searchQuery?: string;
 } = {}): Promise<ListingsItem[]> {
   const supabase = getSupabaseClient();
 
@@ -120,8 +122,18 @@ export async function fetchListings({
     .select(
       "id, title, description, price, images, condition, location, views, category_id, subcategory_id, created_at",
     )
+
     .order(actualSortBy, { ascending: sortOrder === "asc" })
     .range((page - 1) * pageSize, page * pageSize - 1);
+
+  if (searchQuery) {
+    query = query
+      .or(`title.ilike.*${searchQuery}*,description.ilike.*${searchQuery}*`)
+      .or(`location.ilike.*${searchQuery}*`)
+      .or(`condition.ilike.*${searchQuery}*`)
+      .or(`category_id.ilike.*${searchQuery}*`)
+      .or(`subcategory_id.ilike.*${searchQuery}*`);
+  }
 
   if (filters.categories && filters.categories.length > 0) {
     const validCategories = filters.categories
@@ -143,26 +155,21 @@ export async function fetchListings({
       .lte("price", filters.priceRange.max);
   }
 
-  let result: any;
-
-  if (userLocation && filters.maxDistance !== undefined) {
-    result = await supabase.rpc("get_filtered_listings", {
-      p_page: page,
-      p_page_size: pageSize,
-      p_sort_by: sortBy,
-      p_sort_order: sortOrder,
-      p_categories: filters.categories || [],
-      p_subcategories: filters.subcategories || [],
-      p_conditions: filters.conditions || [],
-      p_min_price: filters.priceRange?.min || 0,
-      p_max_price: filters.priceRange?.max || 1000000,
-      p_user_latitude: userLocation.lat,
-      p_user_longitude: userLocation.lon,
-      p_radius_km: filters.maxDistance,
-    });
-  } else {
-    result = await query;
-  }
+  // Always call the RPC function with all parameters
+  const result = await supabase.rpc("get_filtered_listings", {
+    p_page: page,
+    p_page_size: pageSize,
+    p_sort_by: actualSortBy, // Use actualSortBy here
+    p_sort_order: sortOrder,
+    p_categories: filters.categories || [],
+    p_subcategories: filters.subcategories || [],
+    p_conditions: filters.conditions || [],
+    p_min_price: filters.priceRange?.min || 0,
+    p_max_price: filters.priceRange?.max || 1000000,
+    p_user_latitude: userLocation?.lat || null,
+    p_user_longitude: userLocation?.lon || null,
+    p_radius_km: filters.maxDistance || null,
+  });
 
   if (result.error) {
     console.error("Error fetching listings:", result.error.message);

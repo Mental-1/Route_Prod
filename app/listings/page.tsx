@@ -48,6 +48,7 @@ export default function ListingsPage() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState("newest");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Filters
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
@@ -796,7 +797,9 @@ export default function ListingsPage() {
 
             {/* List View */}
             {viewMode === "list" && (
-              <div className="space-y-4">
+              <div className="space-y-6">
+                {" "}
+                {/* Increased spacing */}
                 {loading && listings.length === 0
                   ? Array.from({ length: 8 }).map((_, i) => (
                       <ListingCardSkeleton key={i} layout="list" />
@@ -808,8 +811,12 @@ export default function ListingsPage() {
                           className="overflow-hidden border-0 hover:shadow-md transition-shadow"
                         >
                           <CardContent className="p-0">
-                            <div className="flex">
-                              <div className="w-40 h-40 bg-muted">
+                            <div className="flex flex-col sm:flex-row">
+                              {" "}
+                              {/* Added responsive flex direction */}
+                              <div className="w-full h-48 sm:w-40 sm:h-40 bg-muted flex-shrink-0">
+                                {" "}
+                                {/* Made image container responsive */}
                                 <img
                                   src={
                                     (listing.images && listing.images.length > 0

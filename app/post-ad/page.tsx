@@ -36,8 +36,8 @@ type SubCategory = Database["public"]["Tables"]["subcategories"]["Row"];
 
 const steps = [
   { id: "details", label: "Details" },
-  { id: "media", label: "Media" },
   { id: "payment", label: "Payment" },
+  { id: "media", label: "Media" },
   { id: "method", label: "Method" },
   { id: "preview", label: "Preview" },
 ];
@@ -206,7 +206,7 @@ export default function PostAdPage() {
 
         // Poll for transaction status
         let pollAttempts = 0;
-        const MAX_POLL_ATTEMPTS = 20; // 100 seconds max with 5-second intervals
+        const MAX_POLL_ATTEMPTS = 20;
 
         const checkPaymentStatus = async () => {
           pollAttempts++;
@@ -214,7 +214,8 @@ export default function PostAdPage() {
           if (pollAttempts > MAX_POLL_ATTEMPTS) {
             toast({
               title: "Payment Timeout",
-              description: "Payment verification timed out. Please check your payment status.",
+              description:
+                "Payment verification timed out. Please check your payment status.",
               variant: "destructive",
             });
             setIsProcessingPayment(false);
@@ -249,8 +250,6 @@ export default function PostAdPage() {
               variant: "success",
             });
             setIsProcessingPayment(false);
-            // Automatically proceed to publishing after successful payment
-            // No need to return here, let the rest of handleSubmit execute
           } else if (
             transaction.status === "failed" ||
             transaction.status === "cancelled"
@@ -263,15 +262,14 @@ export default function PostAdPage() {
             setIsProcessingPayment(false);
             setIsSubmitted(false);
             setCurrentTransactionId(null);
-            return; // Stop here, payment failed
+            return;
           } else {
-            // Still pending, poll again after a delay
             setTimeout(checkPaymentStatus, 5000); // Poll every 3 seconds
           }
         };
 
         checkPaymentStatus();
-        return; // Exit handleSubmit for now, it will be re-triggered by user or automatically after payment success
+        return;
       } catch (error) {
         console.error("Payment processing error:", error);
         toast({
@@ -313,24 +311,31 @@ export default function PostAdPage() {
       );
       const finalMediaUrls = uploadedMediaResults.map((res) => res.url);
 
-      const finalLocation = Array.isArray(formData.location) && formData.location.length === 2
-        ? `Lat: ${formData.location[0]}, Lng: ${formData.location[1]}`
-        : formData.location;
+      const finalLocation =
+        Array.isArray(formData.location) && formData.location.length === 2
+          ? `Lat: ${formData.location[0]}, Lng: ${formData.location[1]}`
+          : formData.location;
 
       const listingData = {
         title: formData.title,
         description: formData.description,
         price: parseFloat(formData.price) || null,
-        category_id: formData.category, // Send the category name/slug
+        category_id: formData.category,
         subcategory_id: formData.subcategory
           ? parseInt(formData.subcategory)
           : null,
         location: finalLocation,
-        latitude: Array.isArray(formData.location) && formData.location.length === 2 ? formData.location[0] : null,
-        longitude: Array.isArray(formData.location) && formData.location.length === 2 ? formData.location[1] : null,
+        latitude:
+          Array.isArray(formData.location) && formData.location.length === 2
+            ? formData.location[0]
+            : null,
+        longitude:
+          Array.isArray(formData.location) && formData.location.length === 2
+            ? formData.location[1]
+            : null,
         condition: formData.condition,
-        images: finalMediaUrls, // Use uploaded URLs
-        tags: formData.tags, // Add tags to the payload
+        images: finalMediaUrls,
+        tags: formData.tags,
         paymentTier: formData.paymentTier,
         paymentStatus: selectedTier.price > 0 ? "paid" : "free",
         paymentMethod: formData.paymentMethod,
@@ -414,7 +419,7 @@ export default function PostAdPage() {
       phoneNumber: formData.phoneNumber,
       email: formData.email,
       description: `RouteMe Listing - ${tier.name} Plan`,
-      transactionId: transaction.id, // Pass transaction ID to backend
+      transactionId: transaction.id,
     };
 
     let endpoint = "";
@@ -487,7 +492,7 @@ export default function PostAdPage() {
         );
       case 1:
         return (
-          <MediaUploadStep
+          <PaymentTierStep
             formData={formData}
             updateFormData={updateFormData}
             plans={plans}
@@ -495,7 +500,7 @@ export default function PostAdPage() {
         );
       case 2:
         return (
-          <PaymentTierStep
+          <MediaUploadStep
             formData={formData}
             updateFormData={updateFormData}
             plans={plans}
@@ -578,7 +583,7 @@ export default function PostAdPage() {
                 ) : (
                   <Button
                     onClick={
-                      currentStep === 3 &&
+                      currentStep === 2 &&
                       selectedTier.price > 0 &&
                       !paymentCompleted
                         ? handleSubmit
@@ -586,7 +591,7 @@ export default function PostAdPage() {
                     }
                     disabled={isSubmitted}
                   >
-                    {currentStep === 3 &&
+                    {currentStep === 2 &&
                     selectedTier.price > 0 &&
                     !paymentCompleted
                       ? "Pay"
@@ -757,7 +762,10 @@ function AdDetailsStep({
           <Label htmlFor="tags">Tags</Label>
           <div className="flex flex-wrap items-center gap-2 p-2 border rounded-md bg-background">
             {formData.tags.map((tag: string, index: number) => (
-              <div key={index} className="flex items-center gap-1 bg-muted px-2 py-1 rounded-full">
+              <div
+                key={index}
+                className="flex items-center gap-1 bg-muted px-2 py-1 rounded-full"
+              >
                 <span>{tag}</span>
                 <button
                   type="button"
@@ -777,18 +785,20 @@ function AdDetailsStep({
               placeholder="Add tags (e.g., handmade, vintage)"
               className="flex-grow bg-transparent border-none focus:ring-0"
               onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ',') {
+                if (e.key === "Enter" || e.key === ",") {
                   e.preventDefault();
                   const newTag = e.currentTarget.value.trim();
                   if (newTag && !formData.tags.includes(newTag)) {
                     updateFormData({ tags: [...formData.tags, newTag] });
-                    e.currentTarget.value = '';
+                    e.currentTarget.value = "";
                   }
                 }
               }}
             />
           </div>
-          <p className="text-sm text-muted-foreground mt-1">Press Enter or Comma to add a tag.</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            Press Enter or Comma to add a tag.
+          </p>
         </div>
 
         <div>

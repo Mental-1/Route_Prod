@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { getSupabaseRouteHandler } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
 
@@ -180,8 +181,10 @@ export async function POST(request: Request) {
 
     if (updateError) {
       console.error("Error updating user listing count:", updateError);
-      // Log the error but don't block the listing creation response
     }
+
+    revalidatePath("/listings");
+    revalidatePath("/");
 
     return NextResponse.json(
       { message: "Listing created successfully", listing: data },

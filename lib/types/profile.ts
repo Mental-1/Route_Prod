@@ -4,4 +4,5 @@ export type Profile = {
   avatar_url?: string;
   full_name?: string;
   username?: string;
+  phone_number?: string;
 };
