@@ -27,9 +27,10 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Checkbox } from "@/components/ui/checkbox";
-import { fetchListings, ListingsItem } from "@/lib/data";
+import { getListings, getFilteredListings, ListingsItem } from "@/lib/data";
 import { ListingCardSkeleton } from "@/components/skeletons/listing-card-skeleton";
 import Link from "next/link";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 
 type Subcategory = {
   id: number;
@@ -45,28 +46,17 @@ type Subcategory = {
 export default function ListingsPage() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [priceRange, setPriceRange] = useState([0, 1000000]);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState("newest");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
 
   // Filters
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedConditions, setSelectedConditions] = useState<string[]>([]);
   const [maxDistance, setMaxDistance] = useState([5]);
-  const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
   const [selectedSubcategories, setSelectedSubcategories] = useState<string[]>(
     [],
   );
 
-  // Listings and categories state
-  const [listings, setListings] = useState<ListingsItem[]>([]);
-  const [categories, setCategories] = useState<{ id: number; name: string }[]>(
-    [],
-  );
-  const [loading, setLoading] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
-  const [page, setPage] = useState(1);
   const [showBackToTop, setShowBackToTop] = useState(false);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadingRef = useRef<HTMLDivElement>(null);
@@ -74,155 +64,94 @@ export default function ListingsPage() {
     lat: number;
     lon: number;
   } | null>(null);
-  const [categoryError, setCategoryError] = useState<string | null>(null);
-  const [locationLoading, setLocationLoading] = useState(false);
-  const [locationError, setLocationError] = useState<string | null>(null);
 
-  // Fetch categories from API
-  useEffect(() => {
-    fetch("/api/categories")
-      .then((res) => res.json())
-      .then((data) => setCategories(data || []))
-      .catch((error) => {
-        setCategoryError("Failed to load categories");
-        setCategories([]);
-      });
-  }, []);
+  const { data: categories = [] } = useQuery({
+    queryKey: ["categories"],
+    queryFn: () => fetch("/api/categories").then((res) => res.json()),
+  });
+
+  const { data: subcategories = [] } = useQuery({
+    queryKey: ["subcategories"],
+    queryFn: () => fetch("/api/subcategories").then((res) => res.json()),
+  });
+
+  const {
+    data,
+    error,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    status,
+  } = useInfiniteQuery({
+    queryKey: [
+      "listings",
+      selectedCategories,
+      selectedSubcategories,
+      selectedConditions,
+      priceRange,
+      sortBy,
+      maxDistance,
+      userLocation,
+    ],
+    queryFn: ({ pageParam = 1 }) => {
+      const filters = {
+        categories: selectedCategories.map(Number).filter((n) => !isNaN(n)),
+        subcategories: selectedSubcategories.map(Number).filter((n) => !isNaN(n)),
+        conditions: selectedConditions,
+        priceRange: {
+          min: priceRange[0],
+          max: priceRange[1],
+        },
+        maxDistance: maxDistance[0] === 5 ? undefined : maxDistance[0],
+      };
+
+      if (
+        filters.categories.length > 0 ||
+        filters.subcategories.length > 0 ||
+        filters.conditions.length > 0 ||
+        filters.priceRange.min > 0 ||
+        filters.priceRange.max < 1000000 ||
+        filters.maxDistance
+      ) {
+        return getFilteredListings({
+          page: pageParam,
+          pageSize: 20,
+          filters,
+          sortBy,
+          userLocation,
+        });
+      }
+      return getListings(pageParam, 20);
+    },
+    getNextPageParam: (lastPage, pages) => {
+      return lastPage.length === 20 ? pages.length + 1 : undefined;
+    },
+    initialPageParam: 1,
+  });
 
   useEffect(() => {
     if (navigator.geolocation) {
-      setLocationLoading(true);
       navigator.geolocation.getCurrentPosition(
         (position) => {
           setUserLocation({
             lat: position.coords.latitude,
             lon: position.coords.longitude,
           });
-          setLocationLoading(false);
         },
         (error) => {
           console.error("Error getting user location:", error);
-          setLocationError(
-            "Unable to get your location. Distance sorting may be less accurate.",
-          );
-          setLocationLoading(false);
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 300000, // 5 minutes
         },
       );
-    } else {
-      setLocationError("Geolocation is not supported by this browser.");
     }
   }, []);
-
-  // Fetch subcategories from API
-  useEffect(() => {
-    fetch("/api/subcategories")
-      .then((res) => res.json())
-      .then((data) => setSubcategories(data || []))
-      .catch((error) => {
-        setCategoryError("Failed to load categories");
-        setCategories([]);
-      });
-  }, []);
-
-  // Fetch listings from API
-  useEffect(() => {
-    setLoading(true);
-    setListings([]);
-    const currentFilters: any = {
-      categories: selectedCategories.map(Number).filter((n) => !isNaN(n)),
-      subcategories: selectedSubcategories.map(Number).filter((n) => !isNaN(n)),
-      conditions: selectedConditions,
-      priceRange: {
-        min: priceRange[0],
-        max: priceRange[1],
-      },
-    };
-
-    if (maxDistance[0] !== 5) {
-      currentFilters.maxDistance = maxDistance[0];
-    }
-
-    fetchListings({
-      page: 1,
-      pageSize: 20,
-      filters: currentFilters,
-      sortBy,
-      userLocation,
-    })
-      .then((data) => {
-        setListings(data);
-        setHasMore(data.length === 20);
-        setPage(1);
-      })
-      .catch((error) => {
-        console.error("Error fetching listings:", error);
-        setListings([]);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-  }, [
-    selectedCategories,
-    selectedSubcategories,
-    selectedConditions,
-    priceRange,
-    sortBy,
-  ]);
-
-  // Infinite scroll logic
-  const loadMoreListings = useCallback(async () => {
-    if (loading || !hasMore) return;
-    setLoading(true);
-    const nextPage = page + 1;
-
-    const currentFilters: any = {
-      categories: selectedCategories.map(Number).filter((n) => !isNaN(n)),
-      subcategories: selectedSubcategories.map(Number).filter((n) => !isNaN(n)),
-      conditions: selectedConditions,
-      priceRange: {
-        min: priceRange[0],
-        max: priceRange[1],
-      },
-    };
-
-    if (maxDistance[0] !== 5) {
-      currentFilters.maxDistance = maxDistance[0];
-    }
-
-    const moreListings = await fetchListings({
-      page: nextPage,
-      pageSize: 20,
-      filters: currentFilters,
-      sortBy,
-      userLocation,
-    });
-    setListings((prev) => [...prev, ...moreListings]);
-    setHasMore(moreListings.length === 20);
-    setPage(nextPage);
-    setLoading(false);
-  }, [
-    loading,
-    hasMore,
-    page,
-    selectedCategories,
-    selectedSubcategories,
-    selectedConditions,
-    priceRange,
-    sortBy,
-  ]);
 
   // Intersection observer for infinite scroll
   useEffect(() => {
     if (observerRef.current) observerRef.current.disconnect();
     observerRef.current = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && hasMore && !loading) {
-          loadMoreListings();
+        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+          fetchNextPage();
         }
       },
       { threshold: 0.1 },
@@ -233,7 +162,7 @@ export default function ListingsPage() {
     return () => {
       if (observerRef.current) observerRef.current.disconnect();
     };
-  }, [loadMoreListings, hasMore, loading]);
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
   // Back to top visibility
   useEffect(() => {
@@ -249,52 +178,6 @@ export default function ListingsPage() {
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
-
-  // Filtering logic
-  const filteredListings = listings.filter((listing) => {
-    if (
-      listing.price === null ||
-      listing.price < priceRange[0] ||
-      listing.price > priceRange[1]
-    ) {
-      return false;
-    }
-    if (
-      selectedCategories.length > 0 &&
-      !selectedCategories.includes(listing.category_id?.toString() || "")
-    ) {
-      return false;
-    }
-    if (
-      selectedConditions.length > 0 &&
-      !selectedConditions.includes((listing.condition || "").toLowerCase())
-    ) {
-      return false;
-    }
-    return true;
-  });
-
-  // Sorting logic
-  const sortedListings = [...filteredListings].sort((a, b) => {
-    if (sortBy === "newest") {
-      const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
-      const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
-      return dateB - dateA;
-    }
-    if (sortBy === "price-low") {
-      return (a.price || 0) - (b.price || 0);
-    }
-    if (sortBy === "price-high") {
-      return (b.price || 0) - (a.price || 0);
-    }
-    if (sortBy === "distance" && userLocation) {
-      // Fallback: sort by creation date when distance data is not available
-      const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
-      const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
-      return dateB - dateA;
-    }
-    return 0;
-  });
 
   // Checkbox handlers
   const handleCategoryChange = (categoryId: string, checked: boolean) => {
@@ -320,6 +203,8 @@ export default function ListingsPage() {
       );
     }
   };
+
+  const listings = data?.pages.flat() || [];
 
   return (
     <div className="min-h-screen bg-background">
@@ -700,7 +585,7 @@ export default function ListingsPage() {
               <div>
                 <h1 className="text-2xl font-bold">Listings</h1>
                 <p className="text-sm text-muted-foreground">
-                  {filteredListings.length} results
+                  {listings.length} results
                 </p>
               </div>
               <div className="flex items-center gap-3">
@@ -747,15 +632,73 @@ export default function ListingsPage() {
             {/* Grid View */}
             {viewMode === "grid" && (
               <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {loading && listings.length === 0
-                  ? Array.from({ length: 12 }).map((_, i) => (
-                      <ListingCardSkeleton key={i} layout="grid" />
-                    ))
-                  : sortedListings.map((listing) => (
-                      <Link key={listing.id} href={`/listings/${listing.id}`}>
-                        <Card className="overflow-hidden border-0 hover:shadow-md transition-shadow">
-                          <CardContent className="p-0">
-                            <div className="aspect-square bg-muted">
+                {status === 'pending' ? (
+                  Array.from({ length: 12 }).map((_, i) => (
+                    <ListingCardSkeleton key={i} layout="grid" />
+                  ))
+                ) : (
+                  listings.map((listing) => (
+                    <Link key={listing.id} href={`/listings/${listing.id}`}>
+                      <Card className="overflow-hidden border-0 hover:shadow-md transition-shadow">
+                        <CardContent className="p-0">
+                          <div className="aspect-square bg-muted">
+                            <img
+                              src={
+                                (listing.images && listing.images.length > 0
+                                  ? listing.images[0]
+                                  : null) || "/placeholder.svg"
+                              }
+                              alt={listing.title}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <div className="p-3">
+                            <h3 className="font-medium text-base mb-1 truncate">
+                              {listing.title}
+                            </h3>
+                            <p className="text-lg font-bold text-green-600 mb-1">
+                              Ksh{listing.price}
+                            </p>
+                            <p className="text-xs text-muted-foreground mb-2 line-clamp-2">
+                              {listing.description}
+                            </p>
+                            <div className="flex items-center gap-2 mb-1">
+                              <Badge variant="outline" className="text-xs">
+                                {listing.condition}
+                              </Badge>
+                            </div>
+                            <div className="flex items-center justify-between text-xs text-muted-foreground">
+                              <div className="flex items-center gap-1">
+                                <MapPin className="h-3 w-3" />
+                                {listing.location}
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </Link>
+                  ))
+                )}
+              </div>
+            )}
+
+            {/* List View */}
+            {viewMode === "list" && (
+              <div className="space-y-6">
+                {status === 'pending' ? (
+                  Array.from({ length: 8 }).map((_, i) => (
+                    <ListingCardSkeleton key={i} layout="list" />
+                  ))
+                ) : (
+                  listings.map((listing) => (
+                    <Link key={listing.id} href={`/listings/${listing.id}`}>
+                      <Card
+                        key={listing.id}
+                        className="overflow-hidden border-0 hover:shadow-md transition-shadow"
+                      >
+                        <CardContent className="p-0">
+                          <div className="flex flex-col sm:flex-row">
+                            <div className="w-full h-48 sm:w-40 sm:h-40 bg-muted flex-shrink-0">
                               <img
                                 src={
                                   (listing.images && listing.images.length > 0
@@ -766,102 +709,42 @@ export default function ListingsPage() {
                                 className="w-full h-full object-cover"
                               />
                             </div>
-                            <div className="p-3">
-                              <h3 className="font-medium text-base mb-1 truncate">
-                                {listing.title}
-                              </h3>
-                              <p className="text-lg font-bold text-green-600 mb-1">
-                                Ksh{listing.price}
-                              </p>
-                              <p className="text-xs text-muted-foreground mb-2 line-clamp-2">
+                            <div className="p-4 flex-1 relative">
+                              <div className="flex justify-between items-start mb-1">
+                                <h3 className="font-medium text-lg truncate">
+                                  {listing.title}
+                                </h3>
+                                <p className="text-xl font-bold text-green-600">
+                                  Ksh{listing.price}
+                                </p>
+                              </div>
+                              <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
                                 {listing.description}
                               </p>
-                              <div className="flex items-center gap-2 mb-1">
-                                <Badge variant="outline" className="text-xs">
+                              <div className="flex items-center gap-2 mb-2">
+                                <Badge variant="outline">
                                   {listing.condition}
                                 </Badge>
                               </div>
-                              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                              <div className="flex items-center justify-between text-sm text-muted-foreground">
                                 <div className="flex items-center gap-1">
-                                  <MapPin className="h-3 w-3" />
+                                  <MapPin className="h-4 w-4" />
                                   {listing.location}
                                 </div>
                               </div>
                             </div>
-                          </CardContent>
-                        </Card>
-                      </Link>
-                    ))}
-              </div>
-            )}
-
-            {/* List View */}
-            {viewMode === "list" && (
-              <div className="space-y-6">
-                {" "}
-                {/* Increased spacing */}
-                {loading && listings.length === 0
-                  ? Array.from({ length: 8 }).map((_, i) => (
-                      <ListingCardSkeleton key={i} layout="list" />
-                    ))
-                  : sortedListings.map((listing) => (
-                      <Link key={listing.id} href={`/listings/${listing.id}`}>
-                        <Card
-                          key={listing.id}
-                          className="overflow-hidden border-0 hover:shadow-md transition-shadow"
-                        >
-                          <CardContent className="p-0">
-                            <div className="flex flex-col sm:flex-row">
-                              {" "}
-                              {/* Added responsive flex direction */}
-                              <div className="w-full h-48 sm:w-40 sm:h-40 bg-muted flex-shrink-0">
-                                {" "}
-                                {/* Made image container responsive */}
-                                <img
-                                  src={
-                                    (listing.images && listing.images.length > 0
-                                      ? listing.images[0]
-                                      : null) || "/placeholder.svg"
-                                  }
-                                  alt={listing.title}
-                                  className="w-full h-full object-cover"
-                                />
-                              </div>
-                              <div className="p-4 flex-1 relative">
-                                <div className="flex justify-between items-start mb-1">
-                                  <h3 className="font-medium text-lg truncate">
-                                    {listing.title}
-                                  </h3>
-                                  <p className="text-xl font-bold text-green-600">
-                                    Ksh{listing.price}
-                                  </p>
-                                </div>
-                                <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
-                                  {listing.description}
-                                </p>
-                                <div className="flex items-center gap-2 mb-2">
-                                  <Badge variant="outline">
-                                    {listing.condition}
-                                  </Badge>
-                                </div>
-                                <div className="flex items-center justify-between text-sm text-muted-foreground">
-                                  <div className="flex items-center gap-1">
-                                    <MapPin className="h-4 w-4" />
-                                    {listing.location}
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      </Link>
-                    ))}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </Link>
+                  ))
+                )}
               </div>
             )}
             {/* Loading indicator for infinite scroll */}
-            {hasMore && (
+            {hasNextPage && (
               <div ref={loadingRef} className="flex justify-center py-8">
-                {loading && <div className="loading-spinner" />}
+                {isFetchingNextPage && <div className="loading-spinner" />}
               </div>
             )}
 

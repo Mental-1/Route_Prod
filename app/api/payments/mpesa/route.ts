@@ -19,7 +19,16 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     logger.debug({ body }, "Received M-Pesa STK Push request body");
-    const validatedData = mpesaPaymentSchema.parse(body);
+    const validatedData = mpesaPaymentSchema.safeParse(body);
+
+    if (!validatedData.success) {
+      logger.error({ errors: validatedData.error.flatten() }, "M-Pesa STK Push request body validation failed:");
+      return NextResponse.json(
+        { error: "Invalid request body", details: validatedData.error.flatten() },
+        { status: 400 },
+      );
+    }
+    const { data } = validatedData;
 
     const supabase = await getSupabaseRouteHandler(cookies);
     const {
@@ -55,6 +64,12 @@ export async function POST(request: NextRequest) {
     logger.debug(
       `Authorization Header (masked): ${authHeader.substring(0, 20)}...`,
     ); // Mask for security
+    logger.debug(`MPESA_BUSINESS_SHORT_CODE: ${process.env.MPESA_BUSINESS_SHORT_CODE}`);
+    logger.debug(`MPESA_PASSKEY (masked): ${process.env.MPESA_PASSKEY ? process.env.MPESA_PASSKEY.substring(0, 5) + '...' : 'not set'}`);
+    logger.debug(`MPESA_USERNAME: ${process.env.MPESA_USERNAME}`);
+    logger.debug(`MPESA_CALLBACK_URL: ${process.env.MPESA_CALLBACK_URL}`);
+    logger.debug(`MPESA_CONSUMER_KEY (masked): ${process.env.MPESA_CONSUMER_KEY ? process.env.MPESA_CONSUMER_KEY.substring(0, 5) + '...' : 'not set'}`);
+    logger.debug(`MPESA_CONSUMER_SECRET (masked): ${process.env.MPESA_CONSUMER_SECRET ? process.env.MPESA_CONSUMER_SECRET.substring(0, 5) + '...' : 'not set'}`);
 
     let authResponse;
     try {
@@ -99,7 +114,7 @@ export async function POST(request: NextRequest) {
       Username: process.env.MPESA_USERNAME,
       Timestamp: timestamp,
       TransactionType: "CustomerBuyGoodsOnline",
-      Amount: validatedData.amount,
+      Amount: validatedData.data.amount,
       PartyA: sanitizedPhoneNumber,
       PartyB: process.env.MPESA_BUSINESS_SHORT_CODE,
       PhoneNumber: sanitizedPhoneNumber,

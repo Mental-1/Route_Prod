@@ -6,7 +6,7 @@ export async function GET(
   request: Request,
   { params }: { params: { id: string } },
 ) {
-  const { id: listingId } = params;
+  const { id: listingId } = await params;
   const supabase = await getSupabaseRouteHandler(cookies);
 
   try {
@@ -38,7 +38,7 @@ export async function POST(
   request: Request,
   { params }: { params: { id: string } },
 ) {
-  const { id: listingId } = params;
+  const { id: listingId } = await params;
   const supabase = await getSupabaseRouteHandler(cookies);
 
   try {

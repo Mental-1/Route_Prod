@@ -264,7 +264,7 @@ export default function PostAdPage() {
             setCurrentTransactionId(null);
             return;
           } else {
-            setTimeout(checkPaymentStatus, 5000); // Poll every 3 seconds
+            setTimeout(checkPaymentStatus, 5000);
           }
         };
 
@@ -527,6 +527,8 @@ export default function PostAdPage() {
     }
   };
 
+  const methodStepIndex = steps.findIndex((step) => step.id === "method");
+
   return (
     <div className="min-h-screen bg-muted/50 py-8">
       <div className="container px-4">
@@ -583,7 +585,7 @@ export default function PostAdPage() {
                 ) : (
                   <Button
                     onClick={
-                      currentStep === 2 &&
+                      currentStep === methodStepIndex &&
                       selectedTier.price > 0 &&
                       !paymentCompleted
                         ? handleSubmit
@@ -591,7 +593,7 @@ export default function PostAdPage() {
                     }
                     disabled={isSubmitted}
                   >
-                    {currentStep === 2 &&
+                    {currentStep === methodStepIndex &&
                     selectedTier.price > 0 &&
                     !paymentCompleted
                       ? "Pay"
@@ -814,7 +816,7 @@ function AdDetailsStep({
                   : formData.location || ""
               }
               onClick={() => setLocationDialogOpen(true)}
-              className="cursor-pointer bg-[#15181e]"
+              className="cursor-pointer bg-background"
             />
           </div>
         </div>

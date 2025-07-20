@@ -48,7 +48,11 @@ export async function GET(
       return NextResponse.json({ error: "Listing not found" }, { status: 404 });
     }
 
-    return NextResponse.json(listing);
+    return NextResponse.json(listing, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=59',
+      },
+    });
   } catch (error) {
     logger.error("Error fetching listing:", error);
     return NextResponse.json(

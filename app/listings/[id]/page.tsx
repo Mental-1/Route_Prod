@@ -2,7 +2,7 @@
 
 import { reportUser } from "./actions";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -30,67 +30,42 @@ import {
 import { ListingMediaGallery } from "@/components/listing-media-gallery";
 import posthog from "posthog-js";
 import { ReviewsSection } from "@/components/listings/ReviewsSection";
-
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { Listing } from "@/lib/types/listing";
+import { ListingDetailSkeleton } from "@/components/skeletons/listing-detail-skeleton";
 
-/**
- * Displays a detailed view of a specific listing, including images, description, location, seller information, and interactive actions.
- *
- * Provides features such as image gallery navigation, saving and sharing the listing, viewing the location on a map, getting directions from the user's current location, and contacting the seller. Handles loading states, error notifications, and fallback behaviors for unsupported features.
- *
- * @returns The rendered listing detail page component.
- */
-export default function ListingDetailPage() {
+function ListingDetails() {
   const params = useParams();
   const router = useRouter();
   const { toast } = useToast();
-  const [listing, setListing] = useState<Listing | null>(null);
-  const [loading, setLoading] = useState(true);
   const [isSaved, setIsSaved] = useState(false);
   const [gettingDirections, setGettingDirections] = useState(false);
 
-  useEffect(() => {
-    fetchListing();
-  }, [params.id]);
-
-  const fetchListing = async () => {
-    try {
+  const { data: listing } = useSuspenseQuery<Listing>({
+    queryKey: ["listing", params.id],
+    queryFn: async () => {
       const response = await fetch(`/api/listings/${params.id}`);
-      if (response.ok) {
-        const data = await response.json();
-        setListing(data);
-
-        // Increment view count
-        await fetch(`/api/listings/${params.id}/view`, { method: "POST" });
-
-        // Track event with PostHog
-        if (typeof window !== "undefined" && posthog) {
-          posthog.capture("listing_viewed", {
-            listing_id: data.id,
-            listing_title: data.title,
-            listing_category: data.category.name,
-            seller_id: data.profiles.id,
-          });
-        }
-      } else {
-        toast({
-          title: "Error",
-          description: "Listing not found",
-          variant: "destructive",
-        });
-        router.push("/listings");
+      if (!response.ok) {
+        throw new Error("Failed to fetch listing details");
       }
-    } catch (error) {
-      console.error("Error fetching listing:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load listing",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+      const data = await response.json();
+
+      // Increment view count
+      await fetch(`/api/listings/${params.id}/view`, { method: "POST" });
+
+      // Track event with PostHog
+      if (typeof window !== "undefined" && posthog) {
+        posthog.capture("listing_viewed", {
+          listing_id: data.id,
+          listing_title: data.title,
+          listing_category: data.category.name,
+          seller_id: data.profiles.id,
+        });
+      }
+
+      return data;
+    },
+  });
 
   const getDirections = async () => {
     if (!listing?.latitude || !listing?.longitude) {
@@ -288,30 +263,6 @@ export default function ListingDetailPage() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading listing...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!listing) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Listing not found</h1>
-          <Button asChild>
-            <Link href="/listings">Browse Listings</Link>
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-background">
       <div className="container px-4 py-6">
@@ -353,7 +304,7 @@ export default function ListingDetailPage() {
                 </div>
 
                 <div className="flex items-center gap-4">
-                  <div className="text-3xl font-bold text-green-600">
+                  <div className="text-2xl font-bold text-green-600">
                     Ksh {listing.price}
                   </div>
                   <Badge variant="outline">{listing.condition}</Badge>
@@ -529,9 +480,17 @@ export default function ListingDetailPage() {
           </div>
         </div>
         <div className="mt-8">
-          <ReviewsSection listingId={listing.id} />
+          <ReviewsSection reviews={listing.reviews} />
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ListingDetailPage() {
+  return (
+    <Suspense fallback={<ListingDetailSkeleton />}>
+      <ListingDetails />
+    </Suspense>
   );
 }

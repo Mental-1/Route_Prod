@@ -1,5 +1,4 @@
 import { getSupabaseClient } from "@/utils/supabase/client";
-import { Toast } from "@/components/ui/toast";
 
 export interface DisplayListingItem {
   id: string;
@@ -79,6 +78,35 @@ export async function getRecentListings(
 }
 
 /**
+ * Fetches a paginated list of all listings from the database without any filtering.
+ *
+ * @param page - The page number to retrieve (default is 1)
+ * @param pageSize - The number of listings per page (default is 20)
+ * @returns An array of listings.
+ */
+export async function getListings(
+  page = 1,
+  pageSize = 20,
+): Promise<ListingsItem[]> {
+  const supabase = getSupabaseClient();
+
+  const { data, error } = await supabase
+    .from("listings")
+    .select(
+      "id, title, description, price, images, condition, location, views, category_id, subcategory_id, created_at",
+    )
+    .order("created_at", { ascending: false })
+    .range((page - 1) * pageSize, page * pageSize - 1);
+
+  if (error) {
+    console.error("Error fetching listings:", error.message);
+    throw new Error("Failed to fetch listings");
+  }
+
+  return data || [];
+}
+
+/**
  * Fetches a paginated list of listings from the database with optional filtering and sorting.
  *
  * Applies filters for categories, subcategories, conditions, and price range if provided. Results are sorted and paginated according to the specified parameters.
@@ -90,7 +118,7 @@ export async function getRecentListings(
  * @param sortOrder - The sort order, either "asc" or "desc" (default is "desc")
  * @returns An array of listings matching the specified criteria
  */
-export async function fetchListings({
+export async function getFilteredListings({
   page = 1,
   pageSize = 10,
   filters = {},
@@ -117,49 +145,11 @@ export async function fetchListings({
 
   const actualSortBy = sortBy === "newest" ? "created_at" : sortBy;
 
-  let query = supabase
-    .from("listings")
-    .select(
-      "id, title, description, price, images, condition, location, views, category_id, subcategory_id, created_at",
-    )
-
-    .order(actualSortBy, { ascending: sortOrder === "asc" })
-    .range((page - 1) * pageSize, page * pageSize - 1);
-
-  if (searchQuery) {
-    query = query
-      .or(`title.ilike.*${searchQuery}*,description.ilike.*${searchQuery}*`)
-      .or(`location.ilike.*${searchQuery}*`)
-      .or(`condition.ilike.*${searchQuery}*`)
-      .or(`category_id.ilike.*${searchQuery}*`)
-      .or(`subcategory_id.ilike.*${searchQuery}*`);
-  }
-
-  if (filters.categories && filters.categories.length > 0) {
-    const validCategories = filters.categories
-      .map(Number)
-      .filter((n) => !isNaN(n) && n > 0);
-    if (validCategories.length > 0) {
-      query = query.in("category_id", validCategories);
-    }
-  }
-  if (filters.subcategories && filters.subcategories.length > 0) {
-    query = query.in("subcategory_id", filters.subcategories.map(Number));
-  }
-  if (filters.conditions && filters.conditions.length > 0) {
-    query = query.in("condition", filters.conditions);
-  }
-  if (filters.priceRange) {
-    query = query
-      .gte("price", filters.priceRange.min)
-      .lte("price", filters.priceRange.max);
-  }
-
   // Always call the RPC function with all parameters
   const result = await supabase.rpc("get_filtered_listings", {
     p_page: page,
     p_page_size: pageSize,
-    p_sort_by: actualSortBy, // Use actualSortBy here
+    p_sort_by: actualSortBy,
     p_sort_order: sortOrder,
     p_categories: filters.categories || [],
     p_subcategories: filters.subcategories || [],
@@ -169,6 +159,7 @@ export async function fetchListings({
     p_user_latitude: userLocation?.lat || null,
     p_user_longitude: userLocation?.lon || null,
     p_radius_km: filters.maxDistance || null,
+    p_search_query: searchQuery || null,
   });
 
   if (result.error) {

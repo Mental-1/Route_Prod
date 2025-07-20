@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
+import React from "react";
 import Link from "next/link";
 import { Search, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,6 +12,9 @@ import dynamic from "next/dynamic";
 import { CategoriesSkeleton } from "@/components/categories-skeleton";
 import { getRecentListings, DisplayListingItem } from "@/lib/data";
 import { useRouter } from "next/navigation";
+import { useSuspenseQuery, useInfiniteQuery } from "@tanstack/react-query";
+import { ErrorBoundary } from "react-error-boundary";
+import { RecentListingsSkeleton } from "@/components/skeletons/recent-listings-skeleton";
 
 const CategoriesSection = dynamic(
   () => import("../components/categories-section"),
@@ -24,82 +28,31 @@ const CategoriesSection = dynamic(
   },
 );
 
-/**
- * Displays the main marketplace homepage with sections for search, categories, recent listings, and a call-to-action to post an ad.
- *
- * Fetches and renders recent listings dynamically, and provides navigation to browse or post items.
- */
+function RecentListings() {
+  const {
+    data,
+    error,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    status,
+  } = useInfiniteQuery({
+    queryKey: ["recentListings"],
+    queryFn: ({ pageParam = 1 }) => getRecentListings(pageParam),
+    getNextPageParam: (lastPage, pages) => {
+      return lastPage.length === 20 ? pages.length + 1 : undefined;
+    },
+    initialPageParam: 1,
+  });
 
-export default function HomePage() {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [recentListings, setRecentListings] = useState<DisplayListingItem[]>(
-    [],
-  );
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadingRef = useRef<HTMLDivElement>(null);
-  const router = useRouter();
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      router.push(`/listings?search=${encodeURIComponent(searchQuery)}`);
-    }
-  };
-
-  // Initial fetch for the first page
-  useEffect(() => {
-    async function initialFetch() {
-      try {
-        setLoading(true);
-        setError(null);
-        const listings = await getRecentListings(1);
-        setRecentListings(listings);
-        setHasMore(listings.length === 20);
-      } catch (error) {
-        setError("Failed to fetch recent listings");
-        console.error("Error fetching recent listings", error);
-      } finally {
-        setLoading(false);
-      }
-    }
-    initialFetch();
-  }, []);
-
-  // Fetch more listings when page changes (triggered by IntersectionObserver)
-  useEffect(() => {
-    async function fetchMoreListings() {
-      if (page === 1) return;
-      try {
-        setLoading(true);
-        setError(null);
-        const listings = await getRecentListings(page);
-        setRecentListings((prevListings) => {
-          const newUniqueListings = listings.filter(
-            (listing) => !prevListings.some((prev) => prev.id === listing.id),
-          );
-          return [...prevListings, ...newUniqueListings];
-        });
-        setHasMore(listings.length === 20);
-      } catch (error) {
-        setError("Failed to fetch recent listings");
-        console.error("Error fetching recent listings", error);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchMoreListings();
-  }, [page]);
-
-  // Intersection Observer setup
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && hasMore && !loading) {
-          setPage((prevPage) => prevPage + 1);
+        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+          fetchNextPage();
         }
       },
       { threshold: 1.0 },
@@ -117,7 +70,87 @@ export default function HomePage() {
       }
       observerRef.current?.disconnect();
     };
-  }, [hasMore, loading]);
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  if (status === "pending") {
+    return <RecentListingsSkeleton />;
+  }
+
+  if (status === "error") {
+    return (
+      <div className="col-span-full text-center py-8 text-red-600">
+        Error: {error.message}
+      </div>
+    );
+  }
+
+  return (
+    <>
+      {data.pages.map((page, i) => (
+        <React.Fragment key={i}>
+          {page.map((listing: DisplayListingItem) => (
+            <Link key={listing.id} href={`/listings/${listing.id}`}>
+              <Card className="hover:shadow-md transition-shadow cursor-pointer overflow-hidden border-0">
+                <CardContent className="p-0">
+                  <div className="aspect-square bg-muted">
+                    <img
+                      src={
+                        Array.isArray(listing.images)
+                          ? listing.images[0] || "/placeholder.svg"
+                          : listing.images || "/placeholder.svg"
+                      }
+                      alt={listing.title}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="p-3">
+                    <h3 className="font-medium text-base mb-1 truncate">
+                      {listing.title}
+                    </h3>
+                    <p className="text-lg font-bold text-green-600 mb-1">
+                      Ksh {listing.price ?? "N/A"}
+                    </p>
+                    <p className="text-sm text-muted-foreground line-clamp-2 mb-1">
+                      {listing.description}
+                    </p>
+                    <div className="flex items-center gap-2 mb-1">
+                      <Badge variant="outline" className="text-xs">
+                        {listing.condition}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <div className="flex items-center gap-1">
+                        <MapPin className="h-3 w-3" />
+                        {listing.location}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <div className="h-3 w-3 text-white" />
+                        {listing.views}
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+          ))}
+        </React.Fragment>
+      ))}
+      <div ref={loadingRef} />
+      {isFetchingNextPage && <RecentListingsSkeleton />}
+    </>
+  );
+}
+
+export default function HomePage() {
+  const [searchQuery, setSearchQuery] = useState("");
+  const router = useRouter();
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      router.push(`/listings?search=${encodeURIComponent(searchQuery)}`);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -155,7 +188,9 @@ export default function HomePage() {
       </section>
 
       {/* Categories Section */}
-      <CategoriesSection />
+      <Suspense fallback={<CategoriesSkeleton />}>
+        <CategoriesSection />
+      </Suspense>
       {/* Recent Listings Section */}
       <section className="py-10">
         <div className="container px-4">
@@ -167,61 +202,17 @@ export default function HomePage() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {loading ? (
-              <div className="col-span-full text-center py-8">
-                Loading recent listings...
-              </div>
-            ) : error ? (
-              <div className="col-span-full text-center py-8 text-red-600">
-                {error}
-              </div>
-            ) : (
-              recentListings.map((listing: DisplayListingItem) => (
-                <Link key={listing.id} href={`/listings/${listing.id}`}>
-                  <Card className="hover:shadow-md transition-shadow cursor-pointer overflow-hidden border-0">
-                    <CardContent className="p-0">
-                      <div className="aspect-square bg-muted">
-                        <img
-                          src={
-                            Array.isArray(listing.images)
-                              ? listing.images[0] || "/placeholder.svg"
-                              : listing.images || "/placeholder.svg"
-                          }
-                          alt={listing.title}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      <div className="p-3">
-                        <h3 className="font-medium text-base mb-1 truncate">
-                          {listing.title}
-                        </h3>
-                        <p className="text-lg font-bold text-green-600 mb-1">
-                          Ksh {listing.price ?? "N/A"}
-                        </p>
-                        <p className="text-sm text-muted-foreground line-clamp-2 mb-1">
-                          {listing.description}
-                        </p>
-                        <div className="flex items-center gap-2 mb-1">
-                          <Badge variant="outline" className="text-xs">
-                            {listing.condition}
-                          </Badge>
-                        </div>
-                        <div className="flex items-center justify-between text-xs text-muted-foreground">
-                          <div className="flex items-center gap-1">
-                            <MapPin className="h-3 w-3" />
-                            {listing.location}
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <div className="h-3 w-3 text-white" />
-                            {listing.views}
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </Link>
-              ))
-            )}
+            <ErrorBoundary
+              fallback={
+                <div className="col-span-full text-center py-8 text-red-600">
+                  Failed to fetch recent listings
+                </div>
+              }
+            >
+              <Suspense fallback={<RecentListingsSkeleton />}>
+                <RecentListings />
+              </Suspense>
+            </ErrorBoundary>
           </div>
         </div>
       </section>

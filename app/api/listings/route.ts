@@ -65,13 +65,20 @@ export async function GET(request: Request) {
 
     const hasMore = count ? offset + formattedListings.length < count : false;
 
-    return NextResponse.json({
-      listings: formattedListings,
-      totalCount: count,
-      hasMore,
-      currentPage: page,
-      limit,
-    });
+    return NextResponse.json(
+      {
+        listings: formattedListings,
+        totalCount: count,
+        hasMore,
+        currentPage: page,
+        limit,
+      },
+      {
+        headers: {
+          "Cache-Control": "public, s-maxage=60, stale-while-revalidate=59",
+        },
+      },
+    );
   } catch (err: any) {
     console.error("Server error in GET /api/listings:", err);
     return NextResponse.json(
@@ -80,6 +87,7 @@ export async function GET(request: Request) {
     );
   }
 }
+
 /**
  * Creates a new listing associated with the authenticated user.
  *

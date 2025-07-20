@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, Suspense } from "react";
 import {
   Card,
   CardContent,
@@ -44,6 +44,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 
 // Type definitions
 interface FormData {
@@ -55,15 +56,19 @@ interface FormData {
   website: string | null;
 }
 
-/**
- * Displays and manages the user's account page, allowing profile editing, avatar upload, password and email changes, two-factor authentication management, and account deletion.
- *
- * Renders profile information, account security settings, verification status, and provides interactive modals for updating sensitive information and enabling or disabling security features.
- */
-export default function AccountPage() {
-  const { user, profile, isLoading } = useAuth();
+function AccountDetails() {
+  const { user, profile } = useAuth();
+  const queryClient = useQueryClient();
+
+  const { data: accountData } = useSuspenseQuery({
+    queryKey: ["accountData", user!.id],
+    queryFn: getAccountData,
+  });
+
   const [saving, setSaving] = useState(false);
-  const [formData, setFormData] = useState<FormData | null>(null);
+  const [formData, setFormData] = useState<FormData | null>(
+    accountData.formData,
+  );
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { uploadFile, uploading: isUploading } = useFileUpload({
     uploadType: "profiles",
@@ -86,35 +91,22 @@ export default function AccountPage() {
   const [emailSaving, setEmailSaving] = useState(false);
 
   useEffect(() => {
-    const fetchAccountData = async () => {
-      if (user) {
-        try {
-          const { formData: accountData } = await getAccountData();
-          if (accountData) {
-            setFormData(accountData);
-          }
-        } catch (error) {
-          console.error("Failed to fetch account data:", error);
-          setFormData({
-            full_name: "",
-            username: "",
-            bio: "",
-            phone_number: "",
-            location: "",
-            website: "",
-          });
-        }
-      }
-    };
-    fetchAccountData();
-  }, [user]);
+    if (accountData?.formData) {
+      setFormData(accountData.formData);
+    }
+  }, [accountData]);
 
   const handleSave = async () => {
     if (!user || !formData) return;
 
     setSaving(true);
     await updateAccount(formData);
+    await queryClient.invalidateQueries({ queryKey: ["accountData", user.id] });
     setSaving(false);
+    toast({
+      title: "Success",
+      description: "Your account has been updated.",
+    });
   };
 
   const handleDelete = async () => {
@@ -131,6 +123,9 @@ export default function AccountPage() {
       const result = await uploadFile(file);
       if (result?.url && user) {
         await updateAvatarUrl(user.id, result.url);
+        await queryClient.invalidateQueries({
+          queryKey: ["accountData", user.id],
+        });
         toast({
           title: "Profile picture updated",
           description: "Your profile picture has been successfully updated.",
@@ -260,25 +255,12 @@ export default function AccountPage() {
     }
   };
 
-  if (isLoading || !formData) {
+  if (!formData) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <p>You must be logged in to view this page.</p>
-          <Button className="p-3 text-white border border-primary mt-3">
-            <Link href="/auth">Sign up</Link>
-          </Button>
+          <p className="mt-4">Loading Form...</p>
         </div>
       </div>
     );
@@ -818,5 +800,53 @@ export default function AccountPage() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+/**
+ * Displays and manages the user's account page, allowing profile editing, avatar upload, password and email changes, two-factor authentication management, and account deletion.
+ *
+ * Renders profile information, account security settings, verification status, and provides interactive modals for updating sensitive information and enabling or disabling security features.
+ */
+export default function AccountPage() {
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <p>You must be logged in to view this page.</p>
+          <Button className="p-3 text-white border border-primary mt-3">
+            <Link href="/auth">Sign up</Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto"></div>
+            <p className="mt-4">Loading Account Details...</p>
+          </div>
+        </div>
+      }
+    >
+      <AccountDetails />
+    </Suspense>
   );
 }

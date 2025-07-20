@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Star } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface Review {
   id: string;
@@ -21,45 +22,15 @@ interface Review {
 
 interface ReviewsSectionProps {
   listingId: string;
+  reviews: Review[];
 }
 
-export const ReviewsSection: React.FC<ReviewsSectionProps> = ({ listingId }) => {
+export const ReviewsSection: React.FC<ReviewsSectionProps> = ({ listingId, reviews }) => {
   const { toast } = useToast();
-  const [reviews, setReviews] = useState<Review[]>([]);
+  const queryClient = useQueryClient();
   const [newReview, setNewReview] = useState("");
   const [newRating, setNewRating] = useState(0);
-  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-
-  useEffect(() => {
-    fetchReviews();
-  }, [listingId]);
-
-  const fetchReviews = async () => {
-    setLoading(true);
-    try {
-      const response = await fetch(`/api/listings/${listingId}/reviews`);
-      if (response.ok) {
-        const data = await response.json();
-        setReviews(data);
-      } else {
-        toast({
-          title: "Error",
-          description: "Failed to load reviews.",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      console.error("Error fetching reviews:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load reviews.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleSubmitReview = async () => {
     if (!newReview.trim() || newRating === 0) {
@@ -87,7 +58,7 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({ listingId }) => 
       if (response.ok) {
         setNewReview("");
         setNewRating(0);
-        fetchReviews(); // Re-fetch reviews to show the new one
+        queryClient.invalidateQueries({ queryKey: ["listing", listingId] });
         toast({
           title: "Success",
           description: "Review submitted successfully!",
@@ -143,9 +114,7 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({ listingId }) => 
           </div>
 
           {/* Existing Reviews */}
-          {loading ? (
-            <p>Loading reviews...</p>
-          ) : reviews.length === 0 ? (
+          {reviews.length === 0 ? (
             <p>No reviews yet. Be the first to leave one!</p>
           ) : (
             <div className="space-y-4">
