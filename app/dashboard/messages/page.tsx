@@ -14,7 +14,32 @@ import {
 import { ConversationListSkeleton } from "@/components/skeletons/conversations-skeleton";
 import { ChatSkeleton } from "@/components/skeletons/chat-skeleton";
 
-// ... (interfaces remain the same)
+interface User {
+  id: string;
+  username: string;
+  avatar_url: string;
+}
+
+interface Listing {
+  id: string;
+  title: string;
+}
+
+interface Conversation {
+  id: string;
+  encryption_key: string;
+  seller: User;
+  buyer: User;
+  listing: Listing;
+}
+
+interface Message {
+  id: string;
+  encrypted_content: string;
+  iv: string;
+  sender_id: string;
+  created_at: string;
+}
 
 async function fetchConversations() {
   const response = await fetch("/api/messages/conversations");
