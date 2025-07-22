@@ -44,6 +44,20 @@ export async function POST(request: NextRequest) {
 
       if (error) {
         console.error("Failed to update transaction:", error);
+        return NextResponse.json({ error: "Failed to update transaction" }, { status: 500 });
+      }
+
+      // Fulfill the order
+      const { data: listing, error: listingError } = await supabase
+        .from("listings")
+        .update({ status: "active" })
+        .eq("transaction_id", event.data.reference)
+        .select()
+        .single();
+
+      if (listingError) {
+        console.error("Failed to update listing:", listingError);
+        // Handle this reconciliation later
       }
 
       // Send notification to user
@@ -58,7 +72,7 @@ export async function POST(request: NextRequest) {
           await supabase.from("notifications").insert({
             user_id: transaction.user_id,
             title: "Payment Successful",
-            message: `Your payment of ₦${amount / 100} has been processed successfully.`,
+            message: `Your payment of Ksh${amount / 100} has been processed successfully.`,
             type: "payment",
           });
         }

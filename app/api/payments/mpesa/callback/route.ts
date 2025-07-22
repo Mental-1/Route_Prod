@@ -26,10 +26,14 @@ export async function POST(request: NextRequest) {
     logger.debug({ body }, "Raw Callback Body:");
 
     const expectedSignature = crypto
-      .createHmac("sha256", process.env.MPESA_SECRET_KEY || (() => {
-        logger.error("MPESA_SECRET_KEY environment variable is required");
-        throw new Error("Configuration error");
-      })())
+      .createHmac(
+        "sha256",
+        process.env.MPESA_SECRET_KEY ||
+          (() => {
+            logger.error("MPESA_SECRET_KEY environment variable is required");
+            throw new Error("Configuration error");
+          })(),
+      )
       .update(body)
       .digest("hex");
 
@@ -58,7 +62,10 @@ export async function POST(request: NextRequest) {
     const { CheckoutRequestID, ResultCode, ResultDesc, CallbackMetadata } =
       Body.stkCallback;
 
-    logger.info({ CheckoutRequestID, ResultCode, ResultDesc }, "M-Pesa Callback Details:");
+    logger.info(
+      { CheckoutRequestID, ResultCode, ResultDesc },
+      "M-Pesa Callback Details:",
+    );
     logger.debug({ CallbackMetadata }, "CallbackMetadata:");
 
     const supabase = await getSupabaseRouteHandler(cookies);
@@ -71,7 +78,10 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (existingTransaction && existingTransaction.status === "completed") {
-      logger.warn({ CheckoutRequestID }, "Duplicate M-Pesa callback received for already completed transaction.");
+      logger.warn(
+        { CheckoutRequestID },
+        "Duplicate M-Pesa callback received for already completed transaction.",
+      );
       return NextResponse.json({ success: true });
     }
 
@@ -127,6 +137,19 @@ export async function POST(request: NextRequest) {
           type: "payment",
         });
         logger.info("Notification sent.");
+
+        // Fulfill the order
+        const { data: listing, error: listingError } = await supabase
+          .from("listings")
+          .update({ status: "active" })
+          .eq("transaction_id", CheckoutRequestID)
+          .select()
+          .single();
+
+        if (listingError) {
+          console.error("Failed to update listing:", listingError);
+          // Handle this reconciliation later
+        }
       } else {
         logger.warn(
           "Could not find user to send notification for transaction.",

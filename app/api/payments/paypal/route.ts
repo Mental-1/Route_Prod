@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
                 currency_code: validatedData.currency,
                 value: validatedData.amount.toString(),
               },
-              description: "RouteMe Payment",
+              description: "Bidsy Payment",
               custom_id: user.id,
             },
           ],

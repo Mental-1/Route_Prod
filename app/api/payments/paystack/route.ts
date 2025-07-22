@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { getSupabaseRouteHandler } from "@/utils/supabase/server";
 import { paystackPaymentSchema } from "@/lib/validations";
 import { cookies } from "next/headers";
+import z from "zod";
 
 /**
  * Handles PayStack payment initialization and records the transaction.
@@ -11,7 +12,17 @@ import { cookies } from "next/headers";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const validatedData = paystackPaymentSchema.parse(body);
+    const validatedData = paystackPaymentSchema.safeParse(body);
+
+    if (!validatedData.success) {
+      return NextResponse.json(
+        {
+          error: "Invalid request body",
+          details: z.treeifyError(validatedData.error),
+        },
+        { status: 400 },
+      );
+    }
 
     const supabase = await getSupabaseRouteHandler(cookies);
     const {
@@ -33,10 +44,10 @@ export async function POST(request: NextRequest) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          email: validatedData.email,
-          amount: validatedData.amount * 100,
-          currency: "NGN",
-          reference: `routeme_${user.id}_${Date.now()}`,
+          email: validatedData.data.email,
+          amount: validatedData.data.amount * 100,
+          currency: "KES",
+          reference: `bidsy_${user.id}_${Date.now()}`,
           callback_url: `${process.env.NEXT_PUBLIC_APP_URL}/api/payments/paystack/callback`,
           metadata: {
             user_id: user.id,
@@ -64,9 +75,9 @@ export async function POST(request: NextRequest) {
       .insert({
         user_id: user.id,
         payment_method: "paystack",
-        amount: validatedData.amount,
+        amount: validatedData.data.amount,
         status: "pending",
-        email: validatedData.email,
+        email: validatedData.data.email,
         reference: data.data.reference,
       })
       .select()

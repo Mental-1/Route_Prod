@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
     console.error("Message API error:", error);
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: "Invalid request data", details: error.flatten() },
+        { error: "Invalid request data", details: z.treeifyError(error) },
         { status: 400 },
       );
     }
