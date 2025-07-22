@@ -1,5 +1,13 @@
 import { Profile } from "./profile";
 
+export type Review = {
+  id: string;
+  rating: number;
+  comment: string;
+  created_at: string;
+  profiles: Profile;
+};
+
 export type Listing = {
   id: string;
   title: string;
@@ -25,4 +33,5 @@ export type Listing = {
   updated_at: string;
   expiry_date: string;
   profiles: Profile;
+  reviews: Review[];
 };

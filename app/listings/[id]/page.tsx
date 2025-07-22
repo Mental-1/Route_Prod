@@ -516,7 +516,7 @@ function ListingDetails() {
           </div>
         </div>
         <div className="mt-8">
-          <ReviewsSection reviews={listing.reviews} listingId={listing.id} />
+          <ReviewsSection reviews={listing.reviews || []} listingId={listing.id} />
         </div>
       </div>
     </div>
