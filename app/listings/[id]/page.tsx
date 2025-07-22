@@ -263,6 +263,40 @@ function ListingDetails() {
     }
   };
 
+  const handleSendMessage = async () => {
+    try {
+      const response = await fetch("/api/conversations", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          listingId: listing.id,
+          sellerId: listing.profiles.id,
+        }),
+      });
+
+      if (response.ok) {
+        const { conversationId } = await response.json();
+        router.push(`/dashboard/messages?conversationId=${conversationId}`);
+      } else {
+        const errorData = await response.json();
+        toast({
+          title: "Error",
+          description: errorData.error || "Failed to start conversation.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error sending message:", error);
+      toast({
+        title: "Error",
+        description: "Failed to start conversation.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container px-4 py-6">
@@ -401,7 +435,7 @@ function ListingDetails() {
                 </div>
 
                 <div className="space-y-2">
-                  <Button className="w-full">
+                  <Button className="w-full" onClick={handleSendMessage}>
                     <MessageCircle className="h-4 w-4 mr-2" />
                     Send Message
                   </Button>
@@ -416,12 +450,14 @@ function ListingDetails() {
                       </Button>
                     </a>
                     <a
-                      href={`mailto:${listing.profiles.email}`}
+                      href={`https://wa.me/${listing.profiles.phone_number}`}
                       className="w-full"
+                      target="_blank"
+                      rel="noopener noreferrer"
                     >
                       <Button className="w-full">
-                        <Mail className="h-4 w-4 mr-2" />
-                        Email
+                        <MessageCircle className="h-4 w-4 mr-2" />
+                        WhatsApp
                       </Button>
                     </a>
                   </div>
@@ -480,7 +516,7 @@ function ListingDetails() {
           </div>
         </div>
         <div className="mt-8">
-          <ReviewsSection reviews={listing.reviews} />
+          <ReviewsSection reviews={listing.reviews} listingId={listing.id} />
         </div>
       </div>
     </div>
