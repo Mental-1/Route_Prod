@@ -395,7 +395,7 @@ export default function ListingsPage() {
                       <AccordionTrigger>Categories</AccordionTrigger>
                       <AccordionContent className="pt-4">
                         <div className="space-y-2">
-                          {categories.map((category) => (
+                          {categories.map((category: Category) => (
                             <div
                               key={category.id}
                               className="flex items-center space-x-2"
