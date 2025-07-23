@@ -253,7 +253,7 @@ export default function ListingsPage() {
                   <div className="space-y-2">
                     {subcategories
                       .filter(
-                        (sub) =>
+                        (sub: Subcategory) =>
                           sub.parent_category_id ===
                           Number.parseInt(selectedCategories[0], 10),
                       )
