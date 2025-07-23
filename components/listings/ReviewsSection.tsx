@@ -1,3 +1,4 @@
+import { Review } from "@/lib/types/listing";
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,19 +7,6 @@ import { useToast } from "@/hooks/use-toast";
 import { Star } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useQueryClient } from "@tanstack/react-query";
-
-interface Review {
-  id: string;
-  listing_id: string;
-  user_id: string;
-  rating: number;
-  comment: string;
-  created_at: string;
-  profiles: {
-    full_name: string;
-    avatar_url: string;
-  };
-}
 
 interface ReviewsSectionProps {
   listingId: string;

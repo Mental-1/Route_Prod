@@ -2,6 +2,8 @@ import { Profile } from "./profile";
 
 export type Review = {
   id: string;
+  listing_id: string;
+  user_id: string;
   rating: number;
   comment: string;
   created_at: string;
