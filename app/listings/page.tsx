@@ -31,6 +31,7 @@ import { Category, Listing } from "@/lib/types/listing";
 import { ListingCardSkeleton } from "@/components/skeletons/listing-card-skeleton";
 import Link from "next/link";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { getFilteredListings, getListings } from "../../lib/data";
 
 type Subcategory = {
   id: number;
