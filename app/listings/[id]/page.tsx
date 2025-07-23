@@ -2,7 +2,7 @@
 
 import { reportUser } from "./actions";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -29,69 +29,45 @@ import {
 } from "lucide-react";
 import { ListingMediaGallery } from "@/components/listing-media-gallery";
 import posthog from "posthog-js";
-
-// ... (rest of the file)
-
+import { ReviewsSection } from "@/components/listings/ReviewsSection";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { Listing } from "@/lib/types/listing";
+import { ListingDetailSkeleton } from "@/components/skeletons/listing-detail-skeleton";
 
-/**
- * Displays a detailed view of a specific listing, including images, description, location, seller information, and interactive actions.
- *
- * Provides features such as image gallery navigation, saving and sharing the listing, viewing the location on a map, getting directions from the user's current location, and contacting the seller. Handles loading states, error notifications, and fallback behaviors for unsupported features.
- *
- * @returns The rendered listing detail page component.
- */
-export default function ListingDetailPage() {
+function ListingDetails() {
   const params = useParams();
   const router = useRouter();
   const { toast } = useToast();
-  const [listing, setListing] = useState<Listing | null>(null);
-  const [loading, setLoading] = useState(true);
   const [isSaved, setIsSaved] = useState(false);
   const [gettingDirections, setGettingDirections] = useState(false);
 
-  useEffect(() => {
-    fetchListing();
-  }, [params.id]);
-
-  const fetchListing = async () => {
-    try {
+  const { data: listing } = useSuspenseQuery<Listing>({
+    queryKey: ["listing", params.id],
+    queryFn: async () => {
       const response = await fetch(`/api/listings/${params.id}`);
-      if (response.ok) {
-        const data = await response.json();
-        setListing(data);
-
-        // Increment view count
-        await fetch(`/api/listings/${params.id}/view`, { method: "POST" });
-
-        // Track event with PostHog
-        if (typeof window !== "undefined" && posthog) {
-          posthog.capture("listing_viewed", {
-            listing_id: data.id,
-            listing_title: data.title,
-            listing_category: data.category.name,
-            seller_id: data.profiles.id,
-          });
-        }
-      } else {
-        toast({
-          title: "Error",
-          description: "Listing not found",
-          variant: "destructive",
-        });
-        router.push("/listings");
+      if (!response.ok) {
+        throw new Error(`Failed to fetch listing: ${response.statusText}`);
       }
-    } catch (error) {
-      console.error("Error fetching listing:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load listing",
-        variant: "destructive",
+      return response.json();
+    },
+  });
+
+  useEffect(() => {
+    // Increment view count
+    fetch(`/api/listings/${params.id}/view`, { method: "POST" }).catch(
+      (error) => console.error("Failed to increment view count:", error)
+    );
+
+    // Track event with PostHog
+    if (typeof window !== "undefined" && posthog && listing) {
+      posthog.capture("listing_viewed", {
+        listing_id: listing.id,
+        listing_title: listing.title,
+        listing_category: listing.category.name,
+        seller_id: listing.profiles.id,
       });
-    } finally {
-      setLoading(false);
     }
-  };
+  }, [params.id, listing]);
 
   const getDirections = async () => {
     if (!listing?.latitude || !listing?.longitude) {
@@ -120,9 +96,9 @@ export default function ListingDetailPage() {
       const position = await new Promise<GeolocationPosition>(
         (resolve, reject) => {
           const options: PositionOptions = {
-            enableHighAccuracy: true, // Use high accuracy positioning for better precision
-            timeout: 15000, // Increase timeout to 15 seconds
-            maximumAge: 600000, // Accept cached position up to 10 minutes old
+            enableHighAccuracy: true,
+            timeout: 15000,
+            maximumAge: 600000,
           };
 
           navigator.geolocation.getCurrentPosition(
@@ -178,13 +154,8 @@ export default function ListingDetailPage() {
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
       const isAndroid = /Android/.test(navigator.userAgent);
 
-      let mapsUrl = data.externalUrls.googleMaps; // Default to Google Maps
+      const mapsUrl = isIOS ? data.externalUrls.appleMaps : data.externalUrls.googleMaps;
 
-      if (isIOS) {
-        mapsUrl = data.externalUrls.appleMaps;
-      }
-
-      // Open in new tab
       window.open(mapsUrl, "_blank");
 
       toast({
@@ -290,29 +261,39 @@ export default function ListingDetailPage() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading listing...</p>
-        </div>
-      </div>
-    );
-  }
+  const handleSendMessage = async () => {
+    try {
+      const response = await fetch("/api/conversations", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          listingId: listing.id,
+          sellerId: listing.profiles.id,
+        }),
+      });
 
-  if (!listing) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Listing not found</h1>
-          <Button asChild>
-            <Link href="/listings">Browse Listings</Link>
-          </Button>
-        </div>
-      </div>
-    );
-  }
+      if (response.ok) {
+        const { conversationId } = await response.json();
+        router.push(`/dashboard/messages?conversationId=${conversationId}`);
+      } else {
+        const errorData = await response.json();
+        toast({
+          title: "Error",
+          description: errorData.error || "Failed to start conversation.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error sending message:", error);
+      toast({
+        title: "Error",
+        description: "Failed to start conversation.",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -336,27 +317,13 @@ export default function ListingDetailPage() {
             {/* Listing details */}
             <Card>
               <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <CardTitle className="text-2xl mb-2">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between">
+                  <div className="flex-1 mb-4 sm:mb-0">
+                    <CardTitle className="text-2xl mb-2 break-words">
                       {listing.title}
                     </CardTitle>
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
-                      <div className="flex items-center">
-                        <MapPin className="h-4 w-4 mr-1" />
-                        {listing.location}
-                      </div>
-                      <div className="flex items-center">
-                        <Calendar className="h-4 w-4 mr-1" />
-                        {new Date(listing.created_at).toLocaleDateString()}
-                      </div>
-                      <div className="flex items-center">
-                        <Eye className="h-4 w-4 mr-1" />
-                        {listing.views} views
-                      </div>
-                    </div>
                   </div>
-                  <div className="flex space-x-2">
+                  <div className="flex space-x-2 flex-shrink-0">
                     <Button variant="outline" size="icon" onClick={handleSave}>
                       <Heart
                         className={`h-4 w-4 ${isSaved ? "fill-red-500 text-red-500" : ""}`}
@@ -365,26 +332,25 @@ export default function ListingDetailPage() {
                     <Button variant="outline" size="icon" onClick={handleShare}>
                       <Share2 className="h-4 w-4" />
                     </Button>
-                    {listing.latitude && listing.longitude && (
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={getDirections}
-                        disabled={gettingDirections}
-                        title="Get Directions"
-                      >
-                        <Navigation className="h-4 w-4" />
-                      </Button>
-                    )}
                   </div>
                 </div>
 
                 <div className="flex items-center gap-4">
-                  <div className="text-3xl font-bold text-green-600">
+                  <div className="text-2xl font-bold text-green-600">
                     Ksh {listing.price}
                   </div>
                   <Badge variant="outline">{listing.condition}</Badge>
                   <Badge variant="secondary">{listing.category.name}</Badge>
+                </div>
+                <div className="flex items-center gap-4 text-sm text-muted-foreground mt-4">
+                  <div className="flex items-center">
+                    <Calendar className="h-4 w-4 mr-1" />
+                    {new Date(listing.created_at).toLocaleDateString()}
+                  </div>
+                  <div className="flex items-center">
+                    <Eye className="h-4 w-4 mr-1" />
+                    {listing.views} views
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
@@ -467,19 +433,31 @@ export default function ListingDetailPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Button className="w-full">
+                  <Button className="w-full" onClick={handleSendMessage}>
                     <MessageCircle className="h-4 w-4 mr-2" />
                     Send Message
                   </Button>
                   <div className="grid grid-cols-2 gap-2">
-                    <Button variant="outline" size="sm">
-                      <Phone className="h-4 w-4 mr-1" />
-                      Call
-                    </Button>
-                    <Button variant="outline" size="sm">
-                      <Mail className="h-4 w-4 mr-1" />
-                      Email
-                    </Button>
+                    <a
+                      href={`tel:${listing.profiles.phone_number}`}
+                      className="w-full"
+                    >
+                      <Button className="w-full">
+                        <Phone className="h-4 w-4 mr-2" />
+                        Call
+                      </Button>
+                    </a>
+                    <a
+                      href={`https://wa.me/${listing.profiles.phone_number}`}
+                      className="w-full"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <Button className="w-full">
+                        <MessageCircle className="h-4 w-4 mr-2" />
+                        WhatsApp
+                      </Button>
+                    </a>
                   </div>
                 </div>
 
@@ -535,7 +513,18 @@ export default function ListingDetailPage() {
             </Card>
           </div>
         </div>
+        <div className="mt-8">
+          <ReviewsSection reviews={listing.reviews || []} listingId={listing.id} />
+        </div>
       </div>
     </div>
+  );
+}
+
+export default function ListingDetailPage() {
+  return (
+    <Suspense fallback={<ListingDetailSkeleton />}>
+      <ListingDetails />
+    </Suspense>
   );
 }

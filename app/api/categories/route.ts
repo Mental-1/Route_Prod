@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { getSupabaseRouteHandler } from "@/utils/supabase/server";
-
 import { cookies } from "next/headers";
+
+export const runtime = 'edge';
 
 /**
  * Handles GET requests to retrieve all categories from the database, ordered by name.
@@ -14,7 +15,7 @@ export async function GET() {
 
     const { data: categories, error } = await supabase
       .from("categories")
-      .select("*")
+      .select("id, name, icon")
       .order("name");
 
     if (error) {
@@ -25,7 +26,11 @@ export async function GET() {
       );
     }
 
-    return NextResponse.json(categories);
+    return NextResponse.json(categories, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=59',
+      },
+    });
   } catch (error) {
     console.error("Categories API error:", error);
     return NextResponse.json(

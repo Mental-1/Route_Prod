@@ -1,65 +1,96 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { getSupabaseRouteHandler } from "@/utils/supabase/server";
+import { MessageEncryption } from "@/lib/encryption";
+import { z } from "zod";
 import { cookies } from "next/headers";
 
-export async function GET(
-  req: NextRequest,
+const sendMessageSchema = z.object({
+  content: z.string().min(1).max(2000),
+});
+
+/**
+ * Handles sending a message to an existing conversation.
+ */
+export async function POST(
+  request: NextRequest,
   { params }: { params: { conversationId: string } },
 ) {
-  const supabase = await getSupabaseRouteHandler(cookies);
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json(
-      { error: "User not authenticated" },
-      { status: 401 },
-    );
-  }
-
-  const conversationId = params.conversationId;
-  const uuidRegex =
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  if (!uuidRegex.test(conversationId)) {
-    return NextResponse.json(
-      { error: "Invalid conversation ID format" },
-      { status: 400 },
-    );
-  }
   try {
-    const { data: conversationAccess } = await supabase
+    const supabase = await getSupabaseRouteHandler(cookies);
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { conversationId } = params;
+    const body = await request.json();
+    const { content } = sendMessageSchema.parse(body);
+
+    // 1. Fetch the conversation and verify the user is part of it
+    const { data: conversation, error: convError } = await supabase
       .from("conversations")
-      .select("id")
+      .select("encryption_key, buyer_id, seller_id")
       .eq("id", conversationId)
-      .or(`seller_id.eq.${user.id},buyer_id.eq.${user.id}`)
       .single();
 
-    if (!conversationAccess) {
+    if (convError || !conversation) {
       return NextResponse.json(
-        { error: "Unauthorized access to conversation" },
+        { error: "Conversation not found" },
+        { status: 404 },
+      );
+    }
+
+    if (user.id !== conversation.buyer_id && user.id !== conversation.seller_id) {
+      return NextResponse.json(
+        { error: "You are not a part of this conversation" },
         { status: 403 },
       );
     }
-    const { data, error } = await supabase
-      .from("encrypted_messages")
-      .select("*")
-      .eq("conversation_id", conversationId)
-      .order("created_at", { ascending: true });
 
-    if (error) {
-      console.error("Error fetching messages:", error);
+    // 2. Encrypt the message content
+    const key = await MessageEncryption.importKey(conversation.encryption_key);
+    const { encrypted, iv } = await MessageEncryption.encrypt(content, key);
+
+    // 3. Insert the new message into the database
+    const { data: message, error: messageError } = await supabase
+      .from("encrypted_messages")
+      .insert({
+        conversation_id: conversationId,
+        sender_id: user.id,
+        encrypted_content: encrypted,
+        iv: iv,
+      })
+      .select("id, created_at")
+      .single();
+
+    if (messageError) {
+      console.error("Error saving message:", messageError);
       return NextResponse.json(
-        { error: "Failed to fetch messages" },
+        { error: "Failed to send message" },
         { status: 500 },
       );
     }
 
-    return NextResponse.json(data);
+    // 4. Return the newly created message (or just a success status)
+    return NextResponse.json({
+      success: true,
+      message: {
+        id: message.id,
+        content: content, // Return the original content for optimistic updates
+        sender_id: user.id,
+        created_at: message.created_at,
+      },
+    });
   } catch (error) {
-    console.error("Unexpected error fetching messages:", error);
+    console.error("Message API error:", error);
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: "Invalid request data" }, { status: 400 });
+    }
     return NextResponse.json(
-      { error: "An unexpected error occurred" },
+      { error: "Internal server error" },
       { status: 500 },
     );
   }

@@ -8,6 +8,11 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  PayPalScriptProvider,
+  PayPalButtons,
+  ReactPayPalScriptOptions,
+} from "@paypal/react-paypal-js";
 
 import {
   Select,
@@ -31,13 +36,14 @@ import {
 } from "@/components/ui/dialog";
 
 import type { Database } from "@/utils/supabase/database.types";
+import Image from "next/image";
 type Category = Database["public"]["Tables"]["categories"]["Row"];
 type SubCategory = Database["public"]["Tables"]["subcategories"]["Row"];
 
 const steps = [
   { id: "details", label: "Details" },
-  { id: "media", label: "Media" },
   { id: "payment", label: "Payment" },
+  { id: "media", label: "Media" },
   { id: "method", label: "Method" },
   { id: "preview", label: "Preview" },
 ];
@@ -197,81 +203,16 @@ export default function PostAdPage() {
           return;
         }
 
-        setCurrentTransactionId(paymentResult.transactionId);
+        // The user will be notified upon completion.
         toast({
-          title: "Payment Initiated",
-          description: "Waiting for payment confirmation...",
+          title: "Payment Processing",
+          description:
+            "Your payment is being processed. You will be notified upon completion.",
           variant: "default",
         });
-
-        // Poll for transaction status
-        let pollAttempts = 0;
-        const MAX_POLL_ATTEMPTS = 20; // 100 seconds max with 5-second intervals
-
-        const checkPaymentStatus = async () => {
-          pollAttempts++;
-
-          if (pollAttempts > MAX_POLL_ATTEMPTS) {
-            toast({
-              title: "Payment Timeout",
-              description: "Payment verification timed out. Please check your payment status.",
-              variant: "destructive",
-            });
-            setIsProcessingPayment(false);
-            setIsSubmitted(false);
-            return;
-          }
-
-          const supabase = getSupabaseClient();
-          const { data: transaction, error } = await supabase
-            .from("transactions")
-            .select("status")
-            .eq("id", paymentResult.transactionId)
-            .single();
-
-          if (error || !transaction) {
-            console.error("Error fetching transaction status:", error);
-            toast({
-              title: "Payment Status Error",
-              description: "Could not retrieve payment status.",
-              variant: "destructive",
-            });
-            setIsProcessingPayment(false);
-            setIsSubmitted(false);
-            return;
-          }
-
-          if (transaction.status === "completed") {
-            setPaymentCompleted(true);
-            toast({
-              title: "Payment Successful!",
-              description: "Your ad is being published...",
-              variant: "success",
-            });
-            setIsProcessingPayment(false);
-            // Automatically proceed to publishing after successful payment
-            // No need to return here, let the rest of handleSubmit execute
-          } else if (
-            transaction.status === "failed" ||
-            transaction.status === "cancelled"
-          ) {
-            toast({
-              title: "Payment Failed",
-              description: "Your payment was not successful. Please try again.",
-              variant: "destructive",
-            });
-            setIsProcessingPayment(false);
-            setIsSubmitted(false);
-            setCurrentTransactionId(null);
-            return; // Stop here, payment failed
-          } else {
-            // Still pending, poll again after a delay
-            setTimeout(checkPaymentStatus, 5000); // Poll every 3 seconds
-          }
-        };
-
-        checkPaymentStatus();
-        return; // Exit handleSubmit for now, it will be re-triggered by user or automatically after payment success
+        // We can advance the step to preview, as the backend will handle the rest.
+        handleAdvanceStep();
+        return;
       } catch (error) {
         console.error("Payment processing error:", error);
         toast({
@@ -313,24 +254,33 @@ export default function PostAdPage() {
       );
       const finalMediaUrls = uploadedMediaResults.map((res) => res.url);
 
-      const finalLocation = Array.isArray(formData.location) && formData.location.length === 2
-        ? `Lat: ${formData.location[0]}, Lng: ${formData.location[1]}`
-        : formData.location;
+      const formatLocationData = (location: any) => {
+        const isCoordinates = Array.isArray(location) && location.length === 2;
+        return {
+          displayLocation: isCoordinates 
+            ? `Lat: ${location[0]}, Lng: ${location[1]}` 
+            : location,
+          latitude: isCoordinates ? location[0] : null,
+          longitude: isCoordinates ? location[1] : null,
+        };
+      };
+
+      const { displayLocation, latitude, longitude } = formatLocationData(formData.location);
 
       const listingData = {
         title: formData.title,
         description: formData.description,
-        price: parseFloat(formData.price) || null,
-        category_id: formData.category, // Send the category name/slug
+        price: Number.parseFloat(formData.price) || null,
+        category_id: formData.category,
         subcategory_id: formData.subcategory
-          ? parseInt(formData.subcategory)
+          ? Number.parseInt(formData.subcategory)
           : null,
-        location: finalLocation,
-        latitude: Array.isArray(formData.location) && formData.location.length === 2 ? formData.location[0] : null,
-        longitude: Array.isArray(formData.location) && formData.location.length === 2 ? formData.location[1] : null,
+        location: displayLocation,
+        latitude: latitude,
+        longitude: longitude,
         condition: formData.condition,
-        images: finalMediaUrls, // Use uploaded URLs
-        tags: formData.tags, // Add tags to the payload
+        images: finalMediaUrls,
+        tags: formData.tags,
         paymentTier: formData.paymentTier,
         paymentStatus: selectedTier.price > 0 ? "paid" : "free",
         paymentMethod: formData.paymentMethod,
@@ -414,7 +364,7 @@ export default function PostAdPage() {
       phoneNumber: formData.phoneNumber,
       email: formData.email,
       description: `RouteMe Listing - ${tier.name} Plan`,
-      transactionId: transaction.id, // Pass transaction ID to backend
+      transactionId: transaction.id,
     };
 
     let endpoint = "";
@@ -487,7 +437,7 @@ export default function PostAdPage() {
         );
       case 1:
         return (
-          <MediaUploadStep
+          <PaymentTierStep
             formData={formData}
             updateFormData={updateFormData}
             plans={plans}
@@ -495,7 +445,7 @@ export default function PostAdPage() {
         );
       case 2:
         return (
-          <PaymentTierStep
+          <MediaUploadStep
             formData={formData}
             updateFormData={updateFormData}
             plans={plans}
@@ -521,6 +471,8 @@ export default function PostAdPage() {
         return null;
     }
   };
+
+  const methodStepIndex = steps.findIndex((step) => step.id === "method");
 
   return (
     <div className="min-h-screen bg-muted/50 py-8">
@@ -578,7 +530,7 @@ export default function PostAdPage() {
                 ) : (
                   <Button
                     onClick={
-                      currentStep === 3 &&
+                      currentStep === methodStepIndex &&
                       selectedTier.price > 0 &&
                       !paymentCompleted
                         ? handleSubmit
@@ -586,7 +538,7 @@ export default function PostAdPage() {
                     }
                     disabled={isSubmitted}
                   >
-                    {currentStep === 3 &&
+                    {currentStep === methodStepIndex &&
                     selectedTier.price > 0 &&
                     !paymentCompleted
                       ? "Pay"
@@ -757,7 +709,10 @@ function AdDetailsStep({
           <Label htmlFor="tags">Tags</Label>
           <div className="flex flex-wrap items-center gap-2 p-2 border rounded-md bg-background">
             {formData.tags.map((tag: string, index: number) => (
-              <div key={index} className="flex items-center gap-1 bg-muted px-2 py-1 rounded-full">
+              <div
+                key={index}
+                className="flex items-center gap-1 bg-muted px-2 py-1 rounded-full"
+              >
                 <span>{tag}</span>
                 <button
                   type="button"
@@ -777,18 +732,20 @@ function AdDetailsStep({
               placeholder="Add tags (e.g., handmade, vintage)"
               className="flex-grow bg-transparent border-none focus:ring-0"
               onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ',') {
+                if (e.key === "Enter" || e.key === ",") {
                   e.preventDefault();
                   const newTag = e.currentTarget.value.trim();
                   if (newTag && !formData.tags.includes(newTag)) {
                     updateFormData({ tags: [...formData.tags, newTag] });
-                    e.currentTarget.value = '';
+                    e.currentTarget.value = "";
                   }
                 }
               }}
             />
           </div>
-          <p className="text-sm text-muted-foreground mt-1">Press Enter or Comma to add a tag.</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            Press Enter or Comma to add a tag.
+          </p>
         </div>
 
         <div>
@@ -804,7 +761,7 @@ function AdDetailsStep({
                   : formData.location || ""
               }
               onClick={() => setLocationDialogOpen(true)}
-              className="cursor-pointer bg-[#15181e]"
+              className="cursor-pointer bg-background"
             />
           </div>
         </div>
@@ -1053,127 +1010,211 @@ function PaymentMethodStep({
   }
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-xl font-semibold">Payment Method</h2>
+    <PayPalScriptProvider
+      options={
+        {
+          clientId: process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID,
+          currency: "KES",
+          intent: "capture",
+        } as ReactPayPalScriptOptions
+      }
+    >
+      <div className="space-y-6">
+        <h2 className="text-xl font-semibold">Payment Method</h2>
 
-      <div className="bg-muted p-4 rounded-lg">
-        <p className="font-medium">{selectedTier.name} Plan</p>
-        <p className="text-2xl font-bold text-green-600">
-          Ksh {selectedTier.price}
-        </p>
-      </div>
-
-      <div className="space-y-4">
-        <div>
-          <Label>Choose Payment Method</Label>
-          <div className="grid grid-cols-1 gap-3 mt-2">
-            <Card
-              className={`cursor-pointer transition-all ${
-                formData.paymentMethod === "mpesa"
-                  ? "ring-2 ring-blue-500"
-                  : "hover:shadow-md"
-              }`}
-              onClick={() => updateFormData({ paymentMethod: "mpesa" })}
-            >
-              <CardContent className="p-4">
-                <div className="flex items-center space-x-3">
-                  <img
-                    src="/mpesa_logo.png"
-                    alt="M-Pesa Logo"
-                    className="w-12 h-12 object-contain rounded-lg"
-                  />
-                  <div>
-                    <p className="font-medium">M-Pesa</p>
-                    <p className="text-sm text-muted-foreground">
-                      Pay with your mobile money
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card
-              className={`cursor-pointer transition-all ${
-                formData.paymentMethod === "paystack"
-                  ? "ring-2 ring-blue-500"
-                  : "hover:shadow-md"
-              }`}
-              onClick={() => updateFormData({ paymentMethod: "paystack" })}
-            >
-              <CardContent className="p-4">
-                <div className="flex items-center space-x-3">
-                  <img
-                    src="/PayStack_Logo.png"
-                    alt="Paystack Logo"
-                    className="w-12 h-12 object-contain rounded-lg"
-                  />
-                  <div>
-                    <p className="font-medium">Paystack</p>
-                    <p className="text-sm text-muted-foreground">
-                      Credit/Debit card, Bank transfer
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card
-              className={`cursor-pointer transition-all ${
-                formData.paymentMethod === "paypal"
-                  ? "ring-2 ring-blue-500"
-                  : "hover:shadow-md"
-              }`}
-              onClick={() => updateFormData({ paymentMethod: "paypal" })}
-            >
-              <CardContent className="p-4">
-                <div className="flex items-center space-x-3">
-                  <img
-                    src="/PayPal_Logo.png"
-                    alt="PayPal Logo"
-                    className="w-12 h-12 object-contain rounded-lg"
-                  />
-                  <div>
-                    <p className="font-medium">PayPal</p>
-                    <p className="text-sm text-muted-foreground">
-                      Coming Soon ...
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+        <div className="bg-muted p-4 rounded-lg">
+          <p className="font-medium">{selectedTier.name} Plan</p>
+          <p className="text-2xl font-bold text-green-600">
+            Ksh {selectedTier.price}
+          </p>
         </div>
 
-        {formData.paymentMethod === "mpesa" && (
+        <div className="space-y-4">
           <div>
-            <Label htmlFor="phoneNumber">Phone Number</Label>
-            <Input
-              id="phoneNumber"
-              placeholder="Enter your M-Pesa number"
-              value={formData.phoneNumber}
-              onChange={(e) =>
-                updateFormData({
-                  phoneNumber: e.target.value.replace(/[^\d]/g, ""),
-                })
-              }
-            />
-          </div>
-        )}
+            <Label>Choose Payment Method</Label>
+            <div className="grid grid-cols-1 gap-3 mt-2">
+              <Card
+                className={`cursor-pointer transition-all ${
+                  formData.paymentMethod === "mpesa"
+                    ? "ring-2 ring-blue-500"
+                    : "hover:shadow-md"
+                }`}
+                onClick={() => updateFormData({ paymentMethod: "mpesa" })}
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-center space-x-3">
+                    <Image
+                      src="/mpesa_logo.png"
+                      alt="M-Pesa Logo"
+                      width={48}
+                      height={48}
+                      className="w-12 h-12 object-contain rounded-lg"
+                    />
+                    <div>
+                      <p className="font-medium">M-Pesa</p>
+                      <p className="text-sm text-muted-foreground">
+                        Pay with your mobile money
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
 
-        {formData.paymentMethod === "paystack" && (
-          <div>
-            <Label htmlFor="email">Email Address</Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="Enter your email"
-              value={formData.email}
-              onChange={(e) => updateFormData({ email: e.target.value })}
-            />
+              <Card
+                className={`cursor-pointer transition-all ${
+                  formData.paymentMethod === "paystack"
+                    ? "ring-2 ring-blue-500"
+                    : "hover:shadow-md"
+                }`}
+                onClick={() => updateFormData({ paymentMethod: "paystack" })}
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-center space-x-3">
+                    <Image
+                      src="/PayStack_Logo.png"
+                      alt="Paystack Logo"
+                      width={48}
+                      height={48}
+                      className="w-12 h-12 object-contain rounded-lg"
+                    />
+                    <div>
+                      <p className="font-medium">Paystack</p>
+                      <p className="text-sm text-muted-foreground">
+                        Credit/Debit card, Bank transfer
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card
+                className={`cursor-pointer transition-all ${
+                  formData.paymentMethod === "paypal"
+                    ? "ring-2 ring-blue-500"
+                    : "hover:shadow-md"
+                }`}
+                onClick={() => updateFormData({ paymentMethod: "paypal" })}
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-center space-x-3">
+                    <Image
+                      src="/PayPal_Logo.png"
+                      alt="PayPal Logo"
+                      width={48}
+                      height={48}
+                      className="w-12 h-12 object-contain rounded-lg"
+                    />
+                    <div>
+                      <p className="font-medium">PayPal</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </div>
-        )}
+
+          {formData.paymentMethod === "mpesa" && (
+            <div>
+              <Label htmlFor="phoneNumber">Phone Number</Label>
+              <Input
+                id="phoneNumber"
+                placeholder="Enter your M-Pesa number"
+                value={formData.phoneNumber}
+                onChange={(e) =>
+                  updateFormData({
+                    phoneNumber: e.target.value.replace(/[^\d]/g, ""),
+                  })
+                }
+              />
+            </div>
+          )}
+
+          {formData.paymentMethod === "paystack" && (
+            <div>
+              <Label htmlFor="email">Email Address</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="Enter your email"
+                value={formData.email}
+                onChange={(e) => updateFormData({ email: e.target.value })}
+              />
+            </div>
+          )}
+          {formData.paymentMethod === "paypal" && (
+            <PayPalButtons
+              style={{ layout: "vertical" }}
+              createOrder={async (data, actions) => {
+                try {
+                  const res = await fetch("/api/payments/paypal", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      amount: selectedTier.price,
+                      description: `Bidsy Payment - ${selectedTier.name} Plan`,
+                    }),
+                  });
+                  if (!res.ok) {
+                    const errorData = await res.json();
+                    throw new Error(errorData.error || "Failed to create PayPal order.");
+                  }
+                  const order = await res.json();
+                  return order.id;
+                } catch (error: any) {
+                  console.error("Error creating PayPal order:", error);
+                  toast({
+                    title: "Payment Error",
+                    description: error.message || "Failed to initiate PayPal payment. Please try again.",
+                    variant: "destructive",
+                  });
+                  throw error; // Re-throw to stop the PayPal flow
+                }
+              }}
+              onApprove={async (data, actions) => {
+                try {
+                  const res = await fetch("/api/payments/paypal/capture", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ orderID: data.orderID }),
+                  });
+                  if (!res.ok) {
+                    const errorData = await res.json();
+                    throw new Error(errorData.error || "Failed to capture PayPal payment.");
+                  }
+                  const details = await res.json();
+                  toast({
+                    title: "Payment Successful",
+                    description: "Your payment has been processed successfully.",
+                  });
+                } catch (error: any) {
+                  console.error("Error capturing PayPal payment:", error);
+                  toast({
+                    title: "Payment Failed",
+                    description: error.message || "There was an error processing your payment. Please try again.",
+                    variant: "destructive",
+                  });
+                }
+              }}
+              onError={(err) => {
+                console.error("PayPal error:", err);
+                toast({
+                  title: "Payment Failed",
+                  description: "There was an error processing your payment. Please try again.",
+                  variant: "destructive",
+                });
+              }}
+              onCancel={() => {
+                toast({
+                  title: "Payment Cancelled",
+                  description: "You cancelled the payment. Please try again when ready.",
+                  variant: "default",
+                });
+              }}
+            />
+          )}
+        </div>
       </div>
-    </div>
+    </PayPalScriptProvider>
   );
 }
 
@@ -1197,11 +1238,7 @@ function PreviewStep({
     (cat) => cat.id === Number.parseInt(formData.category, 10),
   );
 
-  // Helper for location display
-  const displayLocation =
-    Array.isArray(formData.location) && formData.location.length > 0
-      ? `Lat: ${formData.location[0]}, Lng: ${formData.location[1]}`
-      : formData.location || "Not specified";
+  const { displayLocation } = formatLocationData(formData.location);
 
   return (
     <div className="space-y-6">

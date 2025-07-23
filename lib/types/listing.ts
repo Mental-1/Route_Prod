@@ -1,5 +1,14 @@
-
 import { Profile } from "./profile";
+
+export type Review = {
+  id: string;
+  listing_id: string;
+  user_id: string;
+  rating: number;
+  comment: string;
+  created_at: string;
+  profiles: Profile;
+};
 
 export type Listing = {
   id: string;
@@ -26,4 +35,10 @@ export type Listing = {
   updated_at: string;
   expiry_date: string;
   profiles: Profile;
+  reviews: Review[];
+};
+
+export type Category = {
+  id: number;
+  name: string;
 };

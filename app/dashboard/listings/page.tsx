@@ -293,7 +293,7 @@ export default function UserListingsPage() {
                 </CardTitle>
                 <div className="flex items-center justify-between">
                   <span className="text-2xl font-bold text-green-600">
-                    ${listing.price}
+                    Ksh {listing.price}
                   </span>
                   <Badge variant="outline">{listing.condition}</Badge>
                 </div>

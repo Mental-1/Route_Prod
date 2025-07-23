@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { getSupabaseRouteHandler } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
 
@@ -64,13 +65,20 @@ export async function GET(request: Request) {
 
     const hasMore = count ? offset + formattedListings.length < count : false;
 
-    return NextResponse.json({
-      listings: formattedListings,
-      totalCount: count,
-      hasMore,
-      currentPage: page,
-      limit,
-    });
+    return NextResponse.json(
+      {
+        listings: formattedListings,
+        totalCount: count,
+        hasMore,
+        currentPage: page,
+        limit,
+      },
+      {
+        headers: {
+          "Cache-Control": "public, s-maxage=60, stale-while-revalidate=59",
+        },
+      },
+    );
   } catch (err: any) {
     console.error("Server error in GET /api/listings:", err);
     return NextResponse.json(
@@ -79,6 +87,7 @@ export async function GET(request: Request) {
     );
   }
 }
+
 /**
  * Creates a new listing associated with the authenticated user.
  *
@@ -180,8 +189,10 @@ export async function POST(request: Request) {
 
     if (updateError) {
       console.error("Error updating user listing count:", updateError);
-      // Log the error but don't block the listing creation response
     }
+
+    revalidatePath("/listings");
+    revalidatePath("/");
 
     return NextResponse.json(
       { message: "Listing created successfully", listing: data },

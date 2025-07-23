@@ -6,26 +6,31 @@ import { ChevronLeft } from "lucide-react";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { MessageEncryption } from "@/lib/encryption";
 import { useAuth } from "@/contexts/auth-context";
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { ConversationListSkeleton } from "@/components/skeletons/conversations-skeleton";
 import { ChatSkeleton } from "@/components/skeletons/chat-skeleton";
+
+interface User {
+  id: string;
+  username: string;
+  avatar_url: string;
+}
+
+interface Listing {
+  id: string;
+  title: string;
+}
 
 interface Conversation {
   id: string;
   encryption_key: string;
-  seller: {
-    id: string;
-    username: string;
-    avatar_url: string;
-  };
-  buyer: {
-    id: string;
-    username: string;
-    avatar_url: string;
-  };
-  listing: {
-    id: string;
-    title: string;
-  };
+  seller: User;
+  buyer: User;
+  listing: Listing;
 }
 
 interface Message {
@@ -36,79 +41,135 @@ interface Message {
   created_at: string;
 }
 
+async function fetchConversations() {
+  const response = await fetch("/api/messages/conversations");
+  if (!response.ok) {
+    throw new Error("Failed to fetch conversations");
+  }
+  return response.json();
+}
+
+async function fetchMessages(conversation: Conversation) {
+  if (!conversation) return [];
+  const response = await fetch(`/api/messages/${conversation.id}`);
+  if (!response.ok) {
+    throw new Error("Failed to fetch messages");
+  }
+  const data = await response.json();
+
+  const key = await MessageEncryption.importKey(conversation.encryption_key);
+  return Promise.all(
+    data.map(async (msg: Message) => {
+      try {
+        const decryptedContent = await MessageEncryption.decrypt(
+          msg.encrypted_content,
+          msg.iv,
+          key,
+        );
+        return { ...msg, encrypted_content: decryptedContent };
+      } catch (e) {
+        console.error("Failed to decrypt message:", msg.id, e);
+        return {
+          ...msg,
+          encrypted_content: "This message could not be decrypted.",
+        };
+      }
+    }),
+  );
+}
+
+async function sendMessage(
+  conversationId: string,
+  content: string,
+): Promise<{ message: Message }> {
+  const response = await fetch(`/api/messages/${conversationId}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ content }),
+  });
+  if (!response.ok) {
+    throw new Error("Failed to send message");
+  }
+  return response.json();
+}
+
 export default function MessagesPage() {
   const { user } = useAuth();
-  const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [messages, setMessages] = useState<Message[]>([]);
+  const queryClient = useQueryClient();
   const [selectedConversation, setSelectedConversation] =
     useState<Conversation | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [newMessage, setNewMessage] = useState("");
   const isDesktop = useMediaQuery("(min-width: 768px)");
 
-  useEffect(() => {
-    setLoading(true);
-    setError(null);
-    const fetchConversations = async () => {
-      try {
-        const response = await fetch("/api/messages/conversations");
-        if (!response.ok) {
-          throw new Error("Failed to fetch conversations");
-        }
-        const data = await response.json();
-        setConversations(data);
-      } catch (error) {
-        console.error("Error fetching conversations:", error);
-        setError("Failed to load conversations");
-      } finally {
-        setLoading(false);
-      }
-    };
-    if (user) {
-      fetchConversations();
-    }
-  }, [user]);
+  const {
+    data: conversations = [],
+    isLoading: isLoadingConversations,
+    error: conversationsError,
+  } = useQuery<Conversation[]>({
+    queryKey: ["conversations"],
+    queryFn: fetchConversations,
+    enabled: !!user,
+  });
 
-  const handleConversationClick = async (conversation: Conversation) => {
-    setSelectedConversation(conversation);
-    try {
-      const response = await fetch(`/api/messages/${conversation.id}`);
-      if (!response.ok) {
-        throw new Error("Failed to fetch messages");
-      }
-      const data = await response.json();
+  const {
+    data: messages = [],
+    isLoading: isLoadingMessages,
+  } = useQuery<Message[]>({
+    queryKey: ["messages", selectedConversation?.id],
+    queryFn: () => selectedConversation ? fetchMessages(selectedConversation) : Promise.resolve([]),
+    enabled: !!selectedConversation,
+  });
 
-      const key = await MessageEncryption.importKey(
-        conversation.encryption_key,
+  const sendMessageMutation = useMutation({
+    mutationFn: ({ content }: { content: string }) => {
+      if (!selectedConversation) throw new Error("No conversation selected");
+      return sendMessage(selectedConversation.id, content);
+    },
+    onMutate: async ({ content }) => {
+      if (!selectedConversation) return;
+      await queryClient.cancelQueries({ queryKey: ["messages", selectedConversation.id] });
+      const previousMessages = queryClient.getQueryData<Message[]>(["messages", selectedConversation.id]) || [];
+      
+      const optimisticMessage: Message = {
+        id: `optimistic-${Date.now()}`,
+        encrypted_content: content,
+        iv: "",
+        sender_id: user?.id || "",
+        created_at: new Date().toISOString(),
+      };
+
+      queryClient.setQueryData<Message[]>(
+        ["messages", selectedConversation.id],
+        [...previousMessages, optimisticMessage],
       );
-      const decryptedMessages = await Promise.all(
-        data.map(async (msg: Message) => {
-          try {
-            const decryptedContent = await MessageEncryption.decrypt(
-              msg.encrypted_content,
-              msg.iv,
-              key,
-            );
-            return { ...msg, encrypted_content: decryptedContent };
-          } catch (e) {
-            console.error("Failed to decrypt message:", msg.id, e);
-            return {
-              ...msg,
-              encrypted_content: "This message could not be decrypted.",
-            };
-          }
-        }),
-      );
-      setMessages(decryptedMessages);
-    } catch (error) {
-      console.error("Error processing conversation click:", error);
-      setMessages([]);
-    }
+
+      return { previousMessages, optimisticMessage };
+    },
+    onError: (err, variables, context) => {
+      if (context?.previousMessages && selectedConversation) {
+        queryClient.setQueryData<Message[]>(
+          ["messages", selectedConversation.id],
+          context.previousMessages,
+        );
+      }
+    },
+    onSettled: () => {
+      if (selectedConversation) {
+        queryClient.invalidateQueries({ queryKey: ["messages", selectedConversation.id] });
+      }
+    },
+  });
+
+  const handleSendMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newMessage.trim() || !selectedConversation) return;
+    sendMessageMutation.mutate({ content: newMessage });
+    setNewMessage("");
   };
 
   const renderConversationList = () => {
-    if (loading) return <ConversationListSkeleton />;
-    if (error) return <p className="text-red-500 p-4">{error}</p>;
+    if (isLoadingConversations) return <ConversationListSkeleton />;
+    if (conversationsError) return <p className="text-red-500 p-4">{conversationsError.message}</p>;
     if (conversations.length === 0) {
       return (
         <div className="flex items-center justify-center h-full">
@@ -128,11 +189,11 @@ export default function MessagesPage() {
             <li key={convo.id}>
               <button
                 type="button"
-                onClick={() => handleConversationClick(convo)}
+                onClick={() => setSelectedConversation(convo)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" || e.key === " ") {
                     e.preventDefault();
-                    handleConversationClick(convo);
+                    setSelectedConversation(convo);
                   }
                 }}
                 className="w-full p-4 border-b cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 text-left"
@@ -169,7 +230,7 @@ export default function MessagesPage() {
       );
     }
 
-    if (loading) return <ChatSkeleton />;
+    if (isLoadingMessages) return <ChatSkeleton />;
 
     const otherUser =
       user?.id === selectedConversation.seller.id
@@ -217,11 +278,19 @@ export default function MessagesPage() {
           })}
         </div>
         <div className="p-4 border-t bg-white dark:bg-black">
-          <input
-            type="text"
-            placeholder="Type a message..."
-            className="w-full p-2 border rounded-lg dark:bg-gray-800 dark:border-gray-700"
-          />
+          <form onSubmit={handleSendMessage} className="flex items-center space-x-2">
+            <input
+              type="text"
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              placeholder="Type a message..."
+              className="w-full p-2 border rounded-lg dark:bg-gray-800 dark:border-gray-700"
+              disabled={!selectedConversation || sendMessageMutation.isPending}
+            />
+            <button type="submit" disabled={!selectedConversation || sendMessageMutation.isPending} className="px-4 py-2 bg-blue-500 text-white rounded-lg">
+              {sendMessageMutation.isPending ? "Sending..." : "Send"}
+            </button>
+          </form>
         </div>
       </>
     );
