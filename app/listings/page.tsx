@@ -257,7 +257,7 @@ export default function ListingsPage() {
                           sub.parent_category_id ===
                           Number.parseInt(selectedCategories[0], 10),
                       )
-                      .map((subcategory) => (
+                      .map((subcategory: Subcategory) => (
                         <div
                           key={subcategory.id}
                           className="flex items-center space-x-2"
@@ -438,7 +438,7 @@ export default function ListingsPage() {
                                   sub.parent_category_id ===
                                   Number.parseInt(selectedCategories[0], 10),
                               )
-                              .map((subcategory) => (
+                              .map((subcategory: Subcategory) => (
                                 <div
                                   key={subcategory.id}
                                   className="flex items-center space-x-2"
