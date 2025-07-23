@@ -93,13 +93,15 @@ function RecentListings() {
               <Card className="hover:shadow-md transition-shadow cursor-pointer overflow-hidden border-0">
                 <CardContent className="p-0">
                   <div className="aspect-square bg-muted">
-                    <img
+                    <Image
                       src={
                         Array.isArray(listing.images)
                           ? listing.images[0] || "/placeholder.svg"
                           : listing.images || "/placeholder.svg"
                       }
                       alt={listing.title}
+                      width={200}
+                      height={200}
                       className="w-full h-full object-cover"
                     />
                   </div>

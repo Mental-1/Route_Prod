@@ -199,9 +199,11 @@ export default function MessagesPage() {
                 className="w-full p-4 border-b cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 text-left"
               >
                 <div className="flex items-center">
-                  <img
+                  <Image
                     src={otherUser.avatar_url || "/placeholder-user.jpg"}
                     alt={otherUser.username}
+                    width={40}
+                    height={40}
                     className="w-10 h-10 rounded-full mr-4"
                   />
                   <div>
@@ -248,9 +250,11 @@ export default function MessagesPage() {
               Back
             </button>
           )}
-          <img
+          <Image
             src={otherUser.avatar_url || "/placeholder-user.jpg"}
             alt={otherUser.username}
+            width={40}
+            height={40}
             className="w-10 h-10 rounded-full mr-4"
           />
           <h2 className="text-xl font-bold">{otherUser.username}</h2>

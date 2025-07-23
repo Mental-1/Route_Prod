@@ -133,7 +133,7 @@ export default function PostAdPage() {
       }
     };
     fetchPlans();
-  }, []);
+  }, [updateFormData]);
 
   useEffect(() => {
     if (formData.category) {
@@ -974,7 +974,7 @@ function MediaUploadStep({
       {(imageWarning || videoWarning) && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
           <p className="text-sm text-yellow-800">
-            <strong>Notice:</strong> You've uploaded more media than your plan
+            <strong>Notice:</strong> You&apos;ve uploaded more media than your plan
             allows.
             {imageWarning &&
               ` Only the first ${limits.images} images will be published.`}

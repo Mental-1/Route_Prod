@@ -135,9 +135,11 @@ export function ImageCarousel({ images, video, title }: ImageCarouselProps) {
             </div>
           </div>
         ) : (
-          <img
+          <Image
             src={images[activeIndex] || "/placeholder.svg?height=400&width=600"}
             alt={`${title} - ${activeIndex + 1} of ${images.length}`}
+            width={600}
+            height={400}
             className="w-full h-full object-contain"
             onError={(e) => {
               e.currentTarget.src = "/placeholder.svg?height=400&width=600";
@@ -180,9 +182,11 @@ export function ImageCarousel({ images, video, title }: ImageCarouselProps) {
               aria-label={`Go to image ${index + 1}`}
               type="button"
             >
-              <img
+              <Image
                 src={img || "/placeholder.svg"}
                 alt={`Thumbnail ${index + 1}`}
+                width={64}
+                height={64}
                 className="h-16 w-16 object-cover"
               />
             </button>

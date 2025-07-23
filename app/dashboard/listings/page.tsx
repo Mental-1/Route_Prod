@@ -59,7 +59,7 @@ export default function UserListingsPage() {
     } else if (!isLoading && !user) {
       router.push("/auth");
     }
-  }, [user, isLoading]);
+  }, [user, isLoading, fetchUserListings, fetchUserPlan, router]);
 
   const fetchUserListings = async () => {
     try {
@@ -266,9 +266,11 @@ export default function UserListingsPage() {
           {listings.map((listing) => (
             <Card key={listing.id} className="overflow-hidden">
               <div className="relative">
-                <img
+                <Image
                   src={listing.images[0] || "/placeholder.svg"}
                   alt={listing.title}
+                  width={400}
+                  height={192}
                   className="w-full h-48 object-cover"
                 />
                 {listing.featured && (
@@ -375,7 +377,7 @@ export default function UserListingsPage() {
                       <AlertDialogHeader>
                         <AlertDialogTitle>Delete Listing</AlertDialogTitle>
                         <AlertDialogDescription>
-                          Are you sure you want to delete "{listing.title}"?
+                          Are you sure you want to delete &quot;{listing.title}&quot;?
                           This action cannot be undone.
                         </AlertDialogDescription>
                       </AlertDialogHeader>

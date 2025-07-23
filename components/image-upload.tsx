@@ -197,9 +197,11 @@ export function ImageUpload({
                     controls
                   />
                 ) : (
-                  <img
+                  <Image
                     src={url || "/placeholder.svg"}
                     alt={`Preview ${index}`}
+                    width={128}
+                    height={128}
                     className="w-full h-32 object-cover rounded-lg"
                   />
                 )}

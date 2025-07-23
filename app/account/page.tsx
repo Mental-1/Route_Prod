@@ -706,9 +706,11 @@ function AccountDetails() {
                   <p className="mb-4">
                     Scan the QR code with your authenticator app:
                   </p>
-                  <img
+                  <Image
                     src={qrCode}
                     alt="QR Code"
+                    width={192}
+                    height={192}
                     className="mx-auto w-48 h-48"
                   />
                   <div className="space-y-2 mt-4">

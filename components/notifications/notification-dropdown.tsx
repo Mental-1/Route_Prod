@@ -66,7 +66,7 @@ export function NotificationDropdown({
     if (open) {
       fetchNotifications();
     }
-  }, [open]);
+  }, [open, fetchNotifications]);
 
   const fetchNotifications = async () => {
     try {

@@ -160,9 +160,11 @@ export default function ListingPreviewPage({
                   key={index}
                   className="aspect-square bg-muted rounded-lg overflow-hidden"
                 >
-                  <img
+                  <Image
                     src={img}
                     alt={`Listing image ${index + 1}`}
+                    width={200}
+                    height={200}
                     className="w-full h-full object-cover"
                   />
                 </div>
