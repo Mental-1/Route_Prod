@@ -25,6 +25,13 @@ export async function POST(request: NextRequest) {
 
     const buyerId = user.id;
 
+    if (buyerId === sellerId) {
+      return NextResponse.json(
+        { error: "Cannot create a conversation with yourself" },
+        { status: 400 },
+      );
+    }
+
     let { data: conversation, error: conversationFetchError } = await supabase
       .from("conversations")
       .select("*")

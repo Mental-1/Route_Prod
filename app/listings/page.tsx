@@ -45,6 +45,7 @@ type Subcategory = {
  * Users can filter listings by category, subcategory, price range, item condition, and distance. The component fetches data from APIs, supports infinite scroll loading, and adapts its filter UI for desktop and mobile devices. Loading skeletons are shown while data is being fetched. Includes a back-to-top button and sorting options.
  */
 export default function ListingsPage() {
+  const PAGE_SIZE = 20;
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [priceRange, setPriceRange] = useState([0, 1000000]);
   const [sortBy, setSortBy] = useState("newest");
@@ -68,12 +69,20 @@ export default function ListingsPage() {
 
   const { data: categories = [] } = useQuery({
     queryKey: ["categories"],
-    queryFn: () => fetch("/api/categories").then((res) => res.json()),
+    queryFn: async () => {
+      const res = await fetch("/api/categories");
+      if (!res.ok) throw new Error("Failed to fetch categories");
+      return res.json();
+    },
   });
 
   const { data: subcategories = [] } = useQuery({
     queryKey: ["subcategories"],
-    queryFn: () => fetch("/api/subcategories").then((res) => res.json()),
+    queryFn: async () => {
+      const res = await fetch("/api/subcategories");
+      if (!res.ok) throw new Error("Failed to fetch subcategories");
+      return res.json();
+    },
   });
 
   const {
@@ -116,16 +125,16 @@ export default function ListingsPage() {
       ) {
         return getFilteredListings({
           page: pageParam,
-          pageSize: 20,
+          pageSize: PAGE_SIZE,
           filters,
           sortBy,
           userLocation,
         });
       }
-      return getListings(pageParam, 20);
+      return getListings(pageParam, PAGE_SIZE);
     },
     getNextPageParam: (lastPage, pages) => {
-      return lastPage.length === 20 ? pages.length + 1 : undefined;
+      return lastPage.length === PAGE_SIZE ? pages.length + 1 : undefined;
     },
     initialPageParam: 1,
   });

@@ -46,26 +46,28 @@ function ListingDetails() {
     queryFn: async () => {
       const response = await fetch(`/api/listings/${params.id}`);
       if (!response.ok) {
-        throw new Error("Failed to fetch listing details");
+        throw new Error(`Failed to fetch listing: ${response.statusText}`);
       }
-      const data = await response.json();
-
-      // Increment view count
-      await fetch(`/api/listings/${params.id}/view`, { method: "POST" });
-
-      // Track event with PostHog
-      if (typeof window !== "undefined" && posthog) {
-        posthog.capture("listing_viewed", {
-          listing_id: data.id,
-          listing_title: data.title,
-          listing_category: data.category.name,
-          seller_id: data.profiles.id,
-        });
-      }
-
-      return data;
+      return response.json();
     },
   });
+
+  useEffect(() => {
+    // Increment view count
+    fetch(`/api/listings/${params.id}/view`, { method: "POST" }).catch(
+      (error) => console.error("Failed to increment view count:", error)
+    );
+
+    // Track event with PostHog
+    if (typeof window !== "undefined" && posthog && listing) {
+      posthog.capture("listing_viewed", {
+        listing_id: listing.id,
+        listing_title: listing.title,
+        listing_category: listing.category.name,
+        seller_id: listing.profiles.id,
+      });
+    }
+  }, [params.id, listing]);
 
   const getDirections = async () => {
     if (!listing?.latitude || !listing?.longitude) {
@@ -152,11 +154,7 @@ function ListingDetails() {
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
       const isAndroid = /Android/.test(navigator.userAgent);
 
-      let mapsUrl = data.externalUrls.googleMaps;
-
-      if (isIOS) {
-        mapsUrl = data.externalUrls.appleMaps;
-      }
+      const mapsUrl = isIOS ? data.externalUrls.appleMaps : data.externalUrls.googleMaps;
 
       window.open(mapsUrl, "_blank");
 

@@ -75,15 +75,15 @@ export async function POST(request: NextRequest) {
       `MPESA_BUSINESS_SHORT_CODE: ${process.env.MPESA_BUSINESS_SHORT_CODE}`,
     );
     logger.debug(
-      `MPESA_PASSKEY (masked): ${process.env.MPESA_PASSKEY ? process.env.MPESA_PASSKEY.substring(0, 5) + "..." : "not set"}`,
+      `MPESA_PASSKEY (masked): ${process.env.MPESA_PASSKEY ? `${process.env.MPESA_PASSKEY.substring(0, 5)}...` : "not set"}`,
     );
     logger.debug(`MPESA_USERNAME: ${process.env.MPESA_USERNAME}`);
     logger.debug(`MPESA_CALLBACK_URL: ${process.env.MPESA_CALLBACK_URL}`);
     logger.debug(
-      `MPESA_CONSUMER_KEY (masked): ${process.env.MPESA_CONSUMER_KEY ? process.env.MPESA_CONSUMER_KEY.substring(0, 5) + "..." : "not set"}`,
+      `MPESA_CONSUMER_KEY (masked): ${process.env.MPESA_CONSUMER_KEY ? `${process.env.MPESA_CONSUMER_KEY.substring(0, 5)}...` : "not set"}`,
     );
     logger.debug(
-      `MPESA_CONSUMER_SECRET (masked): ${process.env.MPESA_CONSUMER_SECRET ? process.env.MPESA_CONSUMER_SECRET.substring(0, 5) + "..." : "not set"}`,
+      `MPESA_CONSUMER_SECRET (masked): ${process.env.MPESA_CONSUMER_SECRET ? `${process.env.MPESA_CONSUMER_SECRET.substring(0, 5)}...` : "not set"}`,
     );
 
     let authResponse;

@@ -61,7 +61,7 @@ function AccountDetails() {
   const queryClient = useQueryClient();
 
   const { data: accountData } = useSuspenseQuery({
-    queryKey: ["accountData", user!.id],
+    queryKey: ["accountData", user?.id],
     queryFn: getAccountData,
   });
 
@@ -259,7 +259,7 @@ function AccountDetails() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto" />
           <p className="mt-4">Loading Form...</p>
         </div>
       </div>
@@ -815,7 +815,7 @@ export default function AccountPage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto" />
           <p className="mt-4">Loading...</p>
         </div>
       </div>
@@ -840,7 +840,7 @@ export default function AccountPage() {
       fallback={
         <div className="min-h-screen flex items-center justify-center">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto" />
             <p className="mt-4">Loading Account Details...</p>
           </div>
         </div>

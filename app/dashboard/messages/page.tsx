@@ -116,42 +116,47 @@ export default function MessagesPage() {
     isLoading: isLoadingMessages,
   } = useQuery<Message[]>({
     queryKey: ["messages", selectedConversation?.id],
-    queryFn: () => fetchMessages(selectedConversation!),
+    queryFn: () => selectedConversation ? fetchMessages(selectedConversation) : Promise.resolve([]),
     enabled: !!selectedConversation,
   });
 
   const sendMessageMutation = useMutation({
-    mutationFn: ({ content }: { content: string }) =>
-      sendMessage(selectedConversation!.id, content),
+    mutationFn: ({ content }: { content: string }) => {
+      if (!selectedConversation) throw new Error("No conversation selected");
+      return sendMessage(selectedConversation.id, content);
+    },
     onMutate: async ({ content }) => {
-      await queryClient.cancelQueries({ queryKey: ["messages", selectedConversation!.id] });
-      const previousMessages = queryClient.getQueryData<Message[]>(["messages", selectedConversation!.id]) || [];
+      if (!selectedConversation) return;
+      await queryClient.cancelQueries({ queryKey: ["messages", selectedConversation.id] });
+      const previousMessages = queryClient.getQueryData<Message[]>(["messages", selectedConversation.id]) || [];
       
       const optimisticMessage: Message = {
         id: `optimistic-${Date.now()}`,
         encrypted_content: content,
         iv: "",
-        sender_id: user!.id,
+        sender_id: user?.id || "",
         created_at: new Date().toISOString(),
       };
 
       queryClient.setQueryData<Message[]>(
-        ["messages", selectedConversation!.id],
+        ["messages", selectedConversation.id],
         [...previousMessages, optimisticMessage],
       );
 
       return { previousMessages, optimisticMessage };
     },
     onError: (err, variables, context) => {
-      if (context?.previousMessages) {
+      if (context?.previousMessages && selectedConversation) {
         queryClient.setQueryData<Message[]>(
-          ["messages", selectedConversation!.id],
+          ["messages", selectedConversation.id],
           context.previousMessages,
         );
       }
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["messages", selectedConversation!.id] });
+      if (selectedConversation) {
+        queryClient.invalidateQueries({ queryKey: ["messages", selectedConversation.id] });
+      }
     },
   });
 

@@ -32,6 +32,9 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({ listingId, revie
 
     setSubmitting(true);
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
       const response = await fetch(`/api/listings/${listingId}/reviews`, {
         method: "POST",
         headers: {
@@ -41,31 +44,37 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({ listingId, revie
           rating: newRating,
           comment: newReview,
         }),
+        signal: controller.signal,
       });
+      clearTimeout(timeoutId);
 
-      if (response.ok) {
-        setNewReview("");
-        setNewRating(0);
-        queryClient.invalidateQueries({ queryKey: ["listing", listingId] });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+      }
+
+      setNewReview("");
+      setNewRating(0);
+      queryClient.invalidateQueries({ queryKey: ["listing", listingId] });
+      toast({
+        title: "Success",
+        description: "Review submitted successfully!",
+      });
+    } catch (error: any) {
+      console.error("Error submitting review:", error);
+      if (error.name === "AbortError") {
         toast({
-          title: "Success",
-          description: "Review submitted successfully!",
+          title: "Request Timed Out",
+          description: "The review submission took too long. Please try again.",
+          variant: "destructive",
         });
       } else {
-        const errorData = await response.json();
         toast({
           title: "Error",
-          description: errorData.error || "Failed to submit review.",
+          description: error.message || "Failed to submit review.",
           variant: "destructive",
         });
       }
-    } catch (error) {
-      console.error("Error submitting review:", error);
-      toast({
-        title: "Error",
-        description: "Failed to submit review.",
-        variant: "destructive",
-      });
     } finally {
       setSubmitting(false);
     }
@@ -85,8 +94,12 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({ listingId, revie
               {[1, 2, 3, 4, 5].map((star) => (
                 <Star
                   key={star}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Rate ${star} star${star > 1 ? 's' : ''}`}
                   className={`cursor-pointer ${newRating >= star ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}`}
                   onClick={() => setNewRating(star)}
+                  onKeyDown={(e) => e.key === 'Enter' && setNewRating(star)}
                 />
               ))}
             </div>

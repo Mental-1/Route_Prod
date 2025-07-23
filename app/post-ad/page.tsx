@@ -262,10 +262,10 @@ export default function PostAdPage() {
       const listingData = {
         title: formData.title,
         description: formData.description,
-        price: parseFloat(formData.price) || null,
+        price: Number.parseFloat(formData.price) || null,
         category_id: formData.category,
         subcategory_id: formData.subcategory
-          ? parseInt(formData.subcategory)
+          ? Number.parseInt(formData.subcategory)
           : null,
         location: finalLocation,
         latitude:

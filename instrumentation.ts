@@ -8,6 +8,11 @@ export async function register() {
   if (process.env.NEXT_RUNTIME === 'edge') {
     await import('./sentry.edge.config');
   }
+
+  // Fallback for unknown or missing runtime
+  if (!process.env.NEXT_RUNTIME) {
+    await import('./sentry.server.config');
+  }
 }
 
 export const onRequestError = Sentry.captureRequestError;

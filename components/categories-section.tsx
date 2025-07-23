@@ -5,6 +5,12 @@ import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
+interface Category {
+  id: number;
+  name: string;
+  icon?: string;
+}
+
 const fallbackCategories = [
   { id: 1, name: "Automobiles", icon: "🚗" },
   { id: 2, name: "Property", icon: "🏠" },
@@ -61,7 +67,7 @@ export default function CategoriesSection() {
           </Button>
         </div>
         <div className="grid grid-cols-4 md:grid-cols-8 gap-3">
-          {data.map((category: any) => (
+          {data.map((category: Category) => (
             <Link
               key={category.id}
               href={`/listings?category=${category.id}`}
