@@ -27,7 +27,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Checkbox } from "@/components/ui/checkbox";
-import { getListings, getFilteredListings, ListingsItem } from "@/lib/data";
+import { Category, Listing } from "@/lib/types/listing";
 import { ListingCardSkeleton } from "@/components/skeletons/listing-card-skeleton";
 import Link from "next/link";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
@@ -218,7 +218,7 @@ export default function ListingsPage() {
               <div className="border-b pb-6">
                 <h3 className="font-medium mb-4">Categories</h3>
                 <div className="space-y-2">
-                  {categories.map((category) => (
+                  {categories.map((category: Category) => (
                     <div
                       key={category.id}
                       className="flex items-center space-x-2"

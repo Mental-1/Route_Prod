@@ -37,3 +37,8 @@ export type Listing = {
   profiles: Profile;
   reviews: Review[];
 };
+
+export type Category = {
+  id: number;
+  name: string;
+};
