@@ -40,6 +40,17 @@ import Image from "next/image";
 type Category = Database["public"]["Tables"]["categories"]["Row"];
 type SubCategory = Database["public"]["Tables"]["subcategories"]["Row"];
 
+const formatLocationData = (location: any) => {
+  const isCoordinates = Array.isArray(location) && location.length === 2;
+  return {
+    displayLocation: isCoordinates
+      ? `Lat: ${location[0]}, Lng: ${location[1]}`
+      : location,
+    latitude: isCoordinates ? location[0] : null,
+    longitude: isCoordinates ? location[1] : null,
+  };
+};
+
 const steps = [
   { id: "details", label: "Details" },
   { id: "payment", label: "Payment" },
@@ -165,6 +176,71 @@ export default function PostAdPage() {
   const [currentTransactionId, setCurrentTransactionId] = useState<
     string | null
   >(null);
+  const [isPollingPayment, setIsPollingPayment] = useState(false);
+
+  const { displayLocation, latitude, longitude } = formatLocationData(
+    formData.location,
+  );
+
+  const pollTransactionStatus = async (transactionId: string, externalId: string) => {
+    const MAX_POLL_ATTEMPTS = 30; // Poll for 5 minutes (30 * 10 seconds)
+    const POLL_INTERVAL_MS = 10000; // 10 seconds
+  
+    let attempts = 0;
+    const interval = setInterval(async () => {
+      attempts++;
+      if (attempts > MAX_POLL_ATTEMPTS) {
+        clearInterval(interval);
+        setIsPollingPayment(false);
+        setIsProcessingPayment(false);
+        setTransactionInProgress(false);
+        toast({
+          title: "Payment Timeout",
+          description: "Payment status could not be confirmed. Please check your payment provider or contact support.",
+          variant: "destructive",
+        });
+        setCurrentStep(methodStepIndex); // Go back to payment step
+        return;
+      }
+  
+      try {
+        const response = await fetch(`/api/payments/status?transactionId=${transactionId}`);
+        if (!response.ok) {
+          throw new Error("Failed to fetch payment status.");
+        }
+        const data = await response.json();
+  
+        if (data.status === "completed") {
+          clearInterval(interval);
+          setPaymentCompleted(true);
+          setIsProcessingPayment(false);
+          setIsPollingPayment(false);
+          setTransactionInProgress(false);
+          toast({
+            title: "Payment Confirmed",
+            description: "Your payment has been successfully processed! You can now submit your ad.",
+            variant: "default",
+          });
+          // User will click "Submit Ad" manually
+        } else if (data.status === "failed" || data.status === "cancelled") {
+          clearInterval(interval);
+          setIsProcessingPayment(false);
+          setIsPollingPayment(false);
+          setTransactionInProgress(false);
+          toast({
+            title: "Payment Failed",
+            description: "Your payment was not successful. Please try again.",
+            variant: "destructive",
+          });
+          setCurrentStep(methodStepIndex); // Go back to payment step
+        }
+        // If status is still 'pending', continue polling
+      } catch (error) {
+        console.error("Polling error:", error);
+        // Continue polling even on network errors, but log them
+      }
+    }, POLL_INTERVAL_MS);
+  };
 
   const handleSubmit = async () => {
     if (transactionInProgress) return;
@@ -200,17 +276,22 @@ export default function PostAdPage() {
             variant: "destructive",
           });
           setIsProcessingPayment(false);
+          setTransactionInProgress(false);
           return;
         }
 
-        // The user will be notified upon completion.
+        // Start polling for payment status
+        setCurrentTransactionId(paymentResult.transactionId);
+        setIsPollingPayment(true);
+        pollTransactionStatus(paymentResult.transactionId, paymentResult.checkoutRequestId || paymentResult.orderID); // Pass external ID for logging/debugging
+
         toast({
-          title: "Payment Processing",
+          title: "Payment Initiated",
           description:
-            "Your payment is being processed. You will be notified upon completion.",
+            "Your payment is being processed. We are awaiting confirmation.",
           variant: "default",
         });
-        // We can advance the step to preview, as the backend will handle the rest.
+        // Advance to preview step to show payment status
         handleAdvanceStep();
         return;
       } catch (error) {
@@ -254,24 +335,11 @@ export default function PostAdPage() {
       );
       const finalMediaUrls = uploadedMediaResults.map((res) => res.url);
 
-      const formatLocationData = (location: any) => {
-        const isCoordinates = Array.isArray(location) && location.length === 2;
-        return {
-          displayLocation: isCoordinates 
-            ? `Lat: ${location[0]}, Lng: ${location[1]}` 
-            : location,
-          latitude: isCoordinates ? location[0] : null,
-          longitude: isCoordinates ? location[1] : null,
-        };
-      };
-
-      const { displayLocation, latitude, longitude } = formatLocationData(formData.location);
-
       const listingData = {
         title: formData.title,
         description: formData.description,
         price: Number.parseFloat(formData.price) || null,
-        category_id: formData.category,
+        category_id: categories.find(cat => cat.name === formData.category)?.id || null,
         subcategory_id: formData.subcategory
           ? Number.parseInt(formData.subcategory)
           : null,
@@ -388,10 +456,20 @@ export default function PostAdPage() {
       },
       body: JSON.stringify(paymentData),
     });
+    const responseData = await response.json();
+
+    let externalId = null;
+    if (paymentMethod === "mpesa") {
+      externalId = responseData.checkoutRequestId;
+    } else if (paymentMethod === "paypal") {
+      externalId = responseData.id; // PayPal order ID
+    }
+
     return {
       success: true,
-      ...(await response.json()),
+      ...responseData,
       transactionId: transaction.id,
+      externalId: externalId,
     };
   };
 
@@ -465,6 +543,9 @@ export default function PostAdPage() {
             formData={formData}
             categories={categories}
             plans={plans}
+            isPollingPayment={isPollingPayment}
+            paymentCompleted={paymentCompleted}
+            displayLocation={displayLocation}
           />
         );
       default:
@@ -524,7 +605,7 @@ export default function PostAdPage() {
                 </Button>
 
                 {currentStep === steps.length - 1 ? (
-                  <Button onClick={handleSubmit} disabled={isSubmitted}>
+                  <Button onClick={handleSubmit} disabled={isSubmitted || isPollingPayment || isProcessingPayment || isPublishingListing || (selectedTier.price > 0 && !paymentCompleted)}>
                     Submit Ad
                   </Button>
                 ) : (
@@ -536,7 +617,7 @@ export default function PostAdPage() {
                         ? handleSubmit
                         : handleAdvanceStep
                     }
-                    disabled={isSubmitted}
+                    disabled={isSubmitted || isPollingPayment || isProcessingPayment || isPublishingListing}
                   >
                     {currentStep === methodStepIndex &&
                     selectedTier.price > 0 &&
@@ -1227,10 +1308,16 @@ function PreviewStep({
   formData,
   categories,
   plans,
+  isPollingPayment,
+  paymentCompleted,
+  displayLocation,
 }: {
   formData: any;
   categories: any[];
   plans: Plan[];
+  isPollingPayment: boolean;
+  paymentCompleted: boolean;
+  displayLocation: string;
 }) {
   const selectedTier =
     plans.find((tier) => tier.id === formData.paymentTier) || plans[0];
@@ -1238,11 +1325,15 @@ function PreviewStep({
     (cat) => cat.id === Number.parseInt(formData.category, 10),
   );
 
-  const { displayLocation } = formatLocationData(formData.location);
-
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-semibold">Preview Your Ad</h2>
+      {isPollingPayment && !paymentCompleted && (
+        <div className="flex items-center justify-center p-4 rounded-lg bg-yellow-100 border border-yellow-300">
+          <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-yellow-500 mr-3"></div>
+          <p className="text-yellow-800 font-medium">Payment pending confirmation...</p>
+        </div>
+      )}
       <Card>
         <CardContent className="p-6">
           <div className="space-y-4">
