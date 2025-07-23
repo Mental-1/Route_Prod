@@ -4,10 +4,9 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Category as BaseCategory } from "@/lib/types/listing";
 
-interface Category {
-  id: number;
-  name: string;
+interface Category extends BaseCategory {
   icon?: string;
 }
 

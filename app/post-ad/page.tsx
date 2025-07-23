@@ -254,10 +254,18 @@ export default function PostAdPage() {
       );
       const finalMediaUrls = uploadedMediaResults.map((res) => res.url);
 
-      const finalLocation =
-        Array.isArray(formData.location) && formData.location.length === 2
-          ? `Lat: ${formData.location[0]}, Lng: ${formData.location[1]}`
-          : formData.location;
+      const formatLocationData = (location: any) => {
+        const isCoordinates = Array.isArray(location) && location.length === 2;
+        return {
+          displayLocation: isCoordinates 
+            ? `Lat: ${location[0]}, Lng: ${location[1]}` 
+            : location,
+          latitude: isCoordinates ? location[0] : null,
+          longitude: isCoordinates ? location[1] : null,
+        };
+      };
+
+      const { displayLocation, latitude, longitude } = formatLocationData(formData.location);
 
       const listingData = {
         title: formData.title,
@@ -267,15 +275,9 @@ export default function PostAdPage() {
         subcategory_id: formData.subcategory
           ? Number.parseInt(formData.subcategory)
           : null,
-        location: finalLocation,
-        latitude:
-          Array.isArray(formData.location) && formData.location.length === 2
-            ? formData.location[0]
-            : null,
-        longitude:
-          Array.isArray(formData.location) && formData.location.length === 2
-            ? formData.location[1]
-            : null,
+        location: displayLocation,
+        latitude: latitude,
+        longitude: longitude,
         condition: formData.condition,
         images: finalMediaUrls,
         tags: formData.tags,
@@ -1044,6 +1046,8 @@ function PaymentMethodStep({
                     <Image
                       src="/mpesa_logo.png"
                       alt="M-Pesa Logo"
+                      width={48}
+                      height={48}
                       className="w-12 h-12 object-contain rounded-lg"
                     />
                     <div>
@@ -1069,6 +1073,8 @@ function PaymentMethodStep({
                     <Image
                       src="/PayStack_Logo.png"
                       alt="Paystack Logo"
+                      width={48}
+                      height={48}
                       className="w-12 h-12 object-contain rounded-lg"
                     />
                     <div>
@@ -1094,6 +1100,8 @@ function PaymentMethodStep({
                     <Image
                       src="/PayPal_Logo.png"
                       alt="PayPal Logo"
+                      width={48}
+                      height={48}
                       className="w-12 h-12 object-contain rounded-lg"
                     />
                     <div>
@@ -1137,27 +1145,69 @@ function PaymentMethodStep({
             <PayPalButtons
               style={{ layout: "vertical" }}
               createOrder={async (data, actions) => {
-                const res = await fetch("/api/payments/paypal", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    amount: selectedTier.price,
-                    description: `Bidsy Listing - ${selectedTier.name} Plan`,
-                  }),
-                });
-                const order = await res.json();
-                return order.id;
+                try {
+                  const res = await fetch("/api/payments/paypal", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      amount: selectedTier.price,
+                      description: `Bidsy Payment - ${selectedTier.name} Plan`,
+                    }),
+                  });
+                  if (!res.ok) {
+                    const errorData = await res.json();
+                    throw new Error(errorData.error || "Failed to create PayPal order.");
+                  }
+                  const order = await res.json();
+                  return order.id;
+                } catch (error: any) {
+                  console.error("Error creating PayPal order:", error);
+                  toast({
+                    title: "Payment Error",
+                    description: error.message || "Failed to initiate PayPal payment. Please try again.",
+                    variant: "destructive",
+                  });
+                  throw error; // Re-throw to stop the PayPal flow
+                }
               }}
               onApprove={async (data, actions) => {
-                const res = await fetch("/api/payments/paypal/capture", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ orderID: data.orderID }),
-                });
-                const details = await res.json();
+                try {
+                  const res = await fetch("/api/payments/paypal/capture", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ orderID: data.orderID }),
+                  });
+                  if (!res.ok) {
+                    const errorData = await res.json();
+                    throw new Error(errorData.error || "Failed to capture PayPal payment.");
+                  }
+                  const details = await res.json();
+                  toast({
+                    title: "Payment Successful",
+                    description: "Your payment has been processed successfully.",
+                  });
+                } catch (error: any) {
+                  console.error("Error capturing PayPal payment:", error);
+                  toast({
+                    title: "Payment Failed",
+                    description: error.message || "There was an error processing your payment. Please try again.",
+                    variant: "destructive",
+                  });
+                }
+              }}
+              onError={(err) => {
+                console.error("PayPal error:", err);
                 toast({
-                  title: "Payment Successful",
-                  description: "Your payment has been processed successfully.",
+                  title: "Payment Failed",
+                  description: "There was an error processing your payment. Please try again.",
+                  variant: "destructive",
+                });
+              }}
+              onCancel={() => {
+                toast({
+                  title: "Payment Cancelled",
+                  description: "You cancelled the payment. Please try again when ready.",
+                  variant: "default",
                 });
               }}
             />
@@ -1188,11 +1238,7 @@ function PreviewStep({
     (cat) => cat.id === Number.parseInt(formData.category, 10),
   );
 
-  // Helper for location display
-  const displayLocation =
-    Array.isArray(formData.location) && formData.location.length > 0
-      ? `Lat: ${formData.location[0]}, Lng: ${formData.location[1]}`
-      : formData.location || "Not specified";
+  const { displayLocation } = formatLocationData(formData.location);
 
   return (
     <div className="space-y-6">
