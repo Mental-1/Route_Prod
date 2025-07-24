@@ -15,13 +15,6 @@ import { ConversationListSkeleton } from "@/components/skeletons/conversations-s
 import { ChatSkeleton } from "@/components/skeletons/chat-skeleton";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation"; // Import useSearchParams
-import dynamic from "next/dynamic";
-
-// Dynamically import the Web Worker to ensure it's only loaded on the client-side
-const DecryptorWorker = dynamic(() => import('@/lib/message-decryptor.worker?worker'), {
-  ssr: false,
-  loading: () => null, // Or a loading indicator if needed
-});
 
 interface User {
   id: string;
@@ -121,7 +114,13 @@ export default function MessagesPage() {
   const decryptorWorker = useRef<Worker | null>(null);
 
   useEffect(() => {
-    decryptorWorker.current = new DecryptorWorker();
+    if (typeof window !== 'undefined') {
+      import('@/lib/message-decryptor.worker?worker')
+        .then(({ default: WorkerConstructor }) => {
+          decryptorWorker.current = new WorkerConstructor();
+        })
+        .catch(error => console.error("Failed to load worker:", error));
+    }
 
     return () => {
       decryptorWorker.current?.terminate();
