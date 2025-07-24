@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Bell,
   Check,
@@ -60,15 +60,10 @@ export function NotificationDropdown({
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
+
   const supabase = getSupabaseClient();
 
-  useEffect(() => {
-    if (open) {
-      fetchNotifications();
-    }
-  }, [open, fetchNotifications]);
-
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
     try {
       setLoading(true);
       const { data, error } = await supabase
@@ -95,7 +90,13 @@ export function NotificationDropdown({
     } finally {
       setLoading(false);
     }
-  };
+  }, [supabase, setNotifications, toast]);
+
+  useEffect(() => {
+    if (open) {
+      fetchNotifications();
+    }
+  }, [open, fetchNotifications]);
 
   const markAsRead = async (notificationId: string) => {
     try {

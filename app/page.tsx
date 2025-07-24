@@ -15,6 +15,7 @@ import { useRouter } from "next/navigation";
 import { useSuspenseQuery, useInfiniteQuery } from "@tanstack/react-query";
 import { ErrorBoundary } from "react-error-boundary";
 import { RecentListingsSkeleton } from "@/components/skeletons/recent-listings-skeleton";
+import Image from "next/image";
 
 const CategoriesSection = dynamic(
   () => import("../components/categories-section"),
@@ -58,15 +59,17 @@ function RecentListings() {
       { threshold: 1.0 },
     );
 
-    if (loadingRef.current) {
-      observer.observe(loadingRef.current);
+    const currentLoadingRef = loadingRef.current; // Capture the current value
+
+    if (currentLoadingRef) {
+      observer.observe(currentLoadingRef);
     }
 
     observerRef.current = observer;
 
     return () => {
-      if (loadingRef.current && observerRef.current) {
-        observerRef.current.unobserve(loadingRef.current);
+      if (currentLoadingRef && observerRef.current) { // Use the captured value
+        observerRef.current.unobserve(currentLoadingRef);
       }
       observerRef.current?.disconnect();
     };

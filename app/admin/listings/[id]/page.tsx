@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Listing } from "@/lib/types/listing";
+import Image from "next/image";
 
 const ListingModerationActions = ({ listing }: { listing: Listing }) => {
   const router = useRouter();
@@ -92,7 +93,6 @@ export default function ListingPreviewPage({
   }, [params.id, router]);
 
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
-    // Check if the event target is an input, textarea, or contenteditable element
     const target = event.target as HTMLElement;
     if (
       target.tagName === "INPUT" ||

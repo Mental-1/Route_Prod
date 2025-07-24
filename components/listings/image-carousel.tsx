@@ -10,6 +10,7 @@ import {
   Volume2,
   VolumeX,
 } from "lucide-react";
+import Image from "next/image";
 
 interface ImageCarouselProps {
   images: string[];

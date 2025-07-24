@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import Image from "next/image";
 import { getSupabaseClient } from "@/utils/supabase/client";
 import { ChevronLeft, Edit, Trash2, Eye, Star, Clock, MapPin, Calendar, TrendingUp } from "lucide-react";
 import {
@@ -52,16 +53,7 @@ export default function UserListingsPage() {
   const [listings, setListings] = useState<Listing[]>([]);
   const [userPlan, setUserPlan] = useState<string>("free");
 
-  useEffect(() => {
-    if (!isLoading && user) {
-      fetchUserListings();
-      fetchUserPlan();
-    } else if (!isLoading && !user) {
-      router.push("/auth");
-    }
-  }, [user, isLoading, fetchUserListings, fetchUserPlan, router]);
-
-  const fetchUserListings = async () => {
+  const fetchUserListings = useCallback(async () => {
     try {
       const supabase = getSupabaseClient();
 
@@ -106,9 +98,9 @@ export default function UserListingsPage() {
     } catch (error) {
       console.error("Error:", error);
     }
-  };
+  }, [user, toast, setListings]);
 
-  const fetchUserPlan = async () => {
+  const fetchUserPlan = useCallback(async () => {
     try {
       const supabase = getSupabaseClient();
 
@@ -126,7 +118,16 @@ export default function UserListingsPage() {
     } catch (error) {
       console.error("Error fetching user plan:", error);
     }
-  };
+  }, [user, setUserPlan]);
+
+  useEffect(() => {
+    if (!isLoading && user) {
+      fetchUserListings();
+      fetchUserPlan();
+    } else if (!isLoading && !user) {
+      router.push("/auth");
+    }
+  }, [user, isLoading, fetchUserListings, fetchUserPlan, router]);
 
   const canEdit = (listing: Listing) => {
     const createdAt = new Date(listing.created_at);

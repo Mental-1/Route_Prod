@@ -13,6 +13,7 @@ import {
 } from "@tanstack/react-query";
 import { ConversationListSkeleton } from "@/components/skeletons/conversations-skeleton";
 import { ChatSkeleton } from "@/components/skeletons/chat-skeleton";
+import Image from "next/image";
 
 interface User {
   id: string;

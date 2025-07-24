@@ -51,10 +51,7 @@ export default function MapViewPage() {
     setIsOpen(!isOpen);
   };
 
-  const debouncedSetDistance = useCallback(
-    debounce(setDebouncedDistance, 500),
-    [],
-  );
+  const debouncedSetDistance = useRef(debounce(setDebouncedDistance, 500)).current;
 
   useEffect(() => {
     debouncedSetDistance(distance);

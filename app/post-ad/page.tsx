@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -94,6 +94,10 @@ export default function PostAdPage() {
   // Add dialog state and manual location state
   const [locationDialogOpen, setLocationDialogOpen] = useState(false);
   const [manualLocation, setManualLocation] = useState("");
+
+  const updateFormData = useCallback((data: Partial<typeof formData>) => {
+    setFormData((prev) => ({ ...prev, ...data }));
+  }, []);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -473,9 +477,7 @@ export default function PostAdPage() {
     };
   };
 
-  const updateFormData = (data: Partial<typeof formData>) => {
-    setFormData((prev) => ({ ...prev, ...data }));
-  };
+  
 
   // Detect location function with high accuracy
   const detectLocation = () => {
@@ -1356,10 +1358,12 @@ function PreviewStep({
                 {formData.mediaUrls
                   .slice(0, 4)
                   .map((url: string, index: number) => (
-                    <img
+                    <Image
                       key={index}
                       src={url || "/placeholder.svg"}
                       alt={`Preview ${index + 1}`}
+                      width={128}
+                      height={128}
                       className="w-full h-24 object-cover rounded-lg"
                     />
                   ))}
