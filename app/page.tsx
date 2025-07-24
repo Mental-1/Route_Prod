@@ -17,7 +17,6 @@ const CategoriesSection = dynamic(
         <CategoriesSkeleton />
       </div>
     ),
-    ssr: false,
   },
 );
 
