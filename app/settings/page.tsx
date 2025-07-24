@@ -32,6 +32,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Bell, Shield, Globe, Download, Trash2, ChevronLeft } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 import Link from "next/link";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 const defaultSettings: UserSettings = {
   notifications: {
@@ -63,53 +64,47 @@ const defaultSettings: UserSettings = {
  * Displays loading indicators while user or settings data is being fetched. If the user is not authenticated, prompts for login or account creation. Provides controls for updating notification preferences, privacy options, language, currency, timezone, exporting user data, and deleting the account.
  */
 export default function SettingsPage() {
-  const { user, isLoading } = useAuth();
-  const [settings, setSettings] = useState<UserSettings>(defaultSettings);
-  const [isSettingsLoading, setIsSettingsLoading] = useState(true);
-  const [availableLanguages, setAvailableLanguages] = useState<
-    { code: string; name: string }[]
-  >([]);
+  const { user, isLoading: isUserLoading } = useAuth();
+  const queryClient = useQueryClient();
   const router = useRouter();
 
+  const {
+    data: settings,
+    isLoading: isSettingsLoading,
+    error: settingsError,
+    refetch: refetchSettings,
+  } = useQuery<UserSettings>({
+    queryKey: ["userSettings", user?.id],
+    queryFn: async () => {
+      if (!user) return defaultSettings; // Return default if no user
+      const fetchedSettings = await getSettings();
+      return fetchedSettings || defaultSettings; // Ensure a default is always returned
+    },
+    enabled: !!user, // Only run this query if user is available
+    initialData: defaultSettings, // Provide initial data to prevent undefined
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
+  });
+
+  const {
+    data: availableLanguages,
+    isLoading: isLanguagesLoading,
+    error: languagesError,
+  } = useQuery<{ code: string; name: string }[]>({
+    queryKey: ["availableLanguages"],
+    queryFn: getAvailableLanguages,
+    staleTime: Infinity, // Languages are static, so never stale
+    gcTime: Infinity, // Never garbage collect
+  });
+
+  // Use a local state to manage form changes, initialized from query data
+  const [localSettings, setLocalSettings] = useState<UserSettings>(settings);
+
   useEffect(() => {
-    const fetchInitialSettings = async () => {
-      setIsSettingsLoading(true);
-      try {
-        const fetchedSettings = await getSettings();
-        if (fetchedSettings) {
-          // Deep merge fetched settings with defaults
-          setSettings((prevSettings) => ({
-            ...prevSettings,
-            ...fetchedSettings,
-            notifications: {
-              ...prevSettings.notifications,
-              ...fetchedSettings.notifications,
-            },
-            privacy: {
-              ...prevSettings.privacy,
-              ...fetchedSettings.privacy,
-            },
-            preferences: {
-              ...prevSettings.preferences,
-              ...fetchedSettings.preferences,
-            },
-          }));
-        }
-        const languages = await getAvailableLanguages();
-        setAvailableLanguages(languages);
-      } catch (error) {
-        console.error("Failed to fetch initial settings:", error);
-        // Default settings are already set, so we can just log the error
-      } finally {
-        setIsSettingsLoading(false);
-      }
-    };
-    if (user) {
-      fetchInitialSettings();
-    } else if (!isLoading) {
-      setIsSettingsLoading(false);
+    if (settings) {
+      setLocalSettings(settings);
     }
-  }, [user, isLoading]);
+  }, [settings]);
 
   const handleSaveSettings = async () => {
     if (!user) {
@@ -120,7 +115,20 @@ export default function SettingsPage() {
       });
       return;
     }
-    await saveSettings(settings);
+    try {
+      await saveSettings(localSettings);
+      toast({
+        title: "Success",
+        description: "Your settings have been saved.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["userSettings", user.id] }); // Invalidate to refetch latest
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to save settings.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleDeleteAccount = async () => {
@@ -137,7 +145,20 @@ export default function SettingsPage() {
         });
         return;
       }
-      await deleteAccountById(user.id);
+      try {
+        await deleteAccountById(user.id);
+        toast({
+          title: "Success",
+          description: "Your account has been deleted.",
+        });
+        router.push("/"); // Redirect to home or login page
+      } catch (error: any) {
+        toast({
+          title: "Error",
+          description: error.message || "Failed to delete account.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -150,15 +171,37 @@ export default function SettingsPage() {
       });
       return;
     }
-    await exportUserData(user.id);
+    try {
+      await exportUserData(user.id);
+      toast({
+        title: "Success",
+        description: "Your data export has started.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to export data.",
+        variant: "destructive",
+      });
+    }
   };
 
-  if (isLoading || isSettingsLoading) {
+  if (isUserLoading || isSettingsLoading || isLanguagesLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto"></div>
           <p className="mt-4">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (settingsError || languagesError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center text-red-600">
+          <p>Error loading settings: {settingsError?.message || languagesError?.message}</p>
         </div>
       </div>
     );
@@ -220,9 +263,9 @@ export default function SettingsPage() {
                 </div>
                 <Switch
                   id="email-notifications"
-                  checked={settings.notifications?.email_notifications}
+                  checked={localSettings.notifications?.email_notifications}
                   onCheckedChange={(checked) =>
-                    setSettings((prev) => ({
+                    setLocalSettings((prev) => ({
                       ...prev,
                       notifications: {
                         ...prev.notifications,
@@ -242,9 +285,9 @@ export default function SettingsPage() {
                 </div>
                 <Switch
                   id="push-notifications"
-                  checked={settings.notifications?.push_notifications}
+                  checked={localSettings.notifications?.push_notifications}
                   onCheckedChange={(checked) =>
-                    setSettings((prev) => ({
+                    setLocalSettings((prev) => ({
                       ...prev,
                       notifications: {
                         ...prev.notifications,
@@ -264,9 +307,9 @@ export default function SettingsPage() {
                 </div>
                 <Switch
                   id="sms-notifications"
-                  checked={settings.notifications?.sms_notifications}
+                  checked={localSettings.notifications?.sms_notifications}
                   onCheckedChange={(checked) =>
-                    setSettings((prev) => ({
+                    setLocalSettings((prev) => ({
                       ...prev,
                       notifications: {
                         ...prev.notifications,
@@ -288,9 +331,9 @@ export default function SettingsPage() {
                 </div>
                 <Switch
                   id="new-messages"
-                  checked={settings.notifications?.new_messages}
+                  checked={localSettings.notifications?.new_messages}
                   onCheckedChange={(checked) =>
-                    setSettings((prev) => ({
+                    setLocalSettings((prev) => ({
                       ...prev,
                       notifications: {
                         ...prev.notifications,
@@ -310,9 +353,9 @@ export default function SettingsPage() {
                 </div>
                 <Switch
                   id="listing-updates"
-                  checked={settings.notifications?.listing_updates}
+                  checked={localSettings.notifications?.listing_updates}
                   onCheckedChange={(checked) =>
-                    setSettings((prev) => ({
+                    setLocalSettings((prev) => ({
                       ...prev,
                       notifications: {
                         ...prev.notifications,
@@ -332,9 +375,9 @@ export default function SettingsPage() {
                 </div>
                 <Switch
                   id="marketing-emails"
-                  checked={settings.notifications?.marketing_emails}
+                  checked={localSettings.notifications?.marketing_emails}
                   onCheckedChange={(checked) =>
-                    setSettings((prev) => ({
+                    setLocalSettings((prev) => ({
                       ...prev,
                       notifications: {
                         ...prev.notifications,
@@ -369,9 +412,9 @@ export default function SettingsPage() {
                   </p>
                 </div>
                 <Select
-                  value={settings.privacy?.profile_visibility}
+                  value={localSettings.privacy?.profile_visibility}
                   onValueChange={(value) =>
-                    setSettings((prev) => ({
+                    setLocalSettings((prev) => ({
                       ...prev,
                       privacy: {
                         ...prev.privacy,
@@ -403,9 +446,9 @@ export default function SettingsPage() {
                 </div>
                 <Switch
                   id="show-phone"
-                  checked={settings.privacy?.show_phone}
+                  checked={localSettings.privacy?.show_phone}
                   onCheckedChange={(checked) =>
-                    setSettings((prev) => ({
+                    setLocalSettings((prev) => ({
                       ...prev,
                       privacy: { ...prev.privacy, show_phone: checked },
                     }))
@@ -422,9 +465,9 @@ export default function SettingsPage() {
                 </div>
                 <Switch
                   id="show-email"
-                  checked={settings.privacy?.show_email}
+                  checked={localSettings.privacy?.show_email}
                   onCheckedChange={(checked) =>
-                    setSettings((prev) => ({
+                    setLocalSettings((prev) => ({
                       ...prev,
                       privacy: { ...prev.privacy, show_email: checked },
                     }))
@@ -441,9 +484,9 @@ export default function SettingsPage() {
                 </div>
                 <Switch
                   id="show-last-seen"
-                  checked={settings.privacy?.show_last_seen}
+                  checked={localSettings.privacy?.show_last_seen}
                   onCheckedChange={(checked) =>
-                    setSettings((prev) => ({
+                    setLocalSettings((prev) => ({
                       ...prev,
                       privacy: { ...prev.privacy, show_last_seen: checked },
                     }))
@@ -471,9 +514,9 @@ export default function SettingsPage() {
                 <div className="space-y-2">
                   <Label htmlFor="language">Language</Label>
                   <Select
-                    value={settings.preferences?.language}
+                    value={localSettings.preferences?.language}
                     onValueChange={(value) =>
-                      setSettings((prev) => ({
+                      setLocalSettings((prev) => ({
                         ...prev,
                         preferences: { ...prev.preferences, language: value },
                       }))
@@ -483,7 +526,7 @@ export default function SettingsPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {availableLanguages.map((lang) => (
+                      {availableLanguages?.map((lang) => (
                         <SelectItem key={lang.code} value={lang.code}>
                           {lang.name}
                         </SelectItem>
@@ -495,9 +538,9 @@ export default function SettingsPage() {
                 <div className="space-y-2">
                   <Label htmlFor="currency">Currency</Label>
                   <Select
-                    value={settings.preferences?.currency}
+                    value={localSettings.preferences?.currency}
                     onValueChange={(value) =>
-                      setSettings((prev) => ({
+                      setLocalSettings((prev) => ({
                         ...prev,
                         preferences: { ...prev.preferences, currency: value },
                       }))
@@ -518,9 +561,9 @@ export default function SettingsPage() {
                 <div className="space-y-2">
                   <Label htmlFor="timezone">Timezone</Label>
                   <Select
-                    value={settings.preferences?.timezone}
+                    value={localSettings.preferences?.timezone}
                     onValueChange={(value) =>
-                      setSettings((prev) => ({
+                      setLocalSettings((prev) => ({
                         ...prev,
                         preferences: { ...prev.preferences, timezone: value },
                       }))

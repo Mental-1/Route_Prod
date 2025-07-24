@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+import Image from "next/image"; // Import Image component
+import { useTheme } from "next-themes"; // Import useTheme
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -16,7 +19,6 @@ import {
   Settings,
   Plus,
 } from "lucide-react";
-import { useState } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/contexts/auth-context";
@@ -198,7 +200,7 @@ export default function Navigation() {
                     >
                       Account
                     </Button>
-                     <Button
+                    <Button
                       variant="ghost"
                       className="justify-start"
                       onClick={() => router.push("/dashboard")}

@@ -453,7 +453,7 @@ function ListingDetails() {
                       target="_blank"
                       rel="noopener noreferrer"
                     >
-                      <Button className="w-full">
+                      <Button className="w-full bg-green-600 text-white ring-2 ring-green-600 hover:bg-green-700">
                         <MessageCircle className="h-4 w-4 mr-2" />
                         WhatsApp
                       </Button>

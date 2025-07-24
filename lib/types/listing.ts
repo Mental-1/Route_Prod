@@ -1,5 +1,31 @@
 import { Profile } from "./profile";
 
+export interface DisplayListingItem {
+  id: string;
+  title: string;
+  description: string | null;
+  price: number | null;
+  location: string | null;
+  views: number | null;
+  images: string[] | null;
+  condition: string | null;
+  distance?: string;
+}
+
+export interface ListingsItem {
+  id: string;
+  title: string;
+  description: string | null;
+  price: number | null;
+  images: string[] | null;
+  condition: string | null;
+  location: string | null;
+  views: number | null;
+  category_id: number | null;
+  subcategory_id: number | null;
+  created_at: string | null;
+}
+
 export type Review = {
   id: string;
   listing_id: string;

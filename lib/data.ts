@@ -1,30 +1,5 @@
 import { getSupabaseClient } from "@/utils/supabase/client";
-
-export interface DisplayListingItem {
-  id: string;
-  title: string;
-  description: string | null;
-  price: number | null;
-  location: string | null;
-  views: number | null;
-  images: string[] | null;
-  condition: string | null;
-  distance?: string;
-}
-
-export interface ListingsItem {
-  id: string;
-  title: string;
-  description: string | null;
-  price: number | null;
-  images: string[] | null;
-  condition: string | null;
-  location: string | null;
-  views: number | null;
-  category_id: number | null;
-  subcategory_id: number | null;
-  created_at: string | null;
-}
+import { DisplayListingItem, ListingsItem } from "@/lib/types/listing";
 
 /**
  * Retrieves up to eight of the most recent listings created within the last four days.
