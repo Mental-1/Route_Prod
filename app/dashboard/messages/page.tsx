@@ -122,6 +122,16 @@ export default function MessagesPage() {
     };
   }, []);
 
+  const {
+    data: conversations = [],
+    isLoading: isLoadingConversations,
+    error: conversationsError,
+  } = useQuery<Conversation[]>({
+    queryKey: ["conversations"],
+    queryFn: fetchConversations,
+    enabled: !!user,
+  });
+
   useEffect(() => {
     const conversationIdFromUrl = searchParams.get("conversationId");
     if (conversationIdFromUrl && conversations.length > 0) {
@@ -133,16 +143,6 @@ export default function MessagesPage() {
       }
     }
   }, [searchParams, conversations]);
-
-  const {
-    data: conversations = [],
-    isLoading: isLoadingConversations,
-    error: conversationsError,
-  } = useQuery<Conversation[]>({
-    queryKey: ["conversations"],
-    queryFn: fetchConversations,
-    enabled: !!user,
-  });
 
   const {
     data: messages = [],
