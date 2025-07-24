@@ -15,7 +15,13 @@ import { ConversationListSkeleton } from "@/components/skeletons/conversations-s
 import { ChatSkeleton } from "@/components/skeletons/chat-skeleton";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation"; // Import useSearchParams
-import DecryptorWorker from '@/lib/message-decryptor.worker?worker'; // Import the Web Worker
+import dynamic from "next/dynamic";
+
+// Dynamically import the Web Worker to ensure it's only loaded on the client-side
+const DecryptorWorker = dynamic(() => import('@/lib/message-decryptor.worker?worker'), {
+  ssr: false,
+  loading: () => null, // Or a loading indicator if needed
+});
 
 interface User {
   id: string;
