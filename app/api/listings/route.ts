@@ -108,12 +108,12 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
 
-    // 1. Fetch the category ID from the database
-    const categoryName = body.category_id || "Other";
+    // 1. Fetch the category from the database using the ID
+    const categoryId = body.category_id;
     const { data: category, error: categoryError } = await supabase
       .from("categories")
       .select("id")
-      .eq("name", categoryName)
+      .eq("id", categoryId)
       .single();
 
     if (categoryError || !category) {

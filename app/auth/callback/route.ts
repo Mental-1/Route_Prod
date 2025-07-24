@@ -36,3 +36,30 @@ export async function POST(request: Request) {
     );
   }
 }
+
+/**
+ * Handles Supabase OAuth callbacks by exchanging the authorization code for a session.
+ *
+ * This function is called by Supabase after a successful OAuth authentication (e.g., Google sign-in).
+ * It extracts the 'code' from the URL, exchanges it for a user session, and redirects to the origin.
+ *
+ * @param request The NextRequest object containing the URL with the 'code' parameter.
+ * @returns A redirect response to the origin or an error response.
+ */
+export async function GET(request: Request) {
+  const { searchParams, origin } = new URL(request.url);
+  const code = searchParams.get("code");
+  // if "next" is in param, use it as the redirect URL
+  const next = searchParams.get("next") ?? "/";
+
+  if (code) {
+    const supabase = await getSupabaseRouteHandler(cookies);
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    if (!error) {
+      return NextResponse.redirect(`${origin}${next}`);
+    }
+  }
+
+  // return the user to an error page with instructions
+  return NextResponse.redirect(`${origin}/auth/auth-error`);
+}
