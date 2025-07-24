@@ -10,7 +10,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Search,
-  MapPin,
   Menu,
   X,
   User,
@@ -137,8 +136,7 @@ export default function Navigation() {
     <div className="container flex h-16 items-center justify-between">
       <div className="flex items-center gap-6">
         <Link href="/" className="flex items-center space-x-2">
-          <MapPin className="h-6 w-6 text-primary" />
-          <span className="text-xl font-bold">RouteMe</span>
+          <Image src="/RouteMe_logo.png" alt="RouteMe Logo" width={32} height={32} className="h-6 w-6" />
         </Link>
         <nav className="hidden md:flex items-center gap-6">
           {routes.map((route) => (
@@ -175,8 +173,7 @@ export default function Navigation() {
           <SheetContent side="left">
             <div className="flex flex-col gap-6 py-4">
               <Link href="/" className="flex items-center space-x-2">
-                <MapPin className="h-6 w-6 text-primary" />
-                <span className="text-xl font-bold">RouteMe</span>
+                <Image src="/RouteMe_logo.png" alt="RouteMe Logo" width={32} height={32} className="h-6 w-6" />
               </Link>
               <nav className="flex flex-col gap-4">
                 {routes.map((route) => (

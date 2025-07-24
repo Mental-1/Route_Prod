@@ -22,6 +22,7 @@ export default async function ListingsPage({
   const priceMaxParam = searchParams.priceMax;
   const distanceParam = searchParams.distance;
   const subcategoryParam = searchParams.subcategory;
+  const searchQueryParam = searchParams.search; // Read the search query parameter
 
   const initialFilters = {
     categories: categoryParam
@@ -40,6 +41,7 @@ export default async function ListingsPage({
       max: priceMaxParam ? Number(priceMaxParam) : 1000000,
     },
     maxDistance: distanceParam ? Number(distanceParam) : 5,
+    searchQuery: searchQueryParam ? String(searchQueryParam) : undefined, // Add searchQuery to initialFilters
   };
 
   // Determine if any filters are active for the initial server fetch
@@ -49,7 +51,7 @@ export default async function ListingsPage({
       return filterValue.min > 0 || filterValue.max < 1000000;
     }
     return filterValue !== undefined && filterValue !== 5;
-  });
+  }) || (searchQueryParam !== undefined && searchQueryParam !== ""); // Include searchQuery in filter active check
 
   // Server-side data fetching
   const initialListings = await queryClient.fetchQuery({
@@ -60,6 +62,7 @@ export default async function ListingsPage({
       initialFilters.conditions,
       initialFilters.priceRange,
       initialFilters.maxDistance,
+      initialFilters.searchQuery, // Add searchQuery to queryKey
       "newest",
       null,
     ],
@@ -71,6 +74,7 @@ export default async function ListingsPage({
           filters: initialFilters,
           sortBy: "newest",
           userLocation: null,
+          searchQuery: initialFilters.searchQuery, // Pass searchQuery to getFilteredListings
         });
       }
       return getListings(1, PAGE_SIZE);

@@ -18,6 +18,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { getFilteredListings, getListings } from "@/lib/data";
+import { formatPrice } from "@/lib/utils";
 
 interface ListingsDisplayProps {
   initialListings: DisplayListingItem[];
@@ -27,6 +28,7 @@ interface ListingsDisplayProps {
     conditions?: string[];
     priceRange?: { min: number; max: number };
     maxDistance?: number;
+    searchQuery?: string; // Added searchQuery
   };
 }
 
@@ -54,6 +56,7 @@ export function ListingsDisplay({
       initialFilters.conditions,
       initialFilters.priceRange,
       initialFilters.maxDistance,
+      initialFilters.searchQuery, // Added searchQuery to queryKey
       sortBy,
       userLocation,
     ],
@@ -73,7 +76,7 @@ export function ListingsDisplay({
           return filterValue.min > 0 || filterValue.max < 1000000;
         }
         return filterValue !== undefined;
-      });
+      }) || (initialFilters.searchQuery !== undefined && initialFilters.searchQuery !== ""); // Include searchQuery in filter active check
 
       if (isFilterActive) {
         return getFilteredListings({
@@ -82,6 +85,7 @@ export function ListingsDisplay({
           filters,
           sortBy,
           userLocation,
+          searchQuery: initialFilters.searchQuery, // Pass searchQuery to getFilteredListings
         });
       }
       return getListings(pageParam, PAGE_SIZE);
@@ -224,7 +228,7 @@ export function ListingsDisplay({
                       {listing.title}
                     </h3>
                     <p className="text-lg font-bold text-green-600 mb-1">
-                      Ksh{listing.price}
+                      Ksh {formatPrice(listing.price)}
                     </p>
                     <p className="text-xs text-muted-foreground mb-2 line-clamp-2">
                       {listing.description}
@@ -255,7 +259,7 @@ export function ListingsDisplay({
             <Link key={listing.id} href={`/listings/${listing.id}`}>
               <Card
                 key={listing.id}
-                className="overflow-hidden border-0 hover:shadow-md transition-shadow"
+                className="overflow-hidden border hover:shadow-md transition-shadow"
               >
                 <CardContent className="p-0">
                   <div className="flex flex-col sm:flex-row">
@@ -278,7 +282,7 @@ export function ListingsDisplay({
                           {listing.title}
                         </h3>
                         <p className="text-xl font-bold text-green-600">
-                          Ksh{listing.price}
+                          Ksh {formatPrice(listing.price)}
                         </p>
                       </div>
                       <p className="text-sm text-muted-foreground mb-3 line-clamp-2">

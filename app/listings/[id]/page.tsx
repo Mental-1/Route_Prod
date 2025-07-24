@@ -496,19 +496,27 @@ function ListingDetails() {
                     <span>Trust your instincts</span>
                   </li>
                 </ul>
-                <form
-                  action={async () => {
-                    await reportUser(listing.id, listing.profiles.id);
-                  }}
-                  className="mt-4"
-                >
-                  <Button
+                <Button
                     variant="outline"
                     className="w-full text-destructive hover:bg-destructive/10"
+                    onClick={async () => {
+                      const result = await reportUser(listing.id, listing.profiles.id);
+                      if (result.success) {
+                        toast({
+                          title: "Success",
+                          description: result.success,
+                        });
+                      } else if (result.error) {
+                        toast({
+                          title: "Error",
+                          description: result.error,
+                          variant: "destructive",
+                        });
+                      }
+                    }}
                   >
                     Report Ad
                   </Button>
-                </form>
               </CardContent>
             </Card>
           </div>

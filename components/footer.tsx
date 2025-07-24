@@ -1,6 +1,5 @@
 import Link from "next/link";
-import { MapPin } from "lucide-react";
-import { ThemeToggle } from "@/components/theme-toggle";
+import Image from "next/image"; // Import Image component
 
 /**
  * Renders the website footer with branding, navigation links, category filters, and social media connections.
@@ -14,8 +13,7 @@ export function Footer() {
         <div className="grid grid-cols-1 gap-8 md:grid-cols-4">
           <div>
             <Link href="/" className="flex items-center space-x-2">
-              <MapPin className="h-6 w-6 text-primary" />
-              <span className="text-xl font-bold">RouteMe</span>
+              <Image src="/RouteMe_logo.png" alt="RouteMe Logo" width={32} height={32} className="h-6 w-6" />
             </Link>
             <p className="mt-4 text-sm text-muted-foreground">
               Find and post classified ads in your area. Buy, sell, and connect

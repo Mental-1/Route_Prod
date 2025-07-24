@@ -12,6 +12,8 @@ import { RecentListingsSkeleton } from "@/components/skeletons/recent-listings-s
 import Image from "next/image";
 import { getRecentListings } from "@/lib/data"; // Import getRecentListings
 
+import { formatPrice } from "@/lib/utils"; // Import formatPrice
+
 interface RecentListingsProps {
   initialListings: DisplayListingItem[];
 }
@@ -100,7 +102,7 @@ export function RecentListings({ initialListings }: RecentListingsProps) {
                       {listing.title}
                     </h3>
                     <p className="text-lg font-bold text-green-600 mb-1">
-                      Ksh {listing.price ?? "N/A"}
+                      Ksh {formatPrice(listing.price)}
                     </p>
                     <p className="text-sm text-muted-foreground line-clamp-2 mb-1">
                       {listing.description}

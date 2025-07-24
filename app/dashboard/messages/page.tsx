@@ -1,11 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { MessageEncryption } from "@/lib/encryption";
-import { useAuth } from "@/contexts/auth-context";
 import {
   useQuery,
   useMutation,
@@ -14,6 +13,8 @@ import {
 import { ConversationListSkeleton } from "@/components/skeletons/conversations-skeleton";
 import { ChatSkeleton } from "@/components/skeletons/chat-skeleton";
 import Image from "next/image";
+import { useSearchParams } from "next/navigation"; // Import useSearchParams
+import DecryptorWorker from '@/lib/message-decryptor.worker?worker'; // Import the Web Worker
 
 interface User {
   id: string;
@@ -50,33 +51,39 @@ async function fetchConversations() {
   return response.json();
 }
 
-async function fetchMessages(conversation: Conversation) {
+// Modified fetchMessages to use Web Worker
+async function fetchMessages(conversation: Conversation, worker: Worker): Promise<Message[]> {
   if (!conversation) return [];
   const response = await fetch(`/api/messages/${conversation.id}`);
   if (!response.ok) {
     throw new Error("Failed to fetch messages");
   }
-  const data = await response.json();
+  const data: Message[] = await response.json();
 
-  const key = await MessageEncryption.importKey(conversation.encryption_key);
-  return Promise.all(
-    data.map(async (msg: Message) => {
-      try {
-        const decryptedContent = await MessageEncryption.decrypt(
-          msg.encrypted_content,
-          msg.iv,
-          key,
-        );
-        return { ...msg, encrypted_content: decryptedContent };
-      } catch (e) {
-        console.error("Failed to decrypt message:", msg.id, e);
-        return {
-          ...msg,
-          encrypted_content: "This message could not be decrypted.",
-        };
-      }
-    }),
-  );
+  const decryptedMessages: Message[] = [];
+  const decryptionPromises: Promise<void>[] = [];
+
+  for (const msg of data) {
+    decryptionPromises.push(new Promise((resolve) => {
+      const messageHandler = (event: MessageEvent) => {
+        if (event.data.messageId === msg.id) {
+          decryptedMessages.push({ ...msg, encrypted_content: event.data.decryptedContent });
+          worker.removeEventListener('message', messageHandler);
+          resolve();
+        }
+      };
+      worker.addEventListener('message', messageHandler);
+      worker.postMessage({
+        messageId: msg.id,
+        encryptedContent: msg.encrypted_content,
+        iv: msg.iv,
+        encryptionKey: conversation.encryption_key,
+      });
+    }));
+  }
+
+  await Promise.all(decryptionPromises);
+  return decryptedMessages.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
 }
 
 async function sendMessage(
@@ -101,6 +108,30 @@ export default function MessagesPage() {
     useState<Conversation | null>(null);
   const [newMessage, setNewMessage] = useState("");
   const isDesktop = useMediaQuery("(min-width: 768px)");
+  const searchParams = useSearchParams();
+
+  // Web Worker instance
+  const decryptorWorker = useRef<Worker | null>(null);
+
+  useEffect(() => {
+    decryptorWorker.current = new DecryptorWorker();
+
+    return () => {
+      decryptorWorker.current?.terminate();
+    };
+  }, []);
+
+  useEffect(() => {
+    const conversationIdFromUrl = searchParams.get("conversationId");
+    if (conversationIdFromUrl && conversations.length > 0) {
+      const convoToSelect = conversations.find(
+        (convo) => convo.id === conversationIdFromUrl,
+      );
+      if (convoToSelect) {
+        setSelectedConversation(convoToSelect);
+      }
+    }
+  }, [searchParams, conversations]);
 
   const {
     data: conversations = [],
@@ -117,8 +148,8 @@ export default function MessagesPage() {
     isLoading: isLoadingMessages,
   } = useQuery<Message[]>({
     queryKey: ["messages", selectedConversation?.id],
-    queryFn: () => selectedConversation ? fetchMessages(selectedConversation) : Promise.resolve([]),
-    enabled: !!selectedConversation,
+    queryFn: () => selectedConversation && decryptorWorker.current ? fetchMessages(selectedConversation, decryptorWorker.current) : Promise.resolve([]),
+    enabled: !!selectedConversation && !!decryptorWorker.current,
   });
 
   const sendMessageMutation = useMutation({

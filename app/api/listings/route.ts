@@ -39,7 +39,7 @@ export async function GET(request: Request) {
       `,
         { count: "exact" },
       )
-      .eq("status", "approved") // Only show approved listings
+      .eq("status", "active") // Only show active listings
       .range(offset, offset + limit - 1)
       .order("created_at", { ascending: false });
 
@@ -119,7 +119,7 @@ export async function POST(request: Request) {
     if (categoryError || !category) {
       console.error("Error fetching category:", categoryError);
       return NextResponse.json(
-        { error: `Category '${categoryName}' not found.` },
+        { error: `Category '${categoryId}' not found.` },
         { status: 400 },
       );
     }
