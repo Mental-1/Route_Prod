@@ -16,6 +16,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/components/ui/use-toast";
 import { Toaster } from "@/components/ui/toaster";
+import Image from "next/image";
 import {
   Camera,
   Star,
@@ -706,9 +707,11 @@ function AccountDetails() {
                   <p className="mb-4">
                     Scan the QR code with your authenticator app:
                   </p>
-                  <img
+                  <Image
                     src={qrCode}
                     alt="QR Code"
+                    width={192}
+                    height={192}
                     className="mx-auto w-48 h-48"
                   />
                   <div className="space-y-2 mt-4">

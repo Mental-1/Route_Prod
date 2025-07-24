@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { useFileUpload } from "@/hooks/useFileUpload";
+import Image from "next/image";
 
 interface ImageUploadProps {
   maxImages?: number;
@@ -197,9 +198,11 @@ export function ImageUpload({
                     controls
                   />
                 ) : (
-                  <img
+                  <Image
                     src={url || "/placeholder.svg"}
                     alt={`Preview ${index}`}
+                    width={128}
+                    height={128}
                     className="w-full h-32 object-cover rounded-lg"
                   />
                 )}

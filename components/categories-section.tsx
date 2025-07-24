@@ -50,6 +50,7 @@ export default function CategoriesSection() {
         if (!response.ok) return fallbackCategories;
         return response.json();
       } catch (error) {
+        console.error("Failed to fetch categories:", error);
         return fallbackCategories;
       }
     },

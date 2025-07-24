@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { MapLayout } from "@/components/map-layout";
 import { MapSidebar } from "@/components/map-sidebar";
 import { getNearbyListings } from "./actions";
@@ -51,10 +51,7 @@ export default function MapViewPage() {
     setIsOpen(!isOpen);
   };
 
-  const debouncedSetDistance = useCallback(
-    debounce(setDebouncedDistance, 500),
-    [],
-  );
+  const debouncedSetDistance = useRef(debounce(setDebouncedDistance, 500)).current;
 
   useEffect(() => {
     debouncedSetDistance(distance);

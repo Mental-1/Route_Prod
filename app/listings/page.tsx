@@ -29,6 +29,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Category, Listing } from "@/lib/types/listing";
 import { ListingCardSkeleton } from "@/components/skeletons/listing-card-skeleton";
+import Image from "next/image";
 import Link from "next/link";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { getFilteredListings, getListings } from "../../lib/data";
@@ -652,13 +653,15 @@ export default function ListingsPage() {
                       <Card className="overflow-hidden border-0 hover:shadow-md transition-shadow">
                         <CardContent className="p-0">
                           <div className="aspect-square bg-muted">
-                            <img
+                            <Image
                               src={
                                 (listing.images && listing.images.length > 0
                                   ? listing.images[0]
                                   : null) || "/placeholder.svg"
                               }
                               alt={listing.title}
+                              width={200}
+                              height={200}
                               className="w-full h-full object-cover"
                             />
                           </div>
@@ -709,13 +712,15 @@ export default function ListingsPage() {
                         <CardContent className="p-0">
                           <div className="flex flex-col sm:flex-row">
                             <div className="w-full h-48 sm:w-40 sm:h-40 bg-muted flex-shrink-0">
-                              <img
+                              <Image
                                 src={
                                   (listing.images && listing.images.length > 0
                                     ? listing.images[0]
                                     : null) || "/placeholder.svg"
                                 }
                                 alt={listing.title}
+                                width={160}
+                                height={160}
                                 className="w-full h-full object-cover"
                               />
                             </div>

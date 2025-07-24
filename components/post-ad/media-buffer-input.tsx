@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { toast } from "@/components/ui/use-toast";
+import NextImage from "next/image";
 
 interface MediaBufferInputProps {
   maxImages?: number;
@@ -316,9 +317,11 @@ export function MediaBufferInput({
                     <track kind="captions" />
                   </video>
                 ) : (
-                  <img
+                  <NextImage
                     src={url || "/placeholder.svg"}
                     alt={`Preview ${index}`}
+                    width={128}
+                    height={128}
                     className="w-full h-32 object-cover rounded-lg"
                   />
                 )}

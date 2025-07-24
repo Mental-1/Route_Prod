@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
 import { MapPin, Search, ChevronLeft, ChevronRight } from "lucide-react";
+import Image from "next/image";
 
 import { MapListing } from "@/lib/types/map";
 
@@ -85,9 +86,11 @@ const MapListingCard = ({
       <CardContent className="p-3">
         <div className="flex gap-3">
           <div className="w-20 h-20 bg-muted rounded-md overflow-hidden">
-            <img
+            <Image
               src={listing.image_url || "/placeholder.svg"}
               alt={listing.title}
+              width={80}
+              height={80}
               className="w-full h-full object-cover"
             />
           </div>
