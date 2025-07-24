@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { MessageEncryption } from "@/lib/encryption";
+import { useAuth } from "@/contexts/auth-context";
 import {
   useQuery,
   useMutation,
