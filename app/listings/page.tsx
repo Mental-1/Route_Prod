@@ -41,7 +41,7 @@ export default async function ListingsPage({
       max: priceMaxParam ? Number(priceMaxParam) : 1000000,
     },
     maxDistance: distanceParam ? Number(distanceParam) : 5,
-    searchQuery: searchQueryParam ? String(searchQueryParam) : undefined, // Add searchQuery to initialFilters
+    searchQuery: searchQueryParam ? String(searchQueryParam) : "", // Changed from undefined to ""
   };
 
   // Determine if any filters are active for the initial server fetch
