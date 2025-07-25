@@ -86,6 +86,13 @@ export default async function ListingsPage({
   } catch (error) {
     console.error("Error fetching initial listings on server:", error);
     // initialListings remains an empty array, which is safe
+    initialListings = [];
+  }
+
+  // Final safety check to ensure we never pass undefined/null
+  if (!Array.isArray(initialListings)) {
+    console.warn('Server: initialListings is not an array, falling back to empty array');
+    initialListings = [];
   }
 
   return (
