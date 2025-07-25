@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Listing, DisplayListingItem } from "@/lib/types/listing";
+import { Listing, DisplayListingItem, ListingsItem } from "@/lib/types/listing";
 import { ListingCardSkeleton } from "@/components/skeletons/listing-card-skeleton";
 import Image from "next/image";
 import Link from "next/link";
@@ -21,7 +21,7 @@ import { getFilteredListings, getListings } from "@/lib/data";
 import { formatPrice } from "@/lib/utils";
 
 interface ListingsDisplayProps {
-  initialListings: DisplayListingItem[];
+  initialListings: ListingsItem[];
   initialFilters: {
     categories?: number[];
     subcategories?: number[];
