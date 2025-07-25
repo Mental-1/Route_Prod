@@ -7,7 +7,7 @@ import { RecentListings } from "@/components/recent-listings";
 import { CategoriesSkeleton } from "@/components/categories-skeleton"; // Re-added CategoriesSkeleton import
 import { SearchBar } from "@/components/search-bar";
 import { Button } from "@/components/ui/button"; // Added Button import
-import { CategoriesSection } from "@/components/categories-section"; // Direct import
+import CategoriesSection from "@/components/categories-section"; // Corrected import
 
 export default async function HomePage() {
   // Fetch initial listings on the server
