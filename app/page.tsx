@@ -1,25 +1,12 @@
 import { Suspense } from "react";
 import Link from "next/link";
-import dynamic from "next/dynamic";
-import { CategoriesSkeleton } from "@/components/categories-skeleton";
 import { getRecentListings } from "@/lib/data";
 import { ErrorBoundary } from "react-error-boundary";
 import { RecentListingsSkeleton } from "@/components/skeletons/recent-listings-skeleton";
 import { RecentListings } from "@/components/recent-listings";
 import { SearchBar } from "@/components/search-bar";
 import { Button } from "@/components/ui/button"; // Added Button import
-
-const CategoriesSection = dynamic(
-  () => import("../components/categories-section"),
-  {
-    loading: () => (
-      <div className="container px-4">
-        <CategoriesSkeleton />
-      </div>
-    ),
-    ssr: false, // Re-added ssr: false
-  },
-);
+import { CategoriesSection } from "@/components/categories-section"; // Direct import
 
 export default async function HomePage() {
   // Fetch initial listings on the server
