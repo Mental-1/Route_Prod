@@ -6,6 +6,7 @@ import {
 import { getFilteredListings, getListings } from "../../lib/data";
 import { ListingsFilter } from "@/components/listings-filter";
 import { ListingsDisplay } from "@/components/listings-display";
+import { ListingsItem } from "@/lib/types/listing";
 
 export default async function ListingsPage({
   searchParams,
@@ -54,7 +55,7 @@ export default async function ListingsPage({
   }) || (searchQueryParam !== undefined && searchQueryParam !== ""); // Include searchQuery in filter active check
 
   // Server-side data fetching
-  let initialListings = []; // Initialize as empty array
+  let initialListings: ListingsItem[] = []; // Initialize as empty array
   try {
     initialListings = await queryClient.fetchQuery({
       queryKey: [
