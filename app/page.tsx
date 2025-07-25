@@ -4,6 +4,7 @@ import { getRecentListings } from "@/lib/data";
 import { ErrorBoundary } from "react-error-boundary";
 import { RecentListingsSkeleton } from "@/components/skeletons/recent-listings-skeleton";
 import { RecentListings } from "@/components/recent-listings";
+import { CategoriesSkeleton } from "@/components/categories-skeleton"; // Re-added CategoriesSkeleton import
 import { SearchBar } from "@/components/search-bar";
 import { Button } from "@/components/ui/button"; // Added Button import
 import { CategoriesSection } from "@/components/categories-section"; // Direct import
