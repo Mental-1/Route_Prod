@@ -54,32 +54,38 @@ export default async function ListingsPage({
   }) || (searchQueryParam !== undefined && searchQueryParam !== ""); // Include searchQuery in filter active check
 
   // Server-side data fetching
-  const initialListings = await queryClient.fetchQuery({
-    queryKey: [
-      "listings",
-      initialFilters.categories,
-      initialFilters.subcategories,
-      initialFilters.conditions,
-      initialFilters.priceRange,
-      initialFilters.maxDistance,
-      initialFilters.searchQuery, // Add searchQuery to queryKey
-      "newest",
-      null,
-    ],
-    queryFn: () => {
-      if (isFilterActive) {
-        return getFilteredListings({
-          page: 1,
-          pageSize: PAGE_SIZE,
-          filters: initialFilters,
-          sortBy: "newest",
-          userLocation: null,
-          searchQuery: initialFilters.searchQuery, // Pass searchQuery to getFilteredListings
-        });
-      }
-      return getListings(1, PAGE_SIZE);
-    },
-  });
+  let initialListings = []; // Initialize as empty array
+  try {
+    initialListings = await queryClient.fetchQuery({
+      queryKey: [
+        "listings",
+        initialFilters.categories,
+        initialFilters.subcategories,
+        initialFilters.conditions,
+        initialFilters.priceRange,
+        initialFilters.maxDistance,
+        initialFilters.searchQuery,
+        "newest",
+        null,
+      ],
+      queryFn: () => {
+        if (isFilterActive) {
+          return getFilteredListings({
+            page: 1,
+            pageSize: PAGE_SIZE,
+            filters: initialFilters,
+            sortBy: "newest",
+            userLocation: null,
+            searchQuery: initialFilters.searchQuery,
+          });
+        }
+        return getListings(1, PAGE_SIZE);
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching initial listings on server:", error);
+    // initialListings remains an empty array, which is safe
+  }
 
   return (
     <div className="min-h-screen bg-background">
