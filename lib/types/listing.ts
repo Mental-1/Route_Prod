@@ -17,13 +17,24 @@ export interface ListingsItem {
   title: string;
   description: string | null;
   price: number | null;
-  images: string[] | null;
-  condition: string | null;
   location: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  condition: string | null;
+  featured: boolean | null;
+  images: string[] | null;
   views: number | null;
-  category_id: number | null;
-  subcategory_id: number | null;
   created_at: string | null;
+  updated_at: string | null;
+  category_id: number | null;
+  category_name: string | null;
+  subcategory_id: number | null;
+  subcategory_name: string | null;
+  user_id: string | null;
+  seller_name: string | null;
+  seller_username: string | null;
+  seller_avatar: string | null;
+  distance_km: number | null;
 }
 
 export type Review = {

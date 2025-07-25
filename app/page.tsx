@@ -17,6 +17,7 @@ const CategoriesSection = dynamic(
         <CategoriesSkeleton />
       </div>
     ),
+    ssr: false, // Re-added ssr: false
   },
 );
 
