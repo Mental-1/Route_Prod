@@ -68,7 +68,27 @@ export async function getListings(
   const { data, error } = await supabase
     .from("listings")
     .select(
-      "id, title, description, price, images, condition, location, views, category_id, subcategory_id, created_at",
+      `
+      id,
+      title,
+      description,
+      price,
+      location,
+      latitude,
+      longitude,
+      condition,
+      featured,
+      images,
+      views,
+      created_at,
+      updated_at,
+      category_id,
+      categories(name),
+      subcategory_id,
+      subcategories(name),
+      user_id,
+      profiles(full_name, username, avatar_url)
+      `,
     )
     .order("created_at", { ascending: false })
     .range((page - 1) * pageSize, page * pageSize - 1);
@@ -78,7 +98,33 @@ export async function getListings(
     throw new Error("Failed to fetch listings");
   }
 
-  return data || [];
+  // Map the data to match the ListingsItem interface, including aliased names
+  const mappedData: ListingsItem[] = data.map((item: any) => ({
+    id: item.id,
+    title: item.title,
+    description: item.description,
+    price: item.price,
+    location: item.location,
+    latitude: item.latitude,
+    longitude: item.longitude,
+    condition: item.condition,
+    featured: item.featured,
+    images: item.images,
+    views: item.views,
+    created_at: item.created_at,
+    updated_at: item.updated_at,
+    category_id: item.category_id,
+    category_name: item.categories?.name || null, // Access aliased name
+    subcategory_id: item.subcategory_id,
+    subcategory_name: item.subcategories?.name || null, // Access aliased name
+    user_id: item.user_id,
+    seller_name: item.profiles?.full_name || null, // Access aliased name
+    seller_username: item.profiles?.username || null, // Access aliased name
+    seller_avatar: item.profiles?.avatar_url || null, // Access aliased name
+    distance_km: null, // This field is only calculated by RPC, so it's null here
+  }));
+
+  return mappedData || [];
 }
 
 /**
