@@ -3,10 +3,9 @@ import {
   QueryClient,
   dehydrate,
 } from "@tanstack/react-query";
-import { getFilteredListings, getListings } from "../../lib/data";
+import { getListings } from "../../lib/data";
 import { ListingsFilter } from "@/components/listings-filter";
 import { ListingsDisplay } from "@/components/listings-display";
-import { ListingsItem } from "@/lib/types/listing";
 
 export default async function ListingsPage({
   searchParams,
@@ -16,84 +15,19 @@ export default async function ListingsPage({
   const queryClient = new QueryClient();
   const PAGE_SIZE = 20;
 
-  // Parse search parameters for filters
-  const categoryParam = searchParams.category;
-  const conditionsParam = searchParams.conditions;
-  const priceMinParam = searchParams.priceMin;
-  const priceMaxParam = searchParams.priceMax;
-  const distanceParam = searchParams.distance;
-  const subcategoryParam = searchParams.subcategory;
-  const searchQueryParam = searchParams.search; // Read the search query parameter
-
   const initialFilters = {
-    categories: categoryParam
-      ? [Number(categoryParam)].filter((n) => !isNaN(n))
-      : [],
-    subcategories: subcategoryParam
-      ? [Number(subcategoryParam)].filter((n) => !isNaN(n))
-      : [],
-    conditions: conditionsParam
-      ? Array.isArray(conditionsParam)
-        ? conditionsParam
-        : conditionsParam.split(",")
-      : [],
-    priceRange: {
-      min: priceMinParam ? Number(priceMinParam) : 0,
-      max: priceMaxParam ? Number(priceMaxParam) : 1000000,
-    },
-    maxDistance: distanceParam ? Number(distanceParam) : 5,
-    searchQuery: searchQueryParam ? String(searchQueryParam) : "", // Changed from undefined to ""
+    categories: [],
+    subcategories: [],
+    conditions: [],
+    priceRange: { min: 0, max: 1000000 },
+    maxDistance: 5,
+    searchQuery: searchParams.search ? String(searchParams.search) : "",
   };
 
-  // Determine if any filters are active for the initial server fetch
-  const isFilterActive = Object.values(initialFilters).some((filterValue) => {
-    if (Array.isArray(filterValue)) return filterValue.length > 0;
-    if (typeof filterValue === "object" && filterValue !== null) {
-      return filterValue.min > 0 || filterValue.max < 1000000;
-    }
-    return filterValue !== undefined && filterValue !== 5;
-  }) || (searchQueryParam !== undefined && searchQueryParam !== ""); // Include searchQuery in filter active check
-
-  // Server-side data fetching
-  let initialListings: ListingsItem[] = []; // Initialize as empty array
-  try {
-    initialListings = await queryClient.fetchQuery({
-      queryKey: [
-        "listings",
-        initialFilters.categories,
-        initialFilters.subcategories,
-        initialFilters.conditions,
-        initialFilters.priceRange,
-        initialFilters.maxDistance,
-        initialFilters.searchQuery,
-        "newest",
-        null,
-      ],
-      queryFn: () => {
-        if (isFilterActive) {
-          return getFilteredListings({
-            page: 1,
-            pageSize: PAGE_SIZE,
-            filters: initialFilters,
-            sortBy: "newest",
-            userLocation: null,
-            searchQuery: initialFilters.searchQuery,
-          });
-        }
-        return getListings(1, PAGE_SIZE);
-      },
-    });
-  } catch (error) {
-    console.error("Error fetching initial listings on server:", error);
-    // initialListings remains an empty array, which is safe
-    initialListings = [];
-  }
-
-  // Final safety check to ensure we never pass undefined/null
-  if (!Array.isArray(initialListings)) {
-    console.warn('Server: initialListings is not an array, falling back to empty array');
-    initialListings = [];
-  }
+  const initialListings = await queryClient.fetchQuery({
+    queryKey: ["listings", "all"],
+    queryFn: () => getListings(1, PAGE_SIZE),
+  });
 
   return (
     <div className="min-h-screen bg-background">
@@ -102,7 +36,7 @@ export default async function ListingsPage({
           <ListingsFilter />
           <HydrationBoundary state={dehydrate(queryClient)}>
             <ListingsDisplay
-              initialListings={initialListings}
+              initialListings={initialListings ?? []}
               initialFilters={initialFilters}
             />
           </HydrationBoundary>

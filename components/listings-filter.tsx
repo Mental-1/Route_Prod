@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { Filter } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import debounce from "lodash.debounce";
+import { Filter as FilterIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Slider } from "@/components/ui/slider";
 import {
   Sheet,
   SheetContent,
@@ -18,9 +19,14 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Category } from "@/lib/types/listing";
+import { Slider } from "@/components/ui/slider";
 import { useQuery } from "@tanstack/react-query";
-import { useRouter, useSearchParams } from "next/navigation";
+
+// Define types for better code clarity
+type Category = {
+  id: number;
+  name: string;
+};
 
 type Subcategory = {
   id: number;
@@ -28,59 +34,28 @@ type Subcategory = {
   parent_category_id: number;
 };
 
+interface FilterState {
+  categories: string[];
+  subcategories: string[];
+  conditions: string[];
+  priceRange: [number, number];
+}
+
 export function ListingsFilter() {
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const [priceRange, setPriceRange] = useState([0, 1000000]);
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  // Single state object for filters
+  const [filters, setFilters] = useState<FilterState>({
+    categories: [],
+    subcategories: [],
+    conditions: [],
+    priceRange: [0, 1000000],
+  });
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
 
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [selectedConditions, setSelectedConditions] = useState<string[]>([]);
-  const [maxDistance, setMaxDistance] = useState([5]);
-  const [selectedSubcategories, setSelectedSubcategories] = useState<string[]>(
-    [],
-  );
-
-  // Initialize filters from URL search params on mount
-  useEffect(() => {
-    const categoryParam = searchParams.get("category");
-    if (categoryParam) {
-      setSelectedCategories([categoryParam]);
-    } else {
-      setSelectedCategories([]);
-    }
-
-    const conditionsParam = searchParams.get("conditions");
-    if (conditionsParam) {
-      setSelectedConditions(conditionsParam.split(","));
-    } else {
-      setSelectedConditions([]);
-    }
-
-    const priceMinParam = searchParams.get("priceMin");
-    const priceMaxParam = searchParams.get("priceMax");
-    if (priceMinParam && priceMaxParam) {
-      setPriceRange([Number(priceMinParam), Number(priceMaxParam)]);
-    } else {
-      setPriceRange([0, 1000000]);
-    }
-
-    const distanceParam = searchParams.get("distance");
-    if (distanceParam) {
-      setMaxDistance([Number(distanceParam)]);
-    } else {
-      setMaxDistance([5]);
-    }
-
-    const subcategoryParam = searchParams.get("subcategory");
-    if (subcategoryParam) {
-      setSelectedSubcategories([subcategoryParam]);
-    } else {
-      setSelectedSubcategories([]);
-    }
-  }, [searchParams]);
-
+  // Fetch categories and subcategories using the original fetch calls
   const { data: categories = [] } = useQuery<Category[]>({
     queryKey: ["categories"],
     queryFn: async () => {
@@ -99,421 +74,206 @@ export function ListingsFilter() {
     },
   });
 
-  // Function to update URL search params
-  const updateSearchParams = useCallback(() => {
-    const newSearchParams = new URLSearchParams();
-
-    if (selectedCategories.length > 0) {
-      newSearchParams.set("category", selectedCategories[0]);
-    }
-    if (selectedSubcategories.length > 0) {
-      newSearchParams.set("subcategory", selectedSubcategories[0]);
-    }
-    if (selectedConditions.length > 0) {
-      newSearchParams.set("conditions", selectedConditions.join(","));
-    }
-    if (priceRange[0] > 0) {
-      newSearchParams.set("priceMin", priceRange[0].toString());
-    }
-    if (priceRange[1] < 1000000) {
-      newSearchParams.set("priceMax", priceRange[1].toString());
-    }
-    if (maxDistance[0] !== 5) { // Assuming 5 is default/no filter
-      newSearchParams.set("distance", maxDistance[0].toString());
-    }
-
-    router.push(`/listings?${newSearchParams.toString()}`);
-    setIsFilterOpen(false); // Close sheet after applying filters
-  }, [
-    selectedCategories,
-    selectedSubcategories,
-    selectedConditions,
-    priceRange,
-    maxDistance,
-    router,
-  ]);
-
-  // Checkbox handlers
-  const handleCategoryChange = (categoryId: string, checked: boolean) => {
-    setSelectedCategories((prev) => {
-      const newCategories = checked
-        ? [...prev, categoryId]
-        : prev.filter((id) => id !== categoryId);
-      // Only allow single category selection for now, or adjust logic for multi-select
-      return newCategories.length > 1 ? [categoryId] : newCategories;
+  // Initialize filters from URL search params on mount
+  useEffect(() => {
+    const params = new URLSearchParams(searchParams.toString());
+    setFilters({
+      categories: params.get("categories")?.split(",") || [],
+      subcategories: params.get("subcategories")?.split(",") || [],
+      conditions: params.get("conditions")?.split(",") || [],
+      priceRange: [
+        Number(params.get("priceMin")) || 0,
+        Number(params.get("priceMax")) || 1000000,
+      ],
     });
+  }, [searchParams]);
+
+  // Debounced function to update URL search params
+  const debouncedUpdateUrl = useMemo(
+    () =>
+      debounce((newFilters: FilterState) => {
+        const params = new URLSearchParams(searchParams.toString());
+
+        if (newFilters.categories.length > 0) {
+          params.set("categories", newFilters.categories.join(","));
+        } else {
+          params.delete("categories");
+        }
+
+        if (newFilters.subcategories.length > 0) {
+          params.set("subcategory", newFilters.subcategories.join(","));
+        } else {
+          params.delete("subcategory");
+        }
+
+        if (newFilters.conditions.length > 0) {
+          params.set("conditions", newFilters.conditions.join(","));
+        } else {
+          params.delete("conditions");
+        }
+
+        if (newFilters.priceRange[0] > 0) {
+          params.set("priceMin", newFilters.priceRange[0].toString());
+        } else {
+          params.delete("priceMin");
+        }
+
+        if (newFilters.priceRange[1] < 1000000) {
+          params.set("priceMax", newFilters.priceRange[1].toString());
+        } else {
+          params.delete("priceMax");
+        }
+
+        router.push(`${pathname}?${params.toString()}`);
+      }, 500), // 500ms debounce delay
+    [pathname, router, searchParams]
+  );
+
+  // Handlers for filter changes
+  const handleFilterChange = (newFilters: Partial<FilterState>) => {
+    const updatedFilters = { ...filters, ...newFilters };
+    setFilters(updatedFilters);
+    debouncedUpdateUrl(updatedFilters);
   };
 
-  const handleConditionChange = (condition: string, checked: boolean) => {
-    setSelectedConditions((prev) =>
-      checked ? [...prev, condition] : prev.filter((c) => c !== condition),
-    );
+  const handleCategoryChange = (categoryId: string, checked: boolean) => {
+    const newCategories = checked ? [categoryId] : [];
+    handleFilterChange({ categories: newCategories, subcategories: [] });
   };
 
   const handleSubcategoryChange = (subcategoryId: string, checked: boolean) => {
-    setSelectedSubcategories((prev) => {
-      const newSubcategories = checked
-        ? [...prev, subcategoryId]
-        : prev.filter((id) => id !== subcategoryId);
-      // Only allow single subcategory selection for now
-      return newSubcategories.length > 1 ? [subcategoryId] : newSubcategories;
-    });
+    const newSubcategories = checked ? [subcategoryId] : [];
+    handleFilterChange({ subcategories: newSubcategories });
   };
 
-  return (
-    <>
-      {/* Filter Sidebar - Desktop */}
-      <div className="hidden md:block w-64 space-y-6 overflow-y-auto pr-6 border-r">
-        <div className="font-medium text-lg">Filters</div>
+  const handleConditionChange = (condition: string, checked: boolean) => {
+    const newConditions = checked
+      ? [...filters.conditions, condition]
+      : filters.conditions.filter((c) => c !== condition);
+    handleFilterChange({ conditions: newConditions });
+  };
 
-        <div className="space-y-6">
-          <div className="border-b pb-6">
-            <h3 className="font-medium mb-4">Categories</h3>
-            <div className="space-y-2">
-              {categories.map((category: Category) => (
-                <div key={category.id} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={`category-${category.id}`}
-                    checked={selectedCategories.includes(
-                      category.id.toString(),
-                    )}
-                    onCheckedChange={(checked) =>
-                      handleCategoryChange(
-                        category.id.toString(),
-                        checked as boolean,
-                      )
-                    }
-                  />
-                  <label
-                    htmlFor={`category-${category.id}`}
-                    className="text-sm cursor-pointer"
-                  >
-                    {category.name}
-                  </label>
-                </div>
-              ))}
-            </div>
-          </div>
+  const handlePriceChange = (newPriceRange: [number, number]) => {
+    handleFilterChange({ priceRange: newPriceRange });
+  };
 
-          {selectedCategories.length === 1 && (
-            <div className="border-b pb-6">
-              <h3 className="font-medium mb-4">Subcategories</h3>
-              <div className="space-y-2">
-                {subcategories
-                  .filter(
-                    (sub: Subcategory) =>
-                      sub.parent_category_id ===
-                      Number.parseInt(selectedCategories[0], 10),
-                  )
-                  .map((subcategory: Subcategory) => (
-                    <div
-                      key={subcategory.id}
-                      className="flex items-center space-x-2"
-                    >
+  const renderFilterOptions = (isMobile: boolean) => {
+    const filteredSubcategories = subcategories.filter(
+      (sub) => sub.parent_category_id === Number(filters.categories[0])
+    );
+
+    return (
+      <>
+        <Accordion type="multiple" defaultValue={["categories", "price", "condition", "subcategories"]} className="w-full">
+          <AccordionItem value="categories">
+            <AccordionTrigger>Categories</AccordionTrigger>
+            <AccordionContent>
+              <div className="space-y-2 pt-2">
+                {categories.map((category) => (
+                  <div key={category.id} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`${isMobile ? 'mobile-' : ''}category-${category.id}`}
+                      checked={filters.categories.includes(category.id.toString())}
+                      onCheckedChange={(checked) => handleCategoryChange(category.id.toString(), !!checked)}
+                    />
+                    <label htmlFor={`${isMobile ? 'mobile-' : ''}category-${category.id}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                      {category.name}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+
+          {filters.categories.length === 1 && (
+            <AccordionItem value="subcategories">
+              <AccordionTrigger>Subcategories</AccordionTrigger>
+              <AccordionContent>
+                <div className="space-y-2 pt-2">
+                  {filteredSubcategories.map((subcategory) => (
+                    <div key={subcategory.id} className="flex items-center space-x-2">
                       <Checkbox
-                        id={`subcategory-${subcategory.id}`}
-                        checked={selectedSubcategories.includes(
-                          subcategory.id.toString(),
-                        )}
-                        onCheckedChange={(checked) =>
-                          handleSubcategoryChange(
-                            subcategory.id.toString(),
-                            checked as boolean,
-                          )
-                        }
+                        id={`${isMobile ? 'mobile-' : ''}subcategory-${subcategory.id}`}
+                        checked={filters.subcategories.includes(subcategory.id.toString())}
+                        onCheckedChange={(checked) => handleSubcategoryChange(subcategory.id.toString(), !!checked)}
                       />
-                      <label
-                        htmlFor={`subcategory-${subcategory.id}`}
-                        className="text-sm cursor-pointer"
-                      >
+                      <label htmlFor={`${isMobile ? 'mobile-' : ''}subcategory-${subcategory.id}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                         {subcategory.name}
                       </label>
                     </div>
                   ))}
-              </div>
-            </div>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
           )}
 
-          <div className="border-b pb-6">
-            <h3 className="font-medium mb-4">Price Range</h3>
-            <div className="space-y-4">
-              <Slider
-                defaultValue={[0, 1000000]}
-                step={10000}
-                max={1000000}
-                value={priceRange}
-                onValueChange={setPriceRange}
-              />
-              <div className="flex items-center justify-between">
-                <span className="text-sm">Ksh {priceRange[0]}</span>
-                <span className="text-sm">Ksh {priceRange[1]}</span>
+          <AccordionItem value="price">
+            <AccordionTrigger>Price Range</AccordionTrigger>
+            <AccordionContent className="pt-4">
+              <div className="space-y-4">
+                <Slider
+                  defaultValue={[0, 1000000]}
+                  min={0}
+                  max={1000000}
+                  step={1000}
+                  value={filters.priceRange}
+                  onValueChange={(value: [number, number]) => handlePriceChange(value)}
+                />
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">Ksh {filters.priceRange[0]}</span>
+                  <span className="text-sm">Ksh {filters.priceRange[1]}</span>
+                </div>
               </div>
-            </div>
-          </div>
+            </AccordionContent>
+          </AccordionItem>
 
-          <div className="border-b pb-6">
-            <h3 className="font-medium mb-4">Condition</h3>
-            <div className="space-y-2">
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="condition-new"
-                  checked={selectedConditions.includes("new")}
-                  onCheckedChange={(checked) =>
-                    handleConditionChange("new", checked as boolean)
-                  }
-                />
-                <label htmlFor="condition-new" className="text-sm cursor-pointer">
-                  New
-                </label>
+          <AccordionItem value="condition">
+            <AccordionTrigger>Condition</AccordionTrigger>
+            <AccordionContent className="pt-4">
+              <div className="space-y-2">
+                {["new", "used", "refurbished"].map((condition) => (
+                  <div key={condition} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`${isMobile ? 'mobile-' : ''}condition-${condition}`}
+                      checked={filters.conditions.includes(condition)}
+                      onCheckedChange={(checked) => handleConditionChange(condition, !!checked)}
+                    />
+                    <label htmlFor={`${isMobile ? 'mobile-' : ''}condition-${condition}`} className="text-sm capitalize">
+                      {condition}
+                    </label>
+                  </div>
+                ))}
               </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="condition-used"
-                  checked={selectedConditions.includes("used")}
-                  onCheckedChange={(checked) =>
-                    handleConditionChange("used", checked as boolean)
-                  }
-                />
-                <label htmlFor="condition-used" className="text-sm cursor-pointer">
-                  Used
-                </label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="condition-refurbished"
-                  checked={selectedConditions.includes("refurbished")}
-                  onCheckedChange={(checked) =>
-                    handleConditionChange("refurbished", checked as boolean)
-                  }
-                />
-                <label
-                  htmlFor="condition-refurbished"
-                  className="text-sm cursor-pointer"
-                >
-                  Refurbished
-                </label>
-              </div>
-            </div>
-          </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      </>
+    );
+  };
 
-          <div>
-            <h3 className="font-medium mb-4">Distance</h3>
-            <div className="space-y-4">
-              <Slider
-                defaultValue={[10]}
-                max={50}
-                step={1}
-                value={maxDistance}
-                onValueChange={setMaxDistance}
-              />
-              <div className="flex items-center justify-between">
-                <span className="text-sm">0 km</span>
-                <span className="text-sm">50 km</span>
-              </div>
-            </div>
-          </div>
-        </div>
+  return (
+    <>
+      {/* Desktop Filter */}
+      <div className="hidden md:block w-64 space-y-6">
+        <h3 className="font-semibold text-lg">Filters</h3>
+        {renderFilterOptions(false)}
       </div>
-      {/* Mobile Filter Button */}
+
+      {/* Mobile Filter */}
       <div className="md:hidden">
-        <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+        <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
           <SheetTrigger asChild>
-            <Button variant="outline" size="sm" className="w-full">
-              <Filter className="h-4 w-4 mr-2" />
+            <Button variant="outline" className="w-full">
+              <FilterIcon className="mr-2 h-4 w-4" />
               Filters
             </Button>
           </SheetTrigger>
-          <SheetContent side="left" className="w-[300px] sm:w-[400px]">
+          <SheetContent side="left" className="w-[300px]">
             <SheetHeader>
               <SheetTitle>Filters</SheetTitle>
             </SheetHeader>
             <div className="py-4">
-              <Accordion
-                type="single"
-                collapsible
-                className="w-full space-y-4"
-              >
-                <AccordionItem value="categories" className="border-b pb-4">
-                  <AccordionTrigger>Categories</AccordionTrigger>
-                  <AccordionContent className="pt-4">
-                    <div className="space-y-2">
-                      {categories.map((category: Category) => (
-                        <div
-                          key={category.id}
-                          className="flex items-center space-x-2"
-                        >
-                          <Checkbox
-                            id={`mobile-category-${category.id}`}
-                            checked={selectedCategories.includes(
-                              category.id.toString(),
-                            )}
-                            onCheckedChange={(checked) =>
-                              handleCategoryChange(
-                                category.id.toString(),
-                                checked as boolean,
-                              )
-                            }
-                          />
-                          <label
-                            htmlFor={`mobile-category-${category.id}`}
-                            className="text-sm cursor-pointer"
-                          >
-                            {category.name}
-                          </label>
-                        </div>
-                      ))}
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-
-                {selectedCategories.length === 1 && (
-                  <AccordionItem
-                    value="subcategories"
-                    className="border-b pb-4"
-                  >
-                    <AccordionTrigger>Subcategories</AccordionTrigger>
-                    <AccordionContent className="pt-4">
-                      <div className="space-y-2">
-                        {subcategories
-                          .filter(
-                            (sub: Subcategory) =>
-                              sub.parent_category_id ===
-                              Number.parseInt(selectedCategories[0], 10),
-                          )
-                          .map((subcategory: Subcategory) => (
-                            <div
-                              key={subcategory.id}
-                              className="flex items-center space-x-2"
-                            >
-                              <Checkbox
-                                id={`mobile-subcategory-${subcategory.id}`}
-                                checked={selectedSubcategories.includes(
-                                  subcategory.id.toString(),
-                                )}
-                                onCheckedChange={(checked) =>
-                                  handleSubcategoryChange(
-                                    subcategory.id.toString(),
-                                    checked as boolean,
-                                  )
-                                }
-                              />
-                              <label
-                                htmlFor={`mobile-subcategory-${subcategory.id}`}
-                                className="text-sm cursor-pointer"
-                              >
-                                {subcategory.name}
-                              </label>
-                            </div>
-                          ))}
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                )}
-
-                <AccordionItem value="price" className="border-b pb-4">
-                  <AccordionTrigger>Price Range</AccordionTrigger>
-                  <AccordionContent className="pt-4">
-                    <div className="space-y-4">
-                      <Slider
-                        defaultValue={[0]}
-                        min={1}
-                        step={1000}
-                        value={priceRange}
-                        onValueChange={setPriceRange}
-                      />
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm">Ksh {priceRange[0]}</span>
-                        <span className="text-sm">Ksh {priceRange[1]}</span>
-                      </div>
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-
-                <AccordionItem value="condition" className="border-b pb-4">
-                  <AccordionTrigger>Condition</AccordionTrigger>
-                  <AccordionContent className="pt-4">
-                    <div className="space-y-2">
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="mobile-condition-new"
-                          checked={selectedConditions.includes("new")}
-                          onCheckedChange={(checked) =>
-                            handleConditionChange("new", checked as boolean)
-                          }
-                        />
-                        <label
-                          htmlFor="mobile-condition-new"
-                          className="text-sm cursor-pointer"
-                        >
-                          New
-                        </label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="mobile-condition-used"
-                          checked={selectedConditions.includes("used")}
-                          onCheckedChange={(checked) =>
-                            handleConditionChange(
-                              "used",
-                              checked as boolean,
-                            )
-                          }
-                        />
-                        <label
-                          htmlFor="mobile-condition-used"
-                          className="text-sm cursor-pointer"
-                        >
-                          Used
-                        </label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="mobile-condition-refurbished"
-                          checked={selectedConditions.includes(
-                                "refurbished",
-                              )}
-                          onCheckedChange={(checked) =>
-                            handleConditionChange(
-                              "refurbished",
-                              checked as boolean,
-                            )
-                          }
-                        />
-                        <label
-                          htmlFor="mobile-condition-refurbished"
-                          className="text-sm cursor-pointer"
-                        >
-                          Refurbished
-                        </label>
-                      </div>
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-
-                <AccordionItem value="distance">
-                  <AccordionTrigger>Distance</AccordionTrigger>
-                  <AccordionContent className="pt-4">
-                    <div className="space-y-4">
-                      <Slider
-                        defaultValue={[5]}
-                        max={50}
-                        step={1}
-                        value={maxDistance}
-                        onValueChange={setMaxDistance}
-                      />
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm">0 km</span>
-                        <span className="text-sm">50 km</span>
-                      </div>
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
-            </div>
-            <div className="mt-4">
-              <Button className="w-full" onClick={updateSearchParams}>
-                Apply Filters
-              </Button>
+              {renderFilterOptions(true)}
             </div>
           </SheetContent>
         </Sheet>

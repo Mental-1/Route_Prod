@@ -136,7 +136,13 @@ export default function Navigation() {
     <div className="container flex h-16 items-center justify-between">
       <div className="flex items-center gap-6">
         <Link href="/" className="flex items-center space-x-2">
-          <Image src="/RouteMe_logo.png" alt="RouteMe Logo" width={32} height={32} className="h-6 w-6" />
+          <Image
+            src="/RouteMe_logo.png"
+            alt="RouteMe Logo"
+            width={96}
+            height={32}
+            className="h-6 w-6"
+          />
         </Link>
         <nav className="hidden md:flex items-center gap-6">
           {routes.map((route) => (
@@ -173,7 +179,13 @@ export default function Navigation() {
           <SheetContent side="left">
             <div className="flex flex-col gap-6 py-4">
               <Link href="/" className="flex items-center space-x-2">
-                <Image src="/RouteMe_logo.png" alt="RouteMe Logo" width={32} height={32} className="h-6 w-6" />
+                <Image
+                  src="/RouteMe_logo.png"
+                  alt="RouteMe Logo"
+                  width={32}
+                  height={32}
+                  className="h-6 w-6"
+                />
               </Link>
               <nav className="flex flex-col gap-4">
                 {routes.map((route) => (

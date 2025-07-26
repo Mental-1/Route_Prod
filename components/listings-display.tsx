@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Grid, List, MapPin, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -12,12 +12,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Listing, DisplayListingItem, ListingsItem } from "@/lib/types/listing";
+import { ListingsItem } from "@/lib/types/listing";
 import { ListingCardSkeleton } from "@/components/skeletons/listing-card-skeleton";
 import Image from "next/image";
 import Link from "next/link";
 import { useInfiniteQuery } from "@tanstack/react-query";
-import { getFilteredListings, getListings } from "@/lib/data";
+import { getFilteredListings } from "@/lib/data";
 import { formatPrice } from "@/lib/utils";
 
 interface ListingsDisplayProps {
@@ -28,7 +28,7 @@ interface ListingsDisplayProps {
     conditions?: string[];
     priceRange?: { min: number; max: number };
     maxDistance?: number;
-    searchQuery?: string; // Added searchQuery
+    searchQuery?: string;
   };
 }
 
@@ -39,57 +39,22 @@ export function ListingsDisplay({
   const PAGE_SIZE = 20;
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [sortBy, setSortBy] = useState("newest");
-
   const [showBackToTop, setShowBackToTop] = useState(false);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadingRef = useRef<HTMLDivElement>(null);
-  const [userLocation, setUserLocation] = useState<{
-    lat: number;
-    lon: number;
-  } | null>(null);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null);
 
-  const { data, error, fetchNextPage, hasNextPage, isFetchingNextPage, status } = useInfiniteQuery({
-    queryKey: [
-      "listings",
-      initialFilters.categories,
-      initialFilters.subcategories,
-      initialFilters.conditions,
-      initialFilters.priceRange,
-      initialFilters.maxDistance,
-      initialFilters.searchQuery, // Added searchQuery to queryKey
-      sortBy,
-      userLocation,
-    ],
-    queryFn: ({ pageParam = 1 }) => {
-      const filters = {
-        categories: initialFilters.categories,
-        subcategories: initialFilters.subcategories,
-        conditions: initialFilters.conditions,
-        priceRange: initialFilters.priceRange,
-        maxDistance: initialFilters.maxDistance,
-      };
-
-      // Determine if any filters are active
-      const isFilterActive = Object.values(filters).some(filterValue => {
-        if (Array.isArray(filterValue)) return filterValue.length > 0;
-        if (typeof filterValue === 'object' && filterValue !== null) {
-          return filterValue.min > 0 || filterValue.max < 1000000;
-        }
-        return filterValue !== undefined;
-      }) || (initialFilters.searchQuery !== undefined && initialFilters.searchQuery !== ""); // Include searchQuery in filter active check
-
-      if (isFilterActive) {
-        return getFilteredListings({
-          page: pageParam,
-          pageSize: PAGE_SIZE,
-          filters,
-          sortBy,
-          userLocation,
-          searchQuery: initialFilters.searchQuery, // Pass searchQuery to getFilteredListings
-        });
-      }
-      return getListings(pageParam, PAGE_SIZE);
-    },
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
+    queryKey: ["listings", initialFilters, sortBy, userLocation],
+    queryFn: ({ pageParam = 1 }) =>
+      getFilteredListings({
+        page: pageParam,
+        pageSize: PAGE_SIZE,
+        filters: initialFilters,
+        sortBy,
+        userLocation,
+        searchQuery: initialFilters.searchQuery,
+      }),
     getNextPageParam: (lastPage, pages) => {
       return lastPage.length === PAGE_SIZE ? pages.length + 1 : undefined;
     },
@@ -111,12 +76,11 @@ export function ListingsDisplay({
         },
         (error) => {
           console.error("Error getting user location:", error);
-        },
+        }
       );
     }
   }, []);
 
-  // Intersection observer for infinite scroll
   useEffect(() => {
     if (observerRef.current) observerRef.current.disconnect();
     observerRef.current = new IntersectionObserver(
@@ -125,7 +89,7 @@ export function ListingsDisplay({
           fetchNextPage();
         }
       },
-      { threshold: 0.1 },
+      { threshold: 0.1 }
     );
     if (loadingRef.current) {
       observerRef.current.observe(loadingRef.current);
@@ -135,12 +99,9 @@ export function ListingsDisplay({
     };
   }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
-  // Back to top visibility
   useEffect(() => {
     const handleScroll = () => {
-      const scrolled = window.scrollY;
-      const threshold = window.innerHeight * 2;
-      setShowBackToTop(scrolled > threshold);
+      setShowBackToTop(window.scrollY > window.innerHeight * 2);
     };
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
@@ -154,7 +115,6 @@ export function ListingsDisplay({
 
   return (
     <div className="flex-1">
-      {/* Results Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
         <div>
           <h1 className="text-2xl font-bold">Listings</h1>
@@ -168,18 +128,10 @@ export function ListingsDisplay({
               <SelectValue placeholder="Sort by" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="newest" onSelect={() => {}}>
-                Newest
-              </SelectItem>
-              <SelectItem value="price-low" onSelect={() => {}}>
-                Price: Low to High
-              </SelectItem>
-              <SelectItem value="price-high" onSelect={() => {}}>
-                Price: High to Low
-              </SelectItem>
-              <SelectItem value="distance" onSelect={() => {}}>
-                Distance
-              </SelectItem>
+              <SelectItem value="newest">Newest</SelectItem>
+              <SelectItem value="price-low">Price: Low to High</SelectItem>
+              <SelectItem value="price-high">Price: High to Low</SelectItem>
+              <SelectItem value="distance">Distance</SelectItem>
             </SelectContent>
           </Select>
           <div className="flex border rounded-md">
@@ -203,7 +155,6 @@ export function ListingsDisplay({
         </div>
       </div>
 
-      {/* Grid View */}
       {viewMode === "grid" && (
         <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {listings.map((listing) => (
@@ -212,12 +163,8 @@ export function ListingsDisplay({
                 <CardContent className="p-0">
                   <div className="aspect-square bg-muted">
                     <Image
-                      src={
-                        (listing.images && listing.images.length > 0
-                          ? listing.images[0]
-                          : null) || "/placeholder.svg"
-                      }
-                      alt={listing.title}
+                      src={listing?.images?.[0] ?? "/placeholder.svg"}
+                      alt={listing?.title ?? "Listing image"}
                       width={200}
                       height={200}
                       className="w-full h-full object-cover"
@@ -225,23 +172,23 @@ export function ListingsDisplay({
                   </div>
                   <div className="p-3">
                     <h3 className="font-medium text-base mb-1 truncate">
-                      {listing.title}
+                      {listing?.title ?? "Untitled Listing"}
                     </h3>
                     <p className="text-lg font-bold text-green-600 mb-1">
-                      Ksh {formatPrice(listing.price)}
+                      Ksh {formatPrice(listing?.price ?? 0)}
                     </p>
                     <p className="text-xs text-muted-foreground mb-2 line-clamp-2">
-                      {listing.description}
+                      {listing?.description ?? "No description available."}
                     </p>
                     <div className="flex items-center gap-2 mb-1">
                       <Badge variant="outline" className="text-xs">
-                        {listing.condition}
+                        {listing?.condition ?? "N/A"}
                       </Badge>
                     </div>
                     <div className="flex items-center justify-between text-xs text-muted-foreground">
                       <div className="flex items-center gap-1">
                         <MapPin className="h-3 w-3" />
-                        {listing.location}
+                        {listing?.location ?? "Unknown location"}
                       </div>
                     </div>
                   </div>
@@ -252,7 +199,6 @@ export function ListingsDisplay({
         </div>
       )}
 
-      {/* List View */}
       {viewMode === "list" && (
         <div className="space-y-6">
           {listings.map((listing) => (
@@ -265,12 +211,8 @@ export function ListingsDisplay({
                   <div className="flex flex-col sm:flex-row">
                     <div className="w-full h-48 sm:w-40 sm:h-40 bg-muted flex-shrink-0">
                       <Image
-                        src={
-                          (listing.images && listing.images.length > 0
-                            ? listing.images[0]
-                            : null) || "/placeholder.svg"
-                        }
-                        alt={listing.title}
+                        src={listing?.images?.[0] ?? "/placeholder.svg"}
+                        alt={listing?.title ?? "Listing image"}
                         width={160}
                         height={160}
                         className="w-full h-full object-cover"
@@ -279,24 +221,24 @@ export function ListingsDisplay({
                     <div className="p-4 flex-1 relative">
                       <div className="flex justify-between items-start mb-1">
                         <h3 className="font-medium text-lg truncate">
-                          {listing.title}
+                          {listing?.title ?? "Untitled Listing"}
                         </h3>
                         <p className="text-xl font-bold text-green-600">
-                          Ksh {formatPrice(listing.price)}
+                          Ksh {formatPrice(listing?.price ?? 0)}
                         </p>
                       </div>
                       <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
-                        {listing.description}
+                        {listing?.description ?? "No description available."}
                       </p>
                       <div className="flex items-center gap-2 mb-2">
                         <Badge variant="outline">
-                          {listing.condition}
+                          {listing?.condition ?? "N/A"}
                         </Badge>
                       </div>
                       <div className="flex items-center justify-between text-sm text-muted-foreground">
                         <div className="flex items-center gap-1">
                           <MapPin className="h-4 w-4" />
-                          {listing.location}
+                          {listing?.location ?? "Unknown location"}
                         </div>
                       </div>
                     </div>
@@ -307,7 +249,7 @@ export function ListingsDisplay({
           ))}
         </div>
       )}
-      {/* Loading indicator for infinite scroll */}
+
       {hasNextPage && (
         <div ref={loadingRef} className="flex justify-center py-8">
           {isFetchingNextPage && (
@@ -320,7 +262,6 @@ export function ListingsDisplay({
         </div>
       )}
 
-      {/* Back to top button */}
       <Button
         onClick={scrollToTop}
         size="icon"
