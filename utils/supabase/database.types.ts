@@ -345,6 +345,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fk_user_profile"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "listings_category_id_fkey"
             columns: ["category_id"]
             isOneToOne: false
@@ -509,6 +516,7 @@ export type Database = {
           email_verified: boolean
           full_name: string | null
           id: string
+          is_flagged: boolean | null
           language: string
           listing_count: number
           listing_updates: boolean
@@ -524,6 +532,7 @@ export type Database = {
           push_notifications: boolean
           rating: number
           reviews_count: number
+          role: Database["public"]["Enums"]["user_role"]
           show_email: boolean
           show_last_seen: boolean
           show_phone: boolean
@@ -549,6 +558,7 @@ export type Database = {
           email_verified?: boolean
           full_name?: string | null
           id: string
+          is_flagged?: boolean | null
           language?: string
           listing_count?: number
           listing_updates?: boolean
@@ -564,6 +574,7 @@ export type Database = {
           push_notifications?: boolean
           rating?: number
           reviews_count?: number
+          role?: Database["public"]["Enums"]["user_role"]
           show_email?: boolean
           show_last_seen?: boolean
           show_phone?: boolean
@@ -589,6 +600,7 @@ export type Database = {
           email_verified?: boolean
           full_name?: string | null
           id?: string
+          is_flagged?: boolean | null
           language?: string
           listing_count?: number
           listing_updates?: boolean
@@ -604,6 +616,7 @@ export type Database = {
           push_notifications?: boolean
           rating?: number
           reviews_count?: number
+          role?: Database["public"]["Enums"]["user_role"]
           show_email?: boolean
           show_last_seen?: boolean
           show_phone?: boolean
@@ -813,6 +826,47 @@ export type Database = {
         Args: { listing_uuid: string; duration_days?: number }
         Returns: boolean
       }
+      get_filtered_listings: {
+        Args: {
+          p_page?: number
+          p_page_size?: number
+          p_sort_by?: string
+          p_sort_order?: string
+          p_categories?: number[]
+          p_subcategories?: number[]
+          p_conditions?: string[]
+          p_min_price?: number
+          p_max_price?: number
+          p_user_latitude?: number
+          p_user_longitude?: number
+          p_radius_km?: number
+          p_search_query?: string
+        }
+        Returns: {
+          id: string
+          title: string
+          description: string
+          price: number
+          location: string
+          latitude: number
+          longitude: number
+          condition: string
+          featured: boolean
+          images: string[]
+          views: number
+          created_at: string
+          updated_at: string
+          category_id: number
+          category_name: string
+          subcategory_id: number
+          subcategory_name: string
+          user_id: string
+          seller_name: string
+          seller_username: string
+          seller_avatar: string
+          distance_km: number
+        }[]
+      }
       get_listings_within_radius: {
         Args: {
           user_latitude: number
@@ -892,52 +946,6 @@ export type Database = {
           state: string | null
         }[]
       }
-      search_listings: {
-        Args:
-          | {
-              p_search_term: string
-              p_min_price?: number
-              p_max_price?: number
-              p_location?: string
-              p_condition?: string
-              p_category_filter?: string
-              p_limit?: number
-              p_offset?: number
-            }
-          | {
-              search_query?: string
-              category_filter?: number
-              subcategory_filter?: number
-              location_filter?: string
-              min_price_filter?: number
-              max_price_filter?: number
-              condition_filter?: string
-              user_lat?: number
-              user_lng?: number
-              radius_km?: number
-              sort_by?: string
-              page_limit?: number
-              page_offset?: number
-            }
-          | {
-              search_term: string
-              min_price?: number
-              max_price?: number
-              location?: string
-              condition?: string
-              category_filter?: string
-            }
-        Returns: {
-          id: string
-          title: string
-          description: string
-          location: string
-          condition: string
-          price: number
-          category: string
-          rank: number
-        }[]
-      }
       unfeature_expired_listings: {
         Args: Record<PropertyKey, never>
         Returns: number
@@ -945,6 +953,7 @@ export type Database = {
     }
     Enums: {
       transaction_status: "pending" | "completed" | "failed"
+      user_role: "user" | "admin" | "moderator"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1073,6 +1082,7 @@ export const Constants = {
   public: {
     Enums: {
       transaction_status: ["pending", "completed", "failed"],
+      user_role: ["user", "admin", "moderator"],
     },
   },
 } as const

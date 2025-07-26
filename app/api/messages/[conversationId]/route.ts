@@ -95,3 +95,69 @@ export async function POST(
     );
   }
 }
+
+/**
+ * Retrieves all messages for a specific conversation
+ */
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { conversationId: string } },
+) {
+  try {
+    const supabase = await getSupabaseRouteHandler(cookies);
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { conversationId } = params;
+
+    // 1. Verify the user is part of this conversation
+    const { data: conversation, error: convError } = await supabase
+      .from("conversations")
+      .select("encryption_key, buyer_id, seller_id")
+      .eq("id", conversationId)
+      .single();
+
+    if (convError || !conversation) {
+      return NextResponse.json(
+        { error: "Conversation not found" },
+        { status: 404 },
+      );
+    }
+
+    if (user.id !== conversation.buyer_id && user.id !== conversation.seller_id) {
+      return NextResponse.json(
+        { error: "You are not a part of this conversation" },
+        { status: 403 },
+      );
+    }
+
+    // 2. Fetch all messages for this conversation
+    const { data: encryptedMessages, error: messagesError } = await supabase
+      .from("encrypted_messages")
+      .select("id, encrypted_content, iv, sender_id, created_at")
+      .eq("conversation_id", conversationId)
+      .order("created_at", { ascending: true });
+
+    if (messagesError) {
+      console.error("Error fetching messages:", messagesError);
+      return NextResponse.json(
+        { error: "Failed to fetch messages" },
+        { status: 500 },
+      );
+    }
+
+    // 3. Return encrypted messages (frontend will decrypt them)
+    return NextResponse.json(encryptedMessages || []);
+  } catch (error) {
+    console.error("Get messages API error:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
+    );
+  }
+}

@@ -3,11 +3,13 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+import Image from "next/image"; // Import Image component
+import { useTheme } from "next-themes"; // Import useTheme
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Search,
-  MapPin,
   Menu,
   X,
   User,
@@ -16,7 +18,6 @@ import {
   Settings,
   Plus,
 } from "lucide-react";
-import { useState } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/contexts/auth-context";
@@ -135,8 +136,13 @@ export default function Navigation() {
     <div className="container flex h-16 items-center justify-between">
       <div className="flex items-center gap-6">
         <Link href="/" className="flex items-center space-x-2">
-          <MapPin className="h-6 w-6 text-primary" />
-          <span className="text-xl font-bold">RouteMe</span>
+          <Image
+            src="/RouteMe_logo.png"
+            alt="RouteMe Logo"
+            width={96}
+            height={32}
+            className="h-6 w-6"
+          />
         </Link>
         <nav className="hidden md:flex items-center gap-6">
           {routes.map((route) => (
@@ -173,8 +179,13 @@ export default function Navigation() {
           <SheetContent side="left">
             <div className="flex flex-col gap-6 py-4">
               <Link href="/" className="flex items-center space-x-2">
-                <MapPin className="h-6 w-6 text-primary" />
-                <span className="text-xl font-bold">RouteMe</span>
+                <Image
+                  src="/RouteMe_logo.png"
+                  alt="RouteMe Logo"
+                  width={32}
+                  height={32}
+                  className="h-6 w-6"
+                />
               </Link>
               <nav className="flex flex-col gap-4">
                 {routes.map((route) => (
@@ -198,7 +209,7 @@ export default function Navigation() {
                     >
                       Account
                     </Button>
-                     <Button
+                    <Button
                       variant="ghost"
                       className="justify-start"
                       onClick={() => router.push("/dashboard")}

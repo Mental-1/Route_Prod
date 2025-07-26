@@ -39,7 +39,7 @@ export async function GET(request: Request) {
       `,
         { count: "exact" },
       )
-      .eq("status", "approved") // Only show approved listings
+      .eq("status", "active") // Only show active listings
       .range(offset, offset + limit - 1)
       .order("created_at", { ascending: false });
 
@@ -108,18 +108,18 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
 
-    // 1. Fetch the category ID from the database
-    const categoryName = body.category_id || "Other";
+    // 1. Fetch the category from the database using the ID
+    const categoryId = body.category_id;
     const { data: category, error: categoryError } = await supabase
       .from("categories")
       .select("id")
-      .eq("name", categoryName)
+      .eq("id", categoryId)
       .single();
 
     if (categoryError || !category) {
       console.error("Error fetching category:", categoryError);
       return NextResponse.json(
-        { error: `Category '${categoryName}' not found.` },
+        { error: `Category '${categoryId}' not found.` },
         { status: 400 },
       );
     }

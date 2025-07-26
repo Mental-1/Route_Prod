@@ -33,7 +33,7 @@ export async function GET(
         longitude,
         category:categories(name),
         subcategory:subcategories(name),
-        profiles!user_id(id, full_name, username, avatar_url)
+        profiles!user_id(id, full_name, username, avatar_url, phone_number)
       `,
       )
       .eq("id", id)

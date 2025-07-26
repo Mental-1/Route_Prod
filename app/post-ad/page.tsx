@@ -27,6 +27,7 @@ import { toast } from "@/components/ui/use-toast";
 import { uploadBufferedMedia } from "./actions/upload-buffered-media";
 import { getSupabaseClient } from "@/utils/supabase/client";
 import { getPlans, Plan } from "./actions";
+import { formatPrice } from "@/lib/utils"; // Import formatPrice
 
 import {
   Dialog,
@@ -689,6 +690,40 @@ function AdDetailsStep({
   detectLocation: () => void;
 }) {
   const availableSubcategories = formData.category ? subcategories : [];
+
+  // Helper function to format number with commas
+  const formatPrice = (value: string | number) => {
+    if (value === null || value === undefined || value === "") return "";
+    const num = Number(value);
+    if (isNaN(num)) return String(value); // Return as is if not a valid number
+    return num.toLocaleString();
+  };
+
+  // Helper function to parse formatted string back to number
+  const parsePrice = (value: string) => {
+    const cleaned = value.replace(/,/g, "");
+    const num = Number(cleaned);
+    return isNaN(num) ? "" : num.toString();
+  };
+
+  // State for the displayed price in the input field
+  const [displayPrice, setDisplayPrice] = useState(formatPrice(formData.price));
+
+  useEffect(() => {
+    // Update displayPrice when formData.price changes externally
+    setDisplayPrice(formatPrice(formData.price));
+  }, [formData.price]);
+
+  const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawValue = e.target.value;
+    // Update the displayed value directly
+    setDisplayPrice(rawValue);
+
+    // Parse and update the actual form data value
+    const parsedValue = parsePrice(rawValue);
+    updateFormData({ price: parsedValue });
+  };
+
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-semibold">Ad Details</h2>
@@ -763,10 +798,11 @@ function AdDetailsStep({
             <Label htmlFor="price">Price</Label>
             <Input
               id="price"
-              type="number"
+              type="text" // Changed to text
               placeholder="Enter price"
-              value={formData.price}
-              onChange={(e) => updateFormData({ price: e.target.value })}
+              value={displayPrice} // Use displayPrice for input value
+              onChange={handlePriceChange} // Use new handler
+              onBlur={(e) => setDisplayPrice(formatPrice(parsePrice(e.target.value)))} // Format on blur
             />
           </div>
 
@@ -1344,7 +1380,7 @@ function PreviewStep({
                 {formData.title || "Ad Title"}
               </h3>
               <p className="text-2xl font-bold text-green-600">
-                Ksh {formData.price || "N/A"}
+                Ksh {formatPrice(Number(formData.price)) || "N/A"}
               </p>
               {formData.negotiable && (
                 <span className="text-sm text-muted-foreground">

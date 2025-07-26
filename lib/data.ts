@@ -1,30 +1,5 @@
 import { getSupabaseClient } from "@/utils/supabase/client";
-
-export interface DisplayListingItem {
-  id: string;
-  title: string;
-  description: string | null;
-  price: number | null;
-  location: string | null;
-  views: number | null;
-  images: string[] | null;
-  condition: string | null;
-  distance?: string;
-}
-
-export interface ListingsItem {
-  id: string;
-  title: string;
-  description: string | null;
-  price: number | null;
-  images: string[] | null;
-  condition: string | null;
-  location: string | null;
-  views: number | null;
-  category_id: number | null;
-  subcategory_id: number | null;
-  created_at: string | null;
-}
+import { DisplayListingItem, ListingsItem } from "@/lib/types/listing";
 
 /**
  * Retrieves up to eight of the most recent listings created within the last four days.
@@ -93,7 +68,27 @@ export async function getListings(
   const { data, error } = await supabase
     .from("listings")
     .select(
-      "id, title, description, price, images, condition, location, views, category_id, subcategory_id, created_at",
+      `
+      id,
+      title,
+      description,
+      price,
+      location,
+      latitude,
+      longitude,
+      condition,
+      featured,
+      images,
+      views,
+      created_at,
+      updated_at,
+      category_id,
+      categories(name),
+      subcategory_id,
+      subcategories(name),
+      user_id,
+      profiles(full_name, username, avatar_url)
+      `,
     )
     .order("created_at", { ascending: false })
     .range((page - 1) * pageSize, page * pageSize - 1);
@@ -103,7 +98,39 @@ export async function getListings(
     throw new Error("Failed to fetch listings");
   }
 
-  return data || [];
+  // Ensure data is an array
+  if (!Array.isArray(data)) {
+    console.warn('getListings: data is not an array:', data);
+    return [];
+  }
+
+  // Map the data to match the ListingsItem interface, including aliased names
+  const mappedData: ListingsItem[] = data.map((item: any) => ({
+    id: item.id || '',
+    title: item.title || 'Untitled',
+    description: item.description,
+    price: item.price,
+    location: item.location,
+    latitude: item.latitude,
+    longitude: item.longitude,
+    condition: item.condition || 'unknown',
+    featured: item.featured || false,
+    images: Array.isArray(item.images) ? item.images : (item.images ? [item.images] : []),
+    views: item.views || 0,
+    created_at: item.created_at,
+    updated_at: item.updated_at,
+    category_id: item.category_id,
+    category_name: item.categories?.name || null,
+    subcategory_id: item.subcategory_id,
+    subcategory_name: item.subcategories?.name || null,
+    user_id: item.user_id,
+    seller_name: item.profiles?.full_name || null,
+    seller_username: item.profiles?.username || null,
+    seller_avatar: item.profiles?.avatar_url || null,
+    distance_km: null, // This field is only calculated by RPC, so it's null here
+  }));
+
+  return mappedData || [];
 }
 
 /**
@@ -172,18 +199,35 @@ export async function getFilteredListings({
       ? result.data.listings
       : result.data) || [];
 
-  return filteredData.map((listing: ListingsItem) => ({
-    id: listing.id,
-    title: listing.title,
+  // Ensure filteredData is an array and handle edge cases
+  if (!Array.isArray(filteredData)) {
+    console.warn('getFilteredListings: filteredData is not an array:', filteredData);
+    return [];
+  }
+
+  return filteredData.map((listing: any) => ({
+    id: listing.id || '',
+    title: listing.title || 'Untitled',
     description: listing.description,
     price: listing.price,
-    images: listing.images,
-    condition: listing.condition,
     location: listing.location,
-    views: listing.views,
-    category_id: listing.category_id,
-    subcategory_id: listing.subcategory_id,
+    latitude: listing.latitude,
+    longitude: listing.longitude,
+    condition: listing.condition || 'unknown',
+    featured: listing.featured || false,
+    images: Array.isArray(listing.images) ? listing.images : (listing.images ? [listing.images] : []),
+    views: listing.views || 0,
     created_at: listing.created_at,
+    updated_at: listing.updated_at,
+    category_id: listing.category_id,
+    category_name: listing.category_name || null,
+    subcategory_id: listing.subcategory_id,
+    subcategory_name: listing.subcategory_name || null,
+    user_id: listing.user_id,
+    seller_name: listing.seller_name || null,
+    seller_username: listing.seller_username || null,
+    seller_avatar: listing.seller_avatar || null,
+    distance_km: listing.distance_km || null,
   }));
 }
 // In lib/data.ts around lines 130 to 154, the current code fetches all listings
