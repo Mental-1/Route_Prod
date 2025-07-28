@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Grid, List, MapPin, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -44,18 +44,52 @@ export function ListingsDisplay({
   const searchParamsInstance = useSearchParams();
   const sortBy = searchParamsInstance.get("sortBy") || "newest";
 
-  // Derive filters from the searchParams prop (from the server component)
-  const currentFilters = {
-    categories: searchParams.categories ? String(searchParams.categories).split(',') : [],
-    subcategories: searchParams.subcategories ? String(searchParams.subcategories).split(',') : [],
-    conditions: searchParams.conditions ? String(searchParams.conditions).split(',') : [],
-    priceRange: {
-      min: searchParams.priceMin ? Number(searchParams.priceMin) : 0,
-      max: searchParams.priceMax ? Number(searchParams.priceMax) : 1000000,
-    },
-    maxDistance: searchParams.maxDistance ? Number(searchParams.maxDistance) : 5,
-    searchQuery: searchParams.search ? String(searchParams.search) : "",
-  };
+  const currentFilters = useMemo(() => {
+    const filters: {
+      categories?: number[];
+      subcategories?: number[];
+      conditions?: string[];
+      priceRange?: { min: number; max: number };
+      maxDistance?: number;
+      searchQuery?: string;
+    } = {
+      conditions: Array.isArray(searchParams.conditions)
+        ? searchParams.conditions.map(String)
+        : searchParams.conditions
+        ? String(searchParams.conditions).split(',').map(s => s.trim())
+        : [],
+      priceRange: {
+        min: searchParams.priceMin ? Number(searchParams.priceMin) : 0,
+        max: searchParams.priceMax ? Number(searchParams.priceMax) : 1000000,
+      },
+      maxDistance: searchParams.maxDistance ? Number(searchParams.maxDistance) : 5,
+      searchQuery: searchParams.search ? String(searchParams.search) : "",
+    };
+
+    // Parse category ID from 'category' param
+    if (searchParams.category) {
+      filters.categories = [Number(searchParams.category)];
+    } else if (searchParams.categories) { // Fallback for comma-separated 'categories'
+      filters.categories = Array.isArray(searchParams.categories)
+        ? searchParams.categories.map(Number)
+        : String(searchParams.categories).split(',').map(Number);
+    } else {
+      filters.categories = [];
+    }
+
+    // Parse subcategory ID from 'subcategory' param
+    if (searchParams.subcategory) {
+      filters.subcategories = [Number(searchParams.subcategory)];
+    } else if (searchParams.subcategories) { // Fallback for comma-separated 'subcategories'
+      filters.subcategories = Array.isArray(searchParams.subcategories)
+        ? searchParams.subcategories.map(Number)
+        : String(searchParams.subcategories).split(',').map(Number);
+    } else {
+      filters.subcategories = [];
+    }
+
+    return filters;
+  }, [searchParams]);
 
   const handleSortByChange = (value: string) => {
     const params = new URLSearchParams(searchParamsInstance.toString());
@@ -64,7 +98,7 @@ export function ListingsDisplay({
   };
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
-    queryKey: ["listings", currentFilters, sortBy, userLocation, JSON.stringify(searchParams)],
+    queryKey: ["listings", currentFilters, sortBy, userLocation, searchParamsInstance.toString()],
     queryFn: ({ pageParam = 1 }) =>
       getFilteredListings({
         page: pageParam,

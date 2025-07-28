@@ -41,14 +41,10 @@ interface FilterState {
   priceRange: [number, number];
 }
 
-export function ListingsFilter({
-  searchParams,
-}: {
-  searchParams: URLSearchParams;
-}) {
+export function ListingsFilter() {
   const router = useRouter();
   const pathname = usePathname();
-  
+  const searchParams = useSearchParams();
 
   // Single state object for filters
   const [filters, setFilters] = useState<FilterState>({
@@ -63,7 +59,7 @@ export function ListingsFilter({
   const { data: categories = [] } = useQuery<Category[]>({
     queryKey: ["categories"],
     queryFn: async () => {
-      const res = await fetch("/api/categories");
+      const res = await fetch(`${window.location.origin}/api/categories`);
       if (!res.ok) throw new Error("Failed to fetch categories");
       return res.json();
     },
