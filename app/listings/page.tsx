@@ -17,7 +17,7 @@ export default async function ListingsPage({
 
   const initialListings = await queryClient.fetchQuery({
     queryKey: ["listings", searchParams],
-    queryFn: () => getListings(1, PAGE_SIZE, searchParams),
+    queryFn: () => getListings(1, PAGE_SIZE),
   });
 
   return (
