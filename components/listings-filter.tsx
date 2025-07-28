@@ -72,7 +72,7 @@ export function ListingsFilter({
   const { data: subcategories = [] } = useQuery<Subcategory[]>({
     queryKey: ["subcategories"],
     queryFn: async () => {
-      const res = await fetch("/api/subcategories");
+      const res = await fetch(`${window.location.origin}/api/subcategories`);
       if (!res.ok) throw new Error("Failed to fetch subcategories");
       return res.json();
     },

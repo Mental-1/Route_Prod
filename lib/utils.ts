@@ -9,5 +9,5 @@ export function formatPrice(price: number | null | undefined): string {
   if (price === null || price === undefined) {
     return "N/A";
   }
-  return price.toLocaleString();
+  return new Intl.NumberFormat('en-US', { useGrouping: true }).format(price);
 }

@@ -52,6 +52,7 @@ export function ListingsDisplay({
   const pathname = usePathname();
   const searchParamsInstance = useSearchParams();
   const sortBy = searchParamsInstance.get("sortBy") || "newest";
+  const searchParamsString = searchParamsInstance.toString();
 
   const handleSortByChange = (value: string) => {
     const params = new URLSearchParams(searchParamsInstance.toString());
@@ -60,7 +61,7 @@ export function ListingsDisplay({
   };
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
-    queryKey: ["listings", initialFilters, sortBy, userLocation, searchParamsInstance.toString()],
+    queryKey: ["listings", initialFilters, sortBy, userLocation, searchParamsString],
     queryFn: ({ pageParam = 1 }) =>
       getFilteredListings({
         page: pageParam,
