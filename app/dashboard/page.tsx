@@ -16,6 +16,7 @@ import Link from "next/link";
 import { Check, Clock, Eye, Plus, Star } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 import { toast } from "@/components/ui/use-toast";
+import { formatPrice } from "@/lib/utils";
 
 import {
   ListingItem,
