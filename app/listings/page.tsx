@@ -39,7 +39,6 @@ export default async function ListingsPage({
           <HydrationBoundary state={dehydrate(queryClient)}>
             <ListingsDisplay
               initialListings={initialListings ?? []}
-              initialFilters={initialFilters}
               searchParams={searchParams}
             />
           </HydrationBoundary>

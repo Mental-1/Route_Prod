@@ -25,20 +25,11 @@ import { formatPrice } from "@/lib/utils";
 
 interface ListingsDisplayProps {
   initialListings: ListingsItem[];
-  initialFilters: {
-    categories?: number[];
-    subcategories?: number[];
-    conditions?: string[];
-    priceRange?: { min: number; max: number };
-    maxDistance?: number;
-    searchQuery?: string;
-  };
   searchParams: { [key: string]: string | string[] | undefined };
 }
 
 export function ListingsDisplay({
   initialListings,
-  initialFilters,
   searchParams,
 }: ListingsDisplayProps) {
   const PAGE_SIZE = 20;
@@ -52,7 +43,19 @@ export function ListingsDisplay({
   const pathname = usePathname();
   const searchParamsInstance = useSearchParams();
   const sortBy = searchParamsInstance.get("sortBy") || "newest";
-  const searchParamsString = searchParamsInstance.toString();
+
+  // Derive filters from the searchParams prop (from the server component)
+  const currentFilters = {
+    categories: searchParams.categories ? String(searchParams.categories).split(',') : [],
+    subcategories: searchParams.subcategories ? String(searchParams.subcategories).split(',') : [],
+    conditions: searchParams.conditions ? String(searchParams.conditions).split(',') : [],
+    priceRange: {
+      min: searchParams.priceMin ? Number(searchParams.priceMin) : 0,
+      max: searchParams.priceMax ? Number(searchParams.priceMax) : 1000000,
+    },
+    maxDistance: searchParams.maxDistance ? Number(searchParams.maxDistance) : 5,
+    searchQuery: searchParams.search ? String(searchParams.search) : "",
+  };
 
   const handleSortByChange = (value: string) => {
     const params = new URLSearchParams(searchParamsInstance.toString());
@@ -61,15 +64,15 @@ export function ListingsDisplay({
   };
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
-    queryKey: ["listings", initialFilters, sortBy, userLocation, searchParamsString],
+    queryKey: ["listings", currentFilters, sortBy, userLocation, JSON.stringify(searchParams)],
     queryFn: ({ pageParam = 1 }) =>
       getFilteredListings({
         page: pageParam,
         pageSize: PAGE_SIZE,
-        filters: initialFilters,
+        filters: currentFilters,
         sortBy,
         userLocation,
-        searchQuery: initialFilters.searchQuery,
+        searchQuery: currentFilters.searchQuery,
       }),
     getNextPageParam: (lastPage, pages) => {
       return lastPage.length === PAGE_SIZE ? pages.length + 1 : undefined;
