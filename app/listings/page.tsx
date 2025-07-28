@@ -24,7 +24,7 @@ export default async function ListingsPage({
     <div className="min-h-screen bg-background">
       <div className="container px-4 py-6">
         <div className="flex flex-col md:flex-row gap-6">
-          <ListingsFilter searchParams={searchParams} />
+          <ListingsFilter />
           <HydrationBoundary state={dehydrate(queryClient)}>
             <ListingsDisplay
               initialListings={initialListings ?? []}
