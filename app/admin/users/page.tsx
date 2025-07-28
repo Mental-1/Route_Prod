@@ -1,6 +1,8 @@
+"use client";
+
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
-import React from "react";
+import React, { useTransition } from "react";
 import { banUser, unbanUser } from "./actions";
 
 interface User {
@@ -15,24 +17,20 @@ interface User {
 
 async function getAllUsers(): Promise<User[]> {
   const cookieStore = await cookies();
-  
+
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  
+
   if (!supabaseUrl || !serviceRoleKey) {
     console.error("Missing required environment variables");
     return [];
   }
-  
-  const supabase = createServerClient(
-    supabaseUrl,
-    serviceRoleKey,
-    {
-      cookies: {
-        getAll: () => cookieStore.getAll(),
-      },
+
+  const supabase = createServerClient(supabaseUrl, serviceRoleKey, {
+    cookies: {
+      getAll: () => cookieStore.getAll(),
     },
-  );
+  });
 
   const { data, error } = await supabase.auth.admin.listUsers();
 
@@ -41,22 +39,7 @@ async function getAllUsers(): Promise<User[]> {
     return [];
   }
 
-  return data.users as User[];
-}
-
-"use client";
-
-import { useTransition } from "react";
-import { banUser, unbanUser } from "./actions";
-
-interface User {
-  id: string;
-  email?: string;
-  created_at: string;
-  banned_until?: string;
-  profile?: {
-    is_flagged?: boolean;
-  };
+  return data.users ?? [];
 }
 
 const UserActions = ({ user }: { user: User }) => {
@@ -75,13 +58,24 @@ const UserActions = ({ user }: { user: User }) => {
   };
 
   return (
-    <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        handleSubmit();
+      }}
+    >
       <button
         type="submit"
         className={`font-bold py-2 px-4 rounded ${isBanned ? "bg-green-500 hover:bg-green-600 text-white" : "bg-red-500 hover:bg-red-600 text-white"}`}
         disabled={isPending}
       >
-        {isPending ? (isBanned ? "Unbanning..." : "Banning...") : (isBanned ? "Unban" : "Ban")}
+        {isPending
+          ? isBanned
+            ? "Unbanning..."
+            : "Banning..."
+          : isBanned
+            ? "Unban"
+            : "Ban"}
       </button>
     </form>
   );
