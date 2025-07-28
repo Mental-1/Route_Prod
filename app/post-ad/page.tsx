@@ -8,11 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  PayPalScriptProvider,
-  PayPalButtons,
-  ReactPayPalScriptOptions,
-} from "@paypal/react-paypal-js";
+
 
 import {
   Select,
@@ -27,7 +23,7 @@ import { toast } from "@/components/ui/use-toast";
 import { uploadBufferedMedia } from "./actions/upload-buffered-media";
 import { getSupabaseClient } from "@/utils/supabase/client";
 import { getPlans, Plan } from "./actions";
-import { formatPrice } from "@/lib/utils"; // Import formatPrice
+import { formatPrice } from "@/lib/utils";
 
 import {
   Dialog,
@@ -54,10 +50,10 @@ const formatLocationData = (location: any) => {
 
 const steps = [
   { id: "details", label: "Details" },
-  { id: "payment", label: "Payment" },
   { id: "media", label: "Media" },
-  { id: "method", label: "Method" },
+  { id: "payment", label: "Payment" },
   { id: "preview", label: "Preview" },
+  { id: "method", label: "Method" },
 ];
 
 /**
@@ -187,10 +183,13 @@ export default function PostAdPage() {
     formData.location,
   );
 
-  const pollTransactionStatus = async (transactionId: string, externalId: string) => {
+  const pollTransactionStatus = async (
+    transactionId: string,
+    externalId: string,
+  ) => {
     const MAX_POLL_ATTEMPTS = 30; // Poll for 5 minutes (30 * 10 seconds)
     const POLL_INTERVAL_MS = 10000; // 10 seconds
-  
+
     let attempts = 0;
     const interval = setInterval(async () => {
       attempts++;
@@ -201,20 +200,23 @@ export default function PostAdPage() {
         setTransactionInProgress(false);
         toast({
           title: "Payment Timeout",
-          description: "Payment status could not be confirmed. Please check your payment provider or contact support.",
+          description:
+            "Payment status could not be confirmed. Please check your payment provider or contact support.",
           variant: "destructive",
         });
         setCurrentStep(methodStepIndex); // Go back to payment step
         return;
       }
-  
+
       try {
-        const response = await fetch(`/api/payments/status?transactionId=${transactionId}`);
+        const response = await fetch(
+          `/api/payments/status?transactionId=${transactionId}`,
+        );
         if (!response.ok) {
           throw new Error("Failed to fetch payment status.");
         }
         const data = await response.json();
-  
+
         if (data.status === "completed") {
           clearInterval(interval);
           setPaymentCompleted(true);
@@ -223,7 +225,8 @@ export default function PostAdPage() {
           setTransactionInProgress(false);
           toast({
             title: "Payment Confirmed",
-            description: "Your payment has been successfully processed! You can now submit your ad.",
+            description:
+              "Your payment has been successfully processed! You can now submit your ad.",
             variant: "default",
           });
           // User will click "Submit Ad" manually
@@ -237,7 +240,7 @@ export default function PostAdPage() {
             description: "Your payment was not successful. Please try again.",
             variant: "destructive",
           });
-          setCurrentStep(methodStepIndex); // Go back to payment step
+          setCurrentStep(methodStepIndex);
         }
         // If status is still 'pending', continue polling
       } catch (error) {
@@ -288,7 +291,10 @@ export default function PostAdPage() {
         // Start polling for payment status
         setCurrentTransactionId(paymentResult.transactionId);
         setIsPollingPayment(true);
-        pollTransactionStatus(paymentResult.transactionId, paymentResult.checkoutRequestId || paymentResult.orderID); // Pass external ID for logging/debugging
+        pollTransactionStatus(
+          paymentResult.transactionId,
+          paymentResult.checkoutRequestId || paymentResult.orderID,
+        ); // Pass external ID for logging/debugging
 
         toast({
           title: "Payment Initiated",
@@ -296,8 +302,7 @@ export default function PostAdPage() {
             "Your payment is being processed. We are awaiting confirmation.",
           variant: "default",
         });
-        // Advance to preview step to show payment status
-        handleAdvanceStep();
+        // User remains on the method step until payment is confirmed
         return;
       } catch (error) {
         console.error("Payment processing error:", error);
@@ -344,7 +349,8 @@ export default function PostAdPage() {
         title: formData.title,
         description: formData.description,
         price: Number.parseFloat(formData.price) || null,
-        category_id: categories.find(cat => cat.name === formData.category)?.id || null,
+        category_id:
+          categories.find((cat) => cat.name === formData.category)?.id || null,
         subcategory_id: formData.subcategory
           ? Number.parseInt(formData.subcategory)
           : null,
@@ -448,9 +454,7 @@ export default function PostAdPage() {
       case "paystack":
         endpoint = "/api/payments/paystack";
         break;
-      case "paypal":
-        endpoint = "/api/payments/paypal";
-        break;
+      
       default:
         throw new Error("Invalid payment method");
     }
@@ -466,8 +470,7 @@ export default function PostAdPage() {
     let externalId = null;
     if (paymentMethod === "mpesa") {
       externalId = responseData.checkoutRequestId;
-    } else if (paymentMethod === "paypal") {
-      externalId = responseData.id; // PayPal order ID
+    
     }
 
     return {
@@ -477,8 +480,6 @@ export default function PostAdPage() {
       externalId: externalId,
     };
   };
-
-  
 
   // Detect location function with high accuracy
   const detectLocation = () => {
@@ -518,7 +519,7 @@ export default function PostAdPage() {
         );
       case 1:
         return (
-          <PaymentTierStep
+          <MediaUploadStep
             formData={formData}
             updateFormData={updateFormData}
             plans={plans}
@@ -526,21 +527,13 @@ export default function PostAdPage() {
         );
       case 2:
         return (
-          <MediaUploadStep
+          <PaymentTierStep
             formData={formData}
             updateFormData={updateFormData}
             plans={plans}
           />
         );
       case 3:
-        return (
-          <PaymentMethodStep
-            formData={formData}
-            updateFormData={updateFormData}
-            plans={plans}
-          />
-        );
-      case 4:
         return (
           <PreviewStep
             formData={formData}
@@ -551,12 +544,21 @@ export default function PostAdPage() {
             displayLocation={displayLocation}
           />
         );
+      case 4:
+        return (
+          <PaymentMethodStep
+            formData={formData}
+            updateFormData={updateFormData}
+            plans={plans}
+          />
+        );
       default:
         return null;
     }
   };
 
   const methodStepIndex = steps.findIndex((step) => step.id === "method");
+  const previewStepIndex = steps.findIndex((step) => step.id === "preview");
 
   return (
     <div className="min-h-screen bg-muted/50 py-8">
@@ -608,25 +610,32 @@ export default function PostAdPage() {
                 </Button>
 
                 {currentStep === steps.length - 1 ? (
-                  <Button onClick={handleSubmit} disabled={isSubmitted || isPollingPayment || isProcessingPayment || isPublishingListing || (selectedTier.price > 0 && !paymentCompleted)}>
-                    Submit Ad
+                  <Button
+                    onClick={handleSubmit}
+                    disabled={
+                      isSubmitted ||
+                      isPollingPayment ||
+                      isProcessingPayment ||
+                      isPublishingListing ||
+                      (selectedTier.price > 0 && !paymentCompleted)
+                    }
+                  >
+                    {selectedTier.price > 0 && !paymentCompleted
+                      ? "Pay"
+                      : "Submit Ad"}
+                    <ChevronRight className="h-4 w-4 ml-2" />
                   </Button>
                 ) : (
                   <Button
-                    onClick={
-                      currentStep === methodStepIndex &&
-                      selectedTier.price > 0 &&
-                      !paymentCompleted
-                        ? handleSubmit
-                        : handleAdvanceStep
+                    onClick={handleAdvanceStep}
+                    disabled={
+                      isSubmitted ||
+                      isPollingPayment ||
+                      isProcessingPayment ||
+                      isPublishingListing
                     }
-                    disabled={isSubmitted || isPollingPayment || isProcessingPayment || isPublishingListing}
                   >
-                    {currentStep === methodStepIndex &&
-                    selectedTier.price > 0 &&
-                    !paymentCompleted
-                      ? "Pay"
-                      : "Next"}
+                    Next
                     <ChevronRight className="h-4 w-4 ml-2" />
                   </Button>
                 )}
@@ -802,7 +811,9 @@ function AdDetailsStep({
               placeholder="Enter price"
               value={displayPrice} // Use displayPrice for input value
               onChange={handlePriceChange} // Use new handler
-              onBlur={(e) => setDisplayPrice(formatPrice(parsePrice(e.target.value)))} // Format on blur
+              onBlur={(e) =>
+                setDisplayPrice(formatPrice(parsePrice(e.target.value)))
+              } // Format on blur
             />
           </div>
 
@@ -1012,8 +1023,8 @@ function MediaUploadStep({
       {(imageWarning || videoWarning) && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
           <p className="text-sm text-yellow-800">
-            <strong>Notice:</strong> You&apos;ve uploaded more media than your plan
-            allows.
+            <strong>Notice:</strong> You&apos;ve uploaded more media than your
+            plan allows.
             {imageWarning &&
               ` Only the first ${limits.images} images will be published.`}
             {videoWarning &&
@@ -1129,15 +1140,6 @@ function PaymentMethodStep({
   }
 
   return (
-    <PayPalScriptProvider
-      options={
-        {
-          clientId: process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID,
-          currency: "KES",
-          intent: "capture",
-        } as ReactPayPalScriptOptions
-      }
-    >
       <div className="space-y-6">
         <h2 className="text-xl font-semibold">Payment Method</h2>
 
@@ -1205,30 +1207,6 @@ function PaymentMethodStep({
                   </div>
                 </CardContent>
               </Card>
-
-              <Card
-                className={`cursor-pointer transition-all ${
-                  formData.paymentMethod === "paypal"
-                    ? "ring-2 ring-blue-500"
-                    : "hover:shadow-md"
-                }`}
-                onClick={() => updateFormData({ paymentMethod: "paypal" })}
-              >
-                <CardContent className="p-4">
-                  <div className="flex items-center space-x-3">
-                    <Image
-                      src="/PayPal_Logo.png"
-                      alt="PayPal Logo"
-                      width={48}
-                      height={48}
-                      className="w-12 h-12 object-contain rounded-lg"
-                    />
-                    <div>
-                      <p className="font-medium">PayPal</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
             </div>
           </div>
 
@@ -1260,80 +1238,8 @@ function PaymentMethodStep({
               />
             </div>
           )}
-          {formData.paymentMethod === "paypal" && (
-            <PayPalButtons
-              style={{ layout: "vertical" }}
-              createOrder={async (data, actions) => {
-                try {
-                  const res = await fetch("/api/payments/paypal", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                      amount: selectedTier.price,
-                      description: `Bidsy Payment - ${selectedTier.name} Plan`,
-                    }),
-                  });
-                  if (!res.ok) {
-                    const errorData = await res.json();
-                    throw new Error(errorData.error || "Failed to create PayPal order.");
-                  }
-                  const order = await res.json();
-                  return order.id;
-                } catch (error: any) {
-                  console.error("Error creating PayPal order:", error);
-                  toast({
-                    title: "Payment Error",
-                    description: error.message || "Failed to initiate PayPal payment. Please try again.",
-                    variant: "destructive",
-                  });
-                  throw error; // Re-throw to stop the PayPal flow
-                }
-              }}
-              onApprove={async (data, actions) => {
-                try {
-                  const res = await fetch("/api/payments/paypal/capture", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ orderID: data.orderID }),
-                  });
-                  if (!res.ok) {
-                    const errorData = await res.json();
-                    throw new Error(errorData.error || "Failed to capture PayPal payment.");
-                  }
-                  const details = await res.json();
-                  toast({
-                    title: "Payment Successful",
-                    description: "Your payment has been processed successfully.",
-                  });
-                } catch (error: any) {
-                  console.error("Error capturing PayPal payment:", error);
-                  toast({
-                    title: "Payment Failed",
-                    description: error.message || "There was an error processing your payment. Please try again.",
-                    variant: "destructive",
-                  });
-                }
-              }}
-              onError={(err) => {
-                console.error("PayPal error:", err);
-                toast({
-                  title: "Payment Failed",
-                  description: "There was an error processing your payment. Please try again.",
-                  variant: "destructive",
-                });
-              }}
-              onCancel={() => {
-                toast({
-                  title: "Payment Cancelled",
-                  description: "You cancelled the payment. Please try again when ready.",
-                  variant: "default",
-                });
-              }}
-            />
-          )}
         </div>
       </div>
-    </PayPalScriptProvider>
   );
 }
 
@@ -1369,7 +1275,9 @@ function PreviewStep({
       {isPollingPayment && !paymentCompleted && (
         <div className="flex items-center justify-center p-4 rounded-lg bg-yellow-100 border border-yellow-300">
           <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-yellow-500 mr-3"></div>
-          <p className="text-yellow-800 font-medium">Payment pending confirmation...</p>
+          <p className="text-yellow-800 font-medium">
+            Payment pending confirmation...
+          </p>
         </div>
       )}
       <Card>

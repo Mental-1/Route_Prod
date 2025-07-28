@@ -46,8 +46,15 @@ export async function POST(request: NextRequest) {
 
     logger.info("Signature validation successful.");
 
-    const parsedBody = JSON.parse(body);
-    logger.debug({ parsedBody }, "Parsed Callback Body:");
+    logger.debug("Attempting to parse callback body.");
+    let parsedBody;
+    try {
+      parsedBody = JSON.parse(body);
+      logger.debug({ parsedBody }, "Parsed Callback Body successfully:");
+    } catch (parseError) {
+      logger.error({ parseError, body }, "Failed to parse callback body.");
+      return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+    }
 
     const { Body } = parsedBody;
 
@@ -70,6 +77,7 @@ export async function POST(request: NextRequest) {
 
     const supabase = await getSupabaseRouteHandler(cookies);
 
+    logger.info({ CheckoutRequestID }, "Checking for existing transaction in database.");
     // Check for duplicate callbacks (idempotency)
     const { data: existingTransaction, error: fetchError } = await supabase
       .from("transactions")
@@ -77,17 +85,25 @@ export async function POST(request: NextRequest) {
       .eq("checkout_request_id", CheckoutRequestID)
       .single();
 
-    if (existingTransaction && existingTransaction.status === "completed") {
-      logger.warn(
-        { CheckoutRequestID },
-        "Duplicate M-Pesa callback received for already completed transaction.",
-      );
-      return NextResponse.json({ success: true });
+    if (fetchError) {
+      logger.error({ fetchError, CheckoutRequestID }, "Error fetching existing transaction:");
+      // Do not return here, continue to attempt update if fetch failed but no existing transaction was found
+    } else if (existingTransaction) {
+      logger.info({ CheckoutRequestID, status: existingTransaction.status }, "Existing transaction found.");
+      if (existingTransaction.status === "completed") {
+        logger.warn(
+          { CheckoutRequestID },
+          "Duplicate M-Pesa callback received for already completed transaction.",
+        );
+        return NextResponse.json({ success: true });
+      }
+    } else {
+      logger.info({ CheckoutRequestID }, "No existing transaction found with 'completed' status. Proceeding with update.");
     }
 
     // Update transaction status
     const status = ResultCode === 0 ? "completed" : "failed";
-    logger.info(`Transaction status determined as: ${status}`);
+    logger.info(`Attempting to update transaction status to: ${status} for CheckoutRequestID: ${CheckoutRequestID}`);
 
     let reference = null;
     if (CallbackMetadata?.Item) {
@@ -102,58 +118,61 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const { error } = await supabase
+    // Attempt to update the transaction status from 'pending'
+    const { data: updatedTransaction, error } = await supabase
       .from("transactions")
       .update({
         status,
         reference,
         updated_at: new Date().toISOString(),
       })
-      .eq("checkout_request_id", CheckoutRequestID);
+      .eq("checkout_request_id", CheckoutRequestID)
+      .eq("status", "pending") // Only update if current status is pending
+      .select()
+      .single();
 
     if (error) {
-      logger.error({ error }, "Failed to update transaction:");
+      logger.error({ error, CheckoutRequestID }, "Failed to update transaction in database:");
+      throw new Error("Failed to update transaction"); // Re-throw for other errors
+    } else if (!updatedTransaction) {
+      // This case handles when no row was updated because it wasn't 'pending'
+      logger.warn(
+        { CheckoutRequestID },
+        "Transaction not updated, likely already processed by another callback (status not pending).",
+      );
+      return NextResponse.json({ success: true }); // Acknowledge callback
     } else {
       logger.info(
-        `Transaction with CheckoutRequestID ${CheckoutRequestID} updated successfully.`,
+        `Transaction with CheckoutRequestID ${CheckoutRequestID} updated successfully to status: ${status}.`,
       );
     }
 
     // Send notification to user
     if (status === "completed") {
       logger.info("Payment completed. Preparing to send notification.");
-      const { data: transaction } = await supabase
+      const { data: transaction, error: fetchTransactionError } = await supabase
         .from("transactions")
         .select("user_id, amount")
         .eq("checkout_request_id", CheckoutRequestID)
         .single();
 
-      if (transaction?.user_id) {
-        logger.info(`Sending notification to user ${transaction.user_id}`);
-        await supabase.from("notifications").insert({
+      if (fetchTransactionError) {
+        logger.error({ fetchTransactionError, CheckoutRequestID }, "Failed to fetch transaction for notification.");
+      } else if (transaction?.user_id) {
+        logger.info(`Sending notification to user ${transaction.user_id} for CheckoutRequestID: ${CheckoutRequestID}`);
+        const { error: notificationError } = await supabase.from("notifications").insert({
           user_id: transaction.user_id,
           title: "Payment Successful",
           message: `Your payment of KES ${transaction.amount} has been processed successfully.`,
           type: "payment",
         });
-        logger.info("Notification sent.");
-
-        // Fulfill the order
-        const { data: listing, error: listingError } = await supabase
-          .from("listings")
-          .update({ status: "active" })
-          .eq("transaction_id", CheckoutRequestID)
-          .select()
-          .single();
-
-        if (listingError) {
-          console.error("Failed to update listing:", listingError);
-          // Handle this reconciliation later
+        if (notificationError) {
+          logger.error({ notificationError, userId: transaction.user_id }, "Failed to send notification.");
+        } else {
+          logger.info(`Notification sent successfully to user ${transaction.user_id}.`);
         }
       } else {
-        logger.warn(
-          "Could not find user to send notification for transaction.",
-        );
+        logger.warn({ CheckoutRequestID }, "User ID not found for transaction, skipping notification.");
       }
     }
 

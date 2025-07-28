@@ -20,6 +20,8 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { getFilteredListings } from "@/lib/data";
 import { formatPrice } from "@/lib/utils";
 
+
+
 interface ListingsDisplayProps {
   initialListings: ListingsItem[];
   initialFilters: {
@@ -30,11 +32,13 @@ interface ListingsDisplayProps {
     maxDistance?: number;
     searchQuery?: string;
   };
+  searchParams: { [key: string]: string | string[] | undefined };
 }
 
 export function ListingsDisplay({
   initialListings,
   initialFilters,
+  searchParams,
 }: ListingsDisplayProps) {
   const PAGE_SIZE = 20;
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -44,8 +48,10 @@ export function ListingsDisplay({
   const loadingRef = useRef<HTMLDivElement>(null);
   const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null);
 
+  const searchParamsInstance = new URLSearchParams(searchParams as Record<string, string>);
+
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
-    queryKey: ["listings", initialFilters, sortBy, userLocation],
+    queryKey: ["listings", initialFilters, sortBy, userLocation, searchParamsInstance.toString()],
     queryFn: ({ pageParam = 1 }) =>
       getFilteredListings({
         page: pageParam,
@@ -205,7 +211,7 @@ export function ListingsDisplay({
             <Link key={listing.id} href={`/listings/${listing.id}`}>
               <Card
                 key={listing.id}
-                className="overflow-hidden border hover:shadow-md transition-shadow"
+                className="overflow-hidden border hover:shadow-md transition-shadow mb-4"
               >
                 <CardContent className="p-0">
                   <div className="flex flex-col sm:flex-row">

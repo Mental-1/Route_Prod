@@ -41,10 +41,14 @@ interface FilterState {
   priceRange: [number, number];
 }
 
-export function ListingsFilter() {
+export function ListingsFilter({
+  searchParams,
+}: {
+  searchParams: URLSearchParams;
+}) {
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
+  
 
   // Single state object for filters
   const [filters, setFilters] = useState<FilterState>({

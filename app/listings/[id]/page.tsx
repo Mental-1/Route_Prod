@@ -32,6 +32,7 @@ import posthog from "posthog-js";
 import { ReviewsSection } from "@/components/listings/ReviewsSection";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Listing } from "@/lib/types/listing";
+import { formatPrice } from "@/lib/utils";
 import { ListingDetailSkeleton } from "@/components/skeletons/listing-detail-skeleton";
 
 function ListingDetails() {
@@ -337,7 +338,7 @@ function ListingDetails() {
 
                 <div className="flex items-center gap-4">
                   <div className="text-2xl font-bold text-green-600">
-                    Ksh {listing.price}
+                    Ksh {formatPrice(listing.price)}
                   </div>
                   <Badge variant="outline">{listing.condition}</Badge>
                   <Badge variant="secondary">{listing.category.name}</Badge>
@@ -519,11 +520,19 @@ function ListingDetails() {
                   </Button>
               </CardContent>
             </Card>
+
+            {/* Reviews Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Reviews</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ReviewsSection reviews={listing.reviews || []} listingId={listing.id} />
+              </CardContent>
+            </Card>
           </div>
         </div>
-        <div className="mt-8">
-          <ReviewsSection reviews={listing.reviews || []} listingId={listing.id} />
-        </div>
+        
       </div>
     </div>
   );

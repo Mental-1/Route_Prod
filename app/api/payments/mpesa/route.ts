@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
         { status: 400 },
       );
     }
-    const { data } = validatedData;
+    const { data, phoneNumber, amount, listingId } = validatedData.data;
 
     const supabase = await getSupabaseRouteHandler(cookies);
     const {
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Sanitize phone number is now handled by Zod schema
-    const sanitizedPhoneNumber = validatedData.data.phoneNumber;
+    const sanitizedPhoneNumber = phoneNumber;
 
     // M-Pesa STK Push implementation
     const timestamp = new Date()
@@ -136,12 +136,12 @@ export async function POST(request: NextRequest) {
       Username: process.env.MPESA_USERNAME,
       Timestamp: timestamp,
       TransactionType: "CustomerBuyGoodsOnline",
-      Amount: validatedData.data.amount,
+      Amount: amount,
       PartyA: sanitizedPhoneNumber,
       PartyB: process.env.MPESA_PARTY_B,
       PhoneNumber: sanitizedPhoneNumber,
       CallBackURL: process.env.MPESA_CALLBACK_URL,
-      AccountReference: `RouteMe-${user.id}`,
+      AccountReference: listingId ? `RouteMe-${user.id}-${listingId}` : `RouteMe-${user.id}`,
       TransactionDesc: "RouteMe Payment",
     };
     logger.debug({ stkPayload }, "STK Push Payload:");

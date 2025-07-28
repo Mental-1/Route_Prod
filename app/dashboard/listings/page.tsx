@@ -23,6 +23,7 @@ import {
 import Link from "next/link";
 import { useAuth } from "@/contexts/auth-context";
 import { requestReReview } from "@/app/dashboard/listings/actions";
+import { formatPrice } from "@/lib/utils";
 
 interface Listing {
   id: string;
@@ -296,7 +297,7 @@ export default function UserListingsPage() {
                 </CardTitle>
                 <div className="flex items-center justify-between">
                   <span className="text-2xl font-bold text-green-600">
-                    Ksh {listing.price}
+                    Ksh {formatPrice(listing.price)}
                   </span>
                   <Badge variant="outline">{listing.condition}</Badge>
                 </div>
