@@ -519,7 +519,7 @@ export default function PostAdPage() {
         );
       case 1:
         return (
-          <MediaUploadStep
+          <PaymentTierStep
             formData={formData}
             updateFormData={updateFormData}
             plans={plans}
@@ -527,7 +527,7 @@ export default function PostAdPage() {
         );
       case 2:
         return (
-          <PaymentTierStep
+          <MediaUploadStep
             formData={formData}
             updateFormData={updateFormData}
             plans={plans}
@@ -617,7 +617,7 @@ export default function PostAdPage() {
                       isPollingPayment ||
                       isProcessingPayment ||
                       isPublishingListing ||
-                      (selectedTier.price > 0 && !paymentCompleted)
+                      (selectedTier.price > 0 && (!paymentCompleted || !formData.paymentMethod))
                     }
                   >
                     {selectedTier.price > 0 && !paymentCompleted
