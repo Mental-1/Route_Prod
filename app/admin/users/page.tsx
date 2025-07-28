@@ -44,25 +44,44 @@ async function getAllUsers(): Promise<User[]> {
   return data.users as User[];
 }
 
+"use client";
+
+import { useTransition } from "react";
+import { banUser, unbanUser } from "./actions";
+
+interface User {
+  id: string;
+  email?: string;
+  created_at: string;
+  banned_until?: string;
+  profile?: {
+    is_flagged?: boolean;
+  };
+}
+
 const UserActions = ({ user }: { user: User }) => {
+  const [isPending, startTransition] = useTransition();
   const isBanned =
     user.banned_until && new Date(user.banned_until) > new Date();
 
-  const action = async () => {
-    if (isBanned) {
-      await unbanUser(user.id);
-    } else {
-      await banUser(user.id);
-    }
+  const handleSubmit = async () => {
+    startTransition(async () => {
+      if (isBanned) {
+        await unbanUser(user.id);
+      } else {
+        await banUser(user.id);
+      }
+    });
   };
 
   return (
-    <form action={action}>
+    <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
       <button
         type="submit"
         className={`font-bold py-2 px-4 rounded ${isBanned ? "bg-green-500 hover:bg-green-600 text-white" : "bg-red-500 hover:bg-red-600 text-white"}`}
+        disabled={isPending}
       >
-        {isBanned ? "Unban" : "Ban"}
+        {isPending ? (isBanned ? "Unbanning..." : "Banning...") : (isBanned ? "Unban" : "Ban")}
       </button>
     </form>
   );

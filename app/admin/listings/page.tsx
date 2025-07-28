@@ -3,27 +3,24 @@ import { cookies } from "next/headers";
 import React from "react";
 import { Listing } from "@/lib/types/listing";
 import { approveListing, rejectListing } from "./actions";
+import ListingActions from "@/components/admin/listing-actions";
 
 async function getAllListings(): Promise<Listing[]> {
   const cookieStore = await cookies();
-  
+
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  
+
   if (!supabaseUrl || !serviceRoleKey) {
     console.error("Missing required environment variables");
     return [];
   }
-  
-  const supabase = createServerClient(
-    supabaseUrl,
-    serviceRoleKey,
-    {
-      cookies: {
-        getAll: () => cookieStore.getAll(),
-      },
+
+  const supabase = createServerClient(supabaseUrl, serviceRoleKey, {
+    cookies: {
+      getAll: () => cookieStore.getAll(),
     },
-  );
+  });
 
   const { data, error } = await supabase
     .from("listings")
@@ -37,66 +34,7 @@ async function getAllListings(): Promise<Listing[]> {
   return data as Listing[];
 }
 
-import { useToast } from "@/hooks/use-toast";
 
-const ListingActions = ({ listing }: { listing: Listing }) => {
-  const { toast } = useToast();
-
-  const handleApprove = async (formData: FormData) => {
-    const result = await approveListing(formData);
-    if (result && 'error' in result) {
-      toast({
-        title: "Error",
-        description: result.error,
-        variant: "destructive",
-      });
-    } else if (result && 'success' in result) {
-      toast({
-        title: "Success",
-        description: result.success,
-      });
-    }
-  };
-
-  const handleReject = async (formData: FormData) => {
-    const result = await rejectListing(formData);
-    if (result && 'error' in result) {
-      toast({
-        title: "Error",
-        description: result.error,
-        variant: "destructive",
-      });
-    } else if (result && 'success' in result) {
-      toast({
-        title: "Success",
-        description: result.success,
-      });
-    }
-  };
-
-  return (
-    <div className="flex gap-2">
-      <form action={handleApprove}>
-        <input type="hidden" name="id" value={listing.id} />
-        <button
-          type="submit"
-          className="bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-3 rounded"
-        >
-          Approve
-        </button>
-      </form>
-      <form action={handleReject}>
-        <input type="hidden" name="id" value={listing.id} />
-        <button
-          type="submit"
-          className="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded"
-        >
-          Reject
-        </button>
-      </form>
-    </div>
-  );
-};
 
 export default async function ListingsPage() {
   const listings = await getAllListings();
