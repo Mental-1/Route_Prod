@@ -50,8 +50,8 @@ const formatLocationData = (location: any) => {
 
 const steps = [
   { id: "details", label: "Details" },
+  { id: "payment", label: "Plan" },
   { id: "media", label: "Media" },
-  { id: "payment", label: "Payment" },
   { id: "preview", label: "Preview" },
   { id: "method", label: "Method" },
 ];
