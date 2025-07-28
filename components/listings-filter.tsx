@@ -157,6 +157,10 @@ export function ListingsFilter({
     handleFilterChange({ conditions: newConditions });
   };
 
+  const handlePriceChange = (newPriceRange: [number, number]) => {
+    handleFilterChange({ priceRange: newPriceRange });
+  };
+
   const handleSortByChange = (value: string) => {
     const params = new URLSearchParams(searchParams.toString());
     params.set("sortBy", value);
