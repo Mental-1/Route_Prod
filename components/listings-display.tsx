@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Grid, List, MapPin, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -42,13 +43,21 @@ export function ListingsDisplay({
 }: ListingsDisplayProps) {
   const PAGE_SIZE = 20;
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [sortBy, setSortBy] = useState("newest");
   const [showBackToTop, setShowBackToTop] = useState(false);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadingRef = useRef<HTMLDivElement>(null);
   const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null);
 
-  const searchParamsInstance = new URLSearchParams(searchParams as Record<string, string>);
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParamsInstance = useSearchParams();
+  const sortBy = searchParamsInstance.get("sortBy") || "newest";
+
+  const handleSortByChange = (value: string) => {
+    const params = new URLSearchParams(searchParamsInstance.toString());
+    params.set("sortBy", value);
+    router.push(`${pathname}?${params.toString()}`);
+  };
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
     queryKey: ["listings", initialFilters, sortBy, userLocation, searchParamsInstance.toString()],
@@ -129,7 +138,7 @@ export function ListingsDisplay({
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Select value={sortBy} onValueChange={setSortBy}>
+          <Select value={sortBy} onValueChange={handleSortByChange}>
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Sort by" />
             </SelectTrigger>

@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
         { status: 400 },
       );
     }
-    const { data, phoneNumber, amount, listingId } = validatedData.data;
+    const { phoneNumber, amount, listingId } = validatedData.data;
 
     const supabase = await getSupabaseRouteHandler(cookies);
     const {
