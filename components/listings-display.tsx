@@ -53,11 +53,10 @@ export function ListingsDisplay({
       maxDistance?: number;
       searchQuery?: string;
     } = {
-      conditions: Array.isArray(searchParamsInstance.get("conditions"))
-        ? (searchParamsInstance.get("conditions") as string[]).map(String)
-        : searchParamsInstance.get("conditions")
-        ? String(searchParamsInstance.get("conditions")).split(',').map(s => s.trim())
-        : [],
+      conditions: searchParamsInstance.get("conditions")
+        ?.split(',')
+        .map(s => s.trim())
+        .filter(Boolean) || [],
       priceRange: {
         min: searchParamsInstance.get("priceMin") ? Number(searchParamsInstance.get("priceMin")) : 0,
         max: searchParamsInstance.get("priceMax") ? Number(searchParamsInstance.get("priceMax")) : 1000000,
@@ -67,23 +66,23 @@ export function ListingsDisplay({
     };
 
     // Parse category ID from 'category' param
-    if (searchParamsInstance.get("category")) {
-      filters.categories = [Number(searchParamsInstance.get("category"))];
-    } else if (searchParamsInstance.get("categories")) { // Fallback for comma-separated 'categories'
-      filters.categories = Array.isArray(searchParamsInstance.get("categories"))
-        ? (searchParamsInstance.get("categories") as string[]).map(Number)
-        : String(searchParamsInstance.get("categories")).split(',').map(Number);
+    const categoryParam = searchParamsInstance.get("category");
+    const categoriesParam = searchParamsInstance.get("categories");
+    if (categoryParam) {
+      filters.categories = [Number(categoryParam)];
+    } else if (categoriesParam) {
+      filters.categories = categoriesParam.split(',').map(Number).filter(n => !isNaN(n));
     } else {
       filters.categories = [];
     }
 
     // Parse subcategory ID from 'subcategory' param
-    if (searchParamsInstance.get("subcategory")) {
-      filters.subcategories = [Number(searchParamsInstance.get("subcategory"))];
-    } else if (searchParamsInstance.get("subcategories")) { // Fallback for comma-separated 'subcategories'
-      filters.subcategories = Array.isArray(searchParamsInstance.get("subcategories"))
-        ? (searchParamsInstance.get("subcategories") as string[]).map(Number)
-        : String(searchParamsInstance.get("subcategories")).split(',').map(Number);
+    const subcategoryParam = searchParamsInstance.get("subcategory");
+    const subcategoriesParam = searchParamsInstance.get("subcategories");
+    if (subcategoryParam) {
+      filters.subcategories = [Number(subcategoryParam)];
+    } else if (subcategoriesParam) {
+      filters.subcategories = subcategoriesParam.split(',').map(Number).filter(n => !isNaN(n));
     } else {
       filters.subcategories = [];
     }
