@@ -46,7 +46,7 @@ export default function CategoriesSection() {
     queryKey: ["categories"],
     queryFn: async () => {
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/categories`);
+        const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/categories`);
         if (!response.ok) return fallbackCategories;
         return response.json();
       } catch (error) {
