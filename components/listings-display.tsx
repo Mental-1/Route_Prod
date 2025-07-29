@@ -53,44 +53,44 @@ export function ListingsDisplay({
       maxDistance?: number;
       searchQuery?: string;
     } = {
-      conditions: Array.isArray(searchParams.conditions)
-        ? searchParams.conditions.map(String)
-        : searchParams.conditions
-        ? String(searchParams.conditions).split(',').map(s => s.trim())
+      conditions: Array.isArray(searchParamsInstance.get("conditions"))
+        ? (searchParamsInstance.get("conditions") as string[]).map(String)
+        : searchParamsInstance.get("conditions")
+        ? String(searchParamsInstance.get("conditions")).split(',').map(s => s.trim())
         : [],
       priceRange: {
-        min: searchParams.priceMin ? Number(searchParams.priceMin) : 0,
-        max: searchParams.priceMax ? Number(searchParams.priceMax) : 1000000,
+        min: searchParamsInstance.get("priceMin") ? Number(searchParamsInstance.get("priceMin")) : 0,
+        max: searchParamsInstance.get("priceMax") ? Number(searchParamsInstance.get("priceMax")) : 1000000,
       },
-      maxDistance: searchParams.maxDistance ? Number(searchParams.maxDistance) : 5,
-      searchQuery: searchParams.search ? String(searchParams.search) : "",
+      maxDistance: searchParamsInstance.get("maxDistance") ? Number(searchParamsInstance.get("maxDistance")) : 5,
+      searchQuery: searchParamsInstance.get("search") || "",
     };
 
     // Parse category ID from 'category' param
-    if (searchParams.category) {
-      filters.categories = [Number(searchParams.category)];
-    } else if (searchParams.categories) { // Fallback for comma-separated 'categories'
-      filters.categories = Array.isArray(searchParams.categories)
-        ? searchParams.categories.map(Number)
-        : String(searchParams.categories).split(',').map(Number);
+    if (searchParamsInstance.get("category")) {
+      filters.categories = [Number(searchParamsInstance.get("category"))];
+    } else if (searchParamsInstance.get("categories")) { // Fallback for comma-separated 'categories'
+      filters.categories = Array.isArray(searchParamsInstance.get("categories"))
+        ? (searchParamsInstance.get("categories") as string[]).map(Number)
+        : String(searchParamsInstance.get("categories")).split(',').map(Number);
     } else {
       filters.categories = [];
     }
 
     // Parse subcategory ID from 'subcategory' param
-    if (searchParams.subcategory) {
-      filters.subcategories = [Number(searchParams.subcategory)];
-    } else if (searchParams.subcategories) { // Fallback for comma-separated 'subcategories'
-      filters.subcategories = Array.isArray(searchParams.subcategories)
-        ? searchParams.subcategories.map(Number)
-        : String(searchParams.subcategories).split(',').map(Number);
+    if (searchParamsInstance.get("subcategory")) {
+      filters.subcategories = [Number(searchParamsInstance.get("subcategory"))];
+    } else if (searchParamsInstance.get("subcategories")) { // Fallback for comma-separated 'subcategories'
+      filters.subcategories = Array.isArray(searchParamsInstance.get("subcategories"))
+        ? (searchParamsInstance.get("subcategories") as string[]).map(Number)
+        : String(searchParamsInstance.get("subcategories")).split(',').map(Number);
     } else {
       filters.subcategories = [];
     }
 
     console.log("Derived currentFilters:", filters);
     return filters;
-  }, [searchParams]);
+  }, [searchParamsInstance]);
 
   const handleSortByChange = (value: string) => {
     const params = new URLSearchParams(searchParamsInstance.toString());
