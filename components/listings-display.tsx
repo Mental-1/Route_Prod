@@ -88,6 +88,7 @@ export function ListingsDisplay({
       filters.subcategories = [];
     }
 
+    console.log("Derived currentFilters:", filters);
     return filters;
   }, [searchParams]);
 
@@ -107,7 +108,17 @@ export function ListingsDisplay({
         sortBy,
         userLocation,
         searchQuery: currentFilters.searchQuery,
-      }),
+      });
+      console.log("Calling getFilteredListings with:", {
+        page: pageParam,
+        pageSize: PAGE_SIZE,
+        filters: currentFilters,
+        sortBy,
+        userLocation,
+        searchQuery: currentFilters.searchQuery,
+      });
+      return result;
+    }),
     getNextPageParam: (lastPage, pages) => {
       return lastPage.length === PAGE_SIZE ? pages.length + 1 : undefined;
     },
