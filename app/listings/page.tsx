@@ -41,7 +41,6 @@ export default async function ListingsPage({
       max: getParam("priceMax") ? Number(getParam("priceMax")) : 1000000,
     },
     maxDistance: getParam("maxDistance") ? Number(getParam("maxDistance")) : 5,
-    searchQuery: getParam("search") || "",
   };
 
   const categoryParam = getParam("category");
