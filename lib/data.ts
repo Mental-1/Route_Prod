@@ -205,7 +205,7 @@ export async function getFilteredListings({
     return [];
   }
 
-  return filteredData.map((listing: any) => ({
+  return filteredData.filter(Boolean).map((listing: any) => ({
     id: listing.id || '',
     title: listing.title || 'Untitled',
     description: listing.description,
