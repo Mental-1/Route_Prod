@@ -99,7 +99,7 @@ export default function PostAdPage() {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await fetch("/api/categories");
+        const response = await fetch((process.env.NEXT_PUBLIC_BASE_URL || window.location.origin) + "/api/categories");
         const data = await response.json();
         setCategories(data);
       } catch (error) {
@@ -114,7 +114,7 @@ export default function PostAdPage() {
   useEffect(() => {
     const fetchSubcategories = async () => {
       try {
-        const response = await fetch("/api/subcategories");
+        const response = await fetch((process.env.NEXT_PUBLIC_BASE_URL || window.location.origin) + "/api/subcategories");
         const data = await response.json();
         setAllSubcategories(data);
       } catch (error) {
@@ -370,7 +370,7 @@ export default function PostAdPage() {
         plan_id: selectedTier.id,
       };
 
-      const response = await fetch("api/listings", {
+      const response = await fetch((process.env.NEXT_PUBLIC_BASE_URL || window.location.origin) + "/api/listings", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
