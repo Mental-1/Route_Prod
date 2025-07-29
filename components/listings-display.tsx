@@ -100,8 +100,8 @@ export function ListingsDisplay({
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
     queryKey: ["listings", currentFilters, sortBy, userLocation, searchParamsInstance.toString()],
-    queryFn: ({ pageParam = 1 }) =>
-      getFilteredListings({
+    queryFn: async ({ pageParam = 1 }) => {
+      const result = await getFilteredListings({
         page: pageParam,
         pageSize: PAGE_SIZE,
         filters: currentFilters,
@@ -118,7 +118,7 @@ export function ListingsDisplay({
         searchQuery: currentFilters.searchQuery,
       });
       return result;
-    }),
+    },
     getNextPageParam: (lastPage, pages) => {
       return lastPage.length === PAGE_SIZE ? pages.length + 1 : undefined;
     },
