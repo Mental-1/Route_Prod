@@ -1,9 +1,13 @@
+"use client";
+
 import React, { useTransition } from "react";
 import { banUser, unbanUser, getAllUsers } from "./actions";
 import { User } from "@/lib/types/profile";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 const UserActions = ({ user }: { user: User }) => {
   const [isPending, startTransition] = useTransition();
+  const queryClient = useQueryClient();
   const isBanned =
     user.banned_until && new Date(user.banned_until) > new Date();
 
@@ -14,6 +18,7 @@ const UserActions = ({ user }: { user: User }) => {
       } else {
         await banUser(user.id);
       }
+      queryClient.invalidateQueries({ queryKey: ["adminUsers"] }); // Invalidate to refetch
     });
   };
 
@@ -41,8 +46,19 @@ const UserActions = ({ user }: { user: User }) => {
   );
 };
 
-export default async function UserTable() {
-  const users = await getAllUsers();
+export default function UserTable() {
+  const { data: users, isLoading, isError, error } = useQuery<User[]>({ 
+    queryKey: ["adminUsers"],
+    queryFn: getAllUsers,
+  });
+
+  if (isLoading) {
+    return <div>Loading users...</div>;
+  }
+
+  if (isError) {
+    return <div className="text-red-500">Error: {error?.message || "Failed to load users"}</div>;
+  }
 
   return (
     <div>
@@ -66,7 +82,7 @@ export default async function UserTable() {
             </tr>
           </thead>
           <tbody>
-            {users.map((user) => (
+            {users?.map((user) => (
               <tr key={user.id}>
                 <td className="px-5 py-5 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm">
                   <p className="text-gray-900 dark:text-white whitespace-no-wrap">
