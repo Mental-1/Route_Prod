@@ -98,7 +98,7 @@ export function ListingsDisplay({
   };
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
-    queryKey: ["listings", currentFilters, sortBy, userLocation, searchParamsInstance.toString()],
+    queryKey: ["listings", searchParamsInstance.toString(), sortBy, userLocation],
     queryFn: async ({ pageParam = 1 }) => {
       const result = await getFilteredListings({
         page: pageParam,
