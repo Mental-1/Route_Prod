@@ -6,3 +6,13 @@ export type Profile = {
   username?: string;
   phone_number?: string;
 };
+
+export type User = {
+  id: string;
+  email?: string;
+  created_at: string;
+  banned_until?: string;
+  profile?: {
+    is_flagged?: boolean;
+  };
+};

@@ -1,46 +1,8 @@
 "use client";
 
-import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
 import React, { useTransition } from "react";
-import { banUser, unbanUser } from "./actions";
-
-interface User {
-  id: string;
-  email?: string;
-  created_at: string;
-  banned_until?: string;
-  profile?: {
-    is_flagged?: boolean;
-  };
-}
-
-async function getAllUsers(): Promise<User[]> {
-  const cookieStore = await cookies();
-
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!supabaseUrl || !serviceRoleKey) {
-    console.error("Missing required environment variables");
-    return [];
-  }
-
-  const supabase = createServerClient(supabaseUrl, serviceRoleKey, {
-    cookies: {
-      getAll: () => cookieStore.getAll(),
-    },
-  });
-
-  const { data, error } = await supabase.auth.admin.listUsers();
-
-  if (error) {
-    console.error("Error fetching users:", error);
-    return [];
-  }
-
-  return data.users ?? [];
-}
+import { banUser, unbanUser, getAllUsers } from "./actions";
+import { User } from "@/lib/types/profile";
 
 const UserActions = ({ user }: { user: User }) => {
   const [isPending, startTransition] = useTransition();

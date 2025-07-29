@@ -4,6 +4,7 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { PostHog } from "posthog-node";
+import { User } from "@/lib/types/profile";
 
 const posthogClient = new PostHog(process.env.NEXT_PUBLIC_POSTHOG_KEY!, {
   host: process.env.NEXT_PUBLIC_POSTHOG_HOST || "https://app.posthog.com",
@@ -26,11 +27,39 @@ async function getSupabaseAdmin() {
     },
   );
 }
+export async function getAllUsers(): Promise<User[]> {
+  const cookieStore = await cookies();
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    console.error("Missing required environment variables");
+    return [];
+  }
+
+  const supabase = createServerClient(supabaseUrl, serviceRoleKey, {
+    cookies: {
+      getAll: () => cookieStore.getAll(),
+    },
+  });
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, email, created_at, banned_until, is_flagged");
+
+  if (error) {
+    console.error("Error fetching users from profiles:", error);
+    return [];
+  }
+
+  return data ?? [];
+}
 
 export async function banUser(userId: string) {
   const supabase = await getSupabaseAdmin();
   const { error } = await supabase.auth.admin.updateUserById(userId, {
-    ban_duration: "none",
+    ban_duration: "720h",
   });
 
   if (error) {
@@ -61,7 +90,7 @@ export async function banUser(userId: string) {
 export async function unbanUser(userId: string) {
   const supabase = await getSupabaseAdmin();
   const { error } = await supabase.auth.admin.updateUserById(userId, {
-    ban_duration: "0s",
+    ban_duration: "none",
   });
 
   if (error) {
