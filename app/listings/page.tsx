@@ -15,6 +15,16 @@ export default async function ListingsPage({
   const queryClient = new QueryClient();
   const PAGE_SIZE = 20;
 
+  // Helper to get param values, handling string[] from Next.js searchParams
+  const getParam = (key: string) => {
+    const value = searchParams[key];
+    if (Array.isArray(value)) {
+      return value.join(',');
+    }
+    return value; // string or undefined
+  };
+
+  // Replicate the filter parsing logic from client-side (components/listings-display.tsx)
   const filters: {
     categories?: number[];
     subcategories?: number[];
@@ -22,43 +32,55 @@ export default async function ListingsPage({
     priceRange?: { min: number; max: number };
     maxDistance?: number;
   } = {
-    conditions: Array.isArray(searchParams.conditions)
-      ? searchParams.conditions.map(String)
-      : searchParams.conditions
-      ? String(searchParams.conditions).split(',').map(s => s.trim())
-      : [],
+    conditions: getParam("conditions")
+      ?.split(',')
+      .map(s => s.trim())
+      .filter(Boolean) || [],
     priceRange: {
-      min: searchParams.priceMin ? Number(searchParams.priceMin) : 0,
-      max: searchParams.priceMax ? Number(searchParams.priceMax) : 1000000,
+      min: getParam("priceMin") ? Number(getParam("priceMin")) : 0,
+      max: getParam("priceMax") ? Number(getParam("priceMax")) : 1000000,
     },
-    maxDistance: searchParams.maxDistance ? Number(searchParams.maxDistance) : 5,
+    maxDistance: getParam("maxDistance") ? Number(getParam("maxDistance")) : 5,
+    searchQuery: getParam("search") || "",
   };
 
-  if (searchParams.category) {
-    filters.categories = [Number(searchParams.category)];
-  } else if (searchParams.categories) {
-    filters.categories = Array.isArray(searchParams.categories)
-      ? searchParams.categories.map(Number)
-      : String(searchParams.categories).split(',').map(Number);
+  const categoryParam = getParam("category");
+  const categoriesParam = getParam("categories");
+  if (categoryParam) {
+    filters.categories = [Number(categoryParam)];
+  } else if (categoriesParam) {
+    filters.categories = categoriesParam.split(',').map(Number).filter(n => !isNaN(n));
   } else {
     filters.categories = [];
   }
 
-  if (searchParams.subcategory) {
-    filters.subcategories = [Number(searchParams.subcategory)];
-  } else if (searchParams.subcategories) {
-    filters.subcategories = Array.isArray(searchParams.subcategories)
-      ? searchParams.subcategories.map(Number)
-      : String(searchParams.subcategories).split(',').map(Number);
+  const subcategoryParam = getParam("subcategory");
+  const subcategoriesParam = getParam("subcategories");
+  if (subcategoryParam) {
+    filters.subcategories = [Number(subcategoryParam)];
+  } else if (subcategoriesParam) {
+    filters.subcategories = subcategoriesParam.split(',').map(Number).filter(n => !isNaN(n));
   } else {
     filters.subcategories = [];
   }
 
-  const sortBy = searchParams.sortBy ? String(searchParams.sortBy) : "newest";
-  const searchQuery = searchParams.search ? String(searchParams.search) : undefined;
+  const sortBy = getParam("sortBy") ? String(getParam("sortBy")) : "newest";
+  const searchQuery = getParam("search") ? String(getParam("search")) : undefined;
+
+  // Construct the searchParamsString for the queryKey to match client-side
+  const urlSearchParamsForQueryKey = new URLSearchParams();
+  for (const key in searchParams) {
+    const value = searchParams[key];
+    if (Array.isArray(value)) {
+      value.forEach(v => urlSearchParamsForQueryKey.append(key, v));
+    } else if (value !== undefined) {
+      urlSearchParamsForQueryKey.append(key, value);
+    }
+  }
+  const searchParamsString = urlSearchParamsForQueryKey.toString();
 
   const initialListings = await queryClient.fetchQuery({
-    queryKey: ["listings", searchParams],
+    queryKey: ["listings", searchParamsString, sortBy, null], // Match client-side queryKey
     queryFn: () => getFilteredListings({
       page: 1,
       pageSize: PAGE_SIZE,
