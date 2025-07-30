@@ -18,10 +18,10 @@ import {
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "RouteMe - Classified Ads",
-  description: "Find and post classified ads in your area",
+  title: "Ki-Kwetu Classifieds",
+  description: "Free and paid classifieds for all your Kenyan business needs.",
   keywords:
-    "Jiji, OLX, classifieds, ads, marketplace, direction, rentals near me,routteme",
+    "Jiji, OLX, classifieds, ads, marketplace, direction, rentals near me,routteme, ki-kwetu, kikwetu classifieds, kikwetu ads, kikwetu marketplace",
 };
 
 /**
@@ -40,8 +40,6 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
         <PostHogProvider>
-          {" "}
-          {/* Use the new PostHogProvider */}
           <Suspense fallback={null}>
             <PostHogPageview />
           </Suspense>
@@ -55,10 +53,20 @@ export default function RootLayout({
               <AuthProvider>
                 <PostHogAuthWrapper>
                   {" "}
-                  {/* Keep this for user identification */}
                   <div className="flex min-h-screen flex-col">
                     <Navigation />
-                    <main className="flex-1">{children}</main>
+                    <main className="flex-1">
+                      {/* Add error boundary for React Query errors */}
+                      <Suspense
+                        fallback={
+                          <div className="flex items-center justify-center min-h-[400px]">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                          </div>
+                        }
+                      >
+                        {children}
+                      </Suspense>
+                    </main>
                     <Footer />
                   </div>
                   <Toaster />
