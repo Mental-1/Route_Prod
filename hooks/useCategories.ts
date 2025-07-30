@@ -7,7 +7,6 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
 );
 
-// Types - adjust these based on your actual database schema
 export interface Category {
   id: number;
   name: string;

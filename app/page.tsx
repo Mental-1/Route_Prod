@@ -1,6 +1,5 @@
 import { Suspense } from "react";
 import Link from "next/link";
-import { getRecentListings } from "@/lib/data";
 import { ErrorBoundary } from "react-error-boundary";
 import { RecentListingsSkeleton } from "@/components/skeletons/recent-listings-skeleton";
 import { RecentListings } from "@/components/recent-listings";
@@ -8,10 +7,17 @@ import { CategoriesSkeleton } from "@/components/categories-skeleton";
 import { SearchBar } from "@/components/search-bar";
 import { Button } from "@/components/ui/button";
 import CategoriesSection from "@/components/categories-section";
+import { SearchService } from "@/lib/services/search-service";
+import { DEFAULT_FILTERS } from "@/lib/search-utils";
 
 export default async function HomePage() {
   // Fetch initial listings on the server
-  const initialListings = await getRecentListings(1);
+  const { data: initialListings } = await SearchService.getFilteredListings({
+    page: 1,
+    pageSize: 8,
+    filters: DEFAULT_FILTERS,
+    sortBy: "newest",
+  });
 
   return (
     <div className="min-h-screen bg-background">

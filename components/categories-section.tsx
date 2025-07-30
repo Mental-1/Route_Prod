@@ -1,16 +1,20 @@
 "use client";
 
-import { useSuspenseQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Category as BaseCategory } from "@/lib/types/listing";
+import { useCategories } from "@/hooks/useCategories"; // Import the new hook
+import { CategoriesSkeleton } from "./categories-skeleton"; // Assuming this is for loading state
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 
-interface Category extends BaseCategory {
+interface CategoryWithIcon {
+  id: number;
+  name: string;
   icon?: string;
 }
 
-const fallbackCategories = [
+const fallbackCategories: CategoryWithIcon[] = [
   { id: 1, name: "Automobiles", icon: "🚗" },
   { id: 2, name: "Property", icon: "🏠" },
   { id: 3, name: "Phones & Tablets", icon: "📱" },
@@ -37,25 +41,20 @@ const fallbackCategories = [
 ];
 
 /**
- * Renders a section displaying a grid of category cards, fetching category data from the API and falling back to static categories if unavailable.
+ * Renders a section displaying a grid of category cards, fetching category data using the useCategories hook.
  *
  * Shows a loading skeleton while fetching data. Each card links to a filtered listings page for the selected category. Includes a header with a "View All" button that navigates to the listings page.
  */
 export default function CategoriesSection() {
-  const { data } = useSuspenseQuery({
-    queryKey: ["categories"],
-    queryFn: async () => {
-      try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/categories`);
-        if (!response.ok) return fallbackCategories;
-        return response.json();
-      } catch (error) {
-        console.error("Failed to fetch categories:", error);
-        return fallbackCategories;
-      }
-    },
-    staleTime: 60 * 1000,
-  });
+  const { data: categories, isLoading, error, refetch } = useCategories();
+
+  // Determine which categories to display, ensuring it's always an array of CategoryWithIcon
+  const categoriesToDisplay: CategoryWithIcon[] =
+    error && !categories?.length ? fallbackCategories : categories || [];
+
+  if (isLoading) {
+    return <CategoriesSkeleton />;
+  }
 
   return (
     <section className="py-10">
@@ -66,12 +65,20 @@ export default function CategoriesSection() {
             <Link href="/listings">View All</Link>
           </Button>
         </div>
+        {error && !categories?.length && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription className="flex justify-between items-center">
+              Failed to load categories from server. Displaying fallback data.
+              <Button onClick={() => refetch()} variant="outline" size="sm">
+                Retry
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
         <div className="grid grid-cols-4 md:grid-cols-8 gap-3">
-          {data.map((category: Category) => (
-            <Link
-              key={category.id}
-              href={`/listings?category=${category.id}`}
-            >
+          {categoriesToDisplay.map((category) => (
+            <Link key={category.id} href={`/listings?category=${category.id}`}>
               <Card className="hover:shadow-md transition-shadow cursor-pointer border-3 border-muted bg-muted/50">
                 <CardContent className="p-3 text-center">
                   <div className="text-2xl mb-1">{category.icon || "📦"}</div>
