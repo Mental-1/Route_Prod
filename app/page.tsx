@@ -11,7 +11,6 @@ import { SearchService } from "@/lib/services/search-service";
 import { DEFAULT_FILTERS } from "@/lib/search-utils";
 
 export default async function HomePage() {
-  // Fetch initial listings on the server
   const { data: initialListings } = await SearchService.getFilteredListings({
     page: 1,
     pageSize: 8,
@@ -29,7 +28,7 @@ export default async function HomePage() {
               Find Everything You Need
             </h1>
             <p className="text-lg md:text-xl mb-6 text-blue-100">
-              Deals don’t wait. Neither should you.
+              Want it. Find it. Get it.
             </p>
 
             {/* Search Bar */}
