@@ -31,13 +31,13 @@ export class SearchService {
           params.filters.conditions.length > 0
             ? params.filters.conditions
             : null,
-        p_price_min: params.filters.priceRange.min,
-        p_price_max: params.filters.priceRange.max,
-        p_max_distance: params.filters.maxDistance,
+        p_min_price: params.filters.priceRange.min,
+        p_max_price: params.filters.priceRange.max,
+        p_radius_km: params.filters.maxDistance,
         p_search_query: params.filters.searchQuery || null,
         p_sort_by: params.sortBy,
-        p_user_lat: params.userLocation?.lat || null,
-        p_user_lon: params.userLocation?.lon || null,
+        p_user_latitude: params.userLocation?.lat || null,
+        p_user_longitude: params.userLocation?.lon || null,
       });
 
       if (error) {
