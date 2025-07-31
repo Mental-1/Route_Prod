@@ -62,7 +62,7 @@ export function FilterSidebar({
     initialFilters.minPrice ? Number.parseInt(initialFilters.minPrice) : 0,
     initialFilters.maxPrice
       ? Number.parseInt(initialFilters.maxPrice)
-      : 1000000,
+      : 10000000000,
   ]);
   const [location, setLocation] = useState<string>(
     initialFilters.location || "",
@@ -94,7 +94,7 @@ export function FilterSidebar({
     const filters = [];
 
     if (selectedCategory !== "all") filters.push("Category");
-    if (priceRange[0] > 0 || priceRange[1] < 1000000) filters.push("Price");
+    if (priceRange[0] > 0 || priceRange[1] < 10000000000) filters.push("Price");
     if (location) filters.push("Location");
     if (distance !== 50) filters.push("Distance");
     if (selectedConditions.length > 0) filters.push("Condition");
@@ -115,7 +115,7 @@ export function FilterSidebar({
     const filters = {
       category: selectedCategory !== "all" ? selectedCategory : undefined,
       minPrice: priceRange[0] > 0 ? priceRange[0].toString() : undefined,
-      maxPrice: priceRange[1] < 1000000 ? priceRange[1].toString() : undefined,
+      maxPrice: priceRange[1] < 10000000000 ? priceRange[1].toString() : undefined,
       location: location || undefined,
       distance: distance !== 50 ? distance.toString() : undefined,
       condition: selectedConditions.length > 0 ? selectedConditions : undefined,
@@ -144,7 +144,7 @@ export function FilterSidebar({
   // Reset filters
   const resetFilters = () => {
     setSelectedCategory("all");
-    setPriceRange([0, 1000000]);
+    setPriceRange([0, 10000000000]);
     setLocation("");
     setDistance(50);
     setSelectedConditions([]);
@@ -237,13 +237,6 @@ export function FilterSidebar({
           <AccordionTrigger>Price Range</AccordionTrigger>
           <AccordionContent>
             <div className="space-y-4">
-              <Slider
-                value={[priceRange[0], priceRange[1]]}
-                min={0}
-                max={1000000}
-                step={1000}
-                onValueChange={(value) => setPriceRange([value[0], value[1]])}
-              />
               <div className="flex items-center gap-2">
                 <Input
                   type="number"
@@ -265,7 +258,7 @@ export function FilterSidebar({
                   onChange={(e) =>
                     setPriceRange([
                       priceRange[0],
-                      Number.parseInt(e.target.value) || 1000000,
+                      Number.parseInt(e.target.value) || 10000000000,
                     ])
                   }
                   className="w-full"

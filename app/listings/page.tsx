@@ -24,15 +24,21 @@ export default async function ListingsPage({
 
   await queryClient.prefetchInfiniteQuery({
     queryKey,
-    queryFn: () =>
-      SearchService.getFilteredListings({
-        page: 1,
+    queryFn: async ({ pageParam = 1 }) => {
+      const results = await SearchService.getFilteredListings({
+        page: pageParam,
         pageSize: PAGE_SIZE,
         filters,
         sortBy,
-        userLocation: null,
-      }),
+        userLocation: null, // You might want to get user location here
+      });
+      return results; // This should match InfiniteData<ListingsResponse>
+    },
     initialPageParam: 1,
+    getNextPageParam: (lastPage, allPages) => {
+      // Check if the last page had data and if we expect more data
+      return lastPage.hasMore ? allPages.length + 1 : undefined;
+    },
   });
 
   return (
