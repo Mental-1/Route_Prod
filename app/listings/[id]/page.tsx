@@ -1,7 +1,6 @@
 "use client";
 
 import { reportUser } from "./actions";
-
 import { useState, useEffect, Suspense } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
@@ -30,33 +29,21 @@ import {
 import { ListingMediaGallery } from "@/components/listing-media-gallery";
 import posthog from "posthog-js";
 import { ReviewsSection } from "@/components/listings/ReviewsSection";
-import { useSuspenseQuery } from "@tanstack/react-query";
 import { Listing } from "@/lib/types/listing";
 import { formatPrice } from "@/lib/utils";
 import { ListingDetailSkeleton } from "@/components/skeletons/listing-detail-skeleton";
+import { getListingById } from "@/lib/data/listings";
 
-function ListingDetails() {
-  const params = useParams();
+function ListingDetailsClient({ listing }: { listing: Listing }) {
   const router = useRouter();
   const { toast } = useToast();
   const [isSaved, setIsSaved] = useState(false);
   const [gettingDirections, setGettingDirections] = useState(false);
 
-  const { data: listing } = useSuspenseQuery<Listing>({
-    queryKey: ["listing", params.id],
-    queryFn: async () => {
-      const response = await fetch(`/api/listings/${params.id}`);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch listing: ${response.statusText}`);
-      }
-      return response.json();
-    },
-  });
-
   useEffect(() => {
     // Increment view count
-    fetch(`/api/listings/${params.id}/view`, { method: "POST" }).catch(
-      (error) => console.error("Failed to increment view count:", error)
+    fetch(`/api/listings/${listing.id}/view`, { method: "POST" }).catch(
+      (error) => console.error("Failed to increment view count:", error),
     );
 
     // Track event with PostHog
@@ -68,7 +55,7 @@ function ListingDetails() {
         seller_id: listing.profiles.id,
       });
     }
-  }, [params.id, listing]);
+  }, [listing]);
 
   const getDirections = async () => {
     if (!listing?.latitude || !listing?.longitude) {
@@ -210,7 +197,7 @@ function ListingDetails() {
 
   const handleSave = async () => {
     try {
-      const response = await fetch(`/api/listings/${params.id}/save`, {
+      const response = await fetch(`/api/listings/${listing.id}/save`, {
         method: isSaved ? "DELETE" : "POST",
       });
 
@@ -538,10 +525,22 @@ function ListingDetails() {
   );
 }
 
-export default function ListingDetailPage() {
+export default async function ListingDetailPage({ params }: { params: { id: string } }) {
+  const listing = await getListingById(params.id);
+
+  if (!listing) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="container px-4 py-6">
+          <p>Listing not found.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <Suspense fallback={<ListingDetailSkeleton />}>
-      <ListingDetails />
+      <ListingDetailsClient listing={listing} />
     </Suspense>
   );
 }

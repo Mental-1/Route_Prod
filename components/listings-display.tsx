@@ -100,6 +100,10 @@ export function ListingsDisplay() {
 
   const listings = data?.pages.flatMap((page) => page.data) || [];
 
+  useEffect(() => {
+    console.log("Client-side listings data:", JSON.stringify(listings, null, 2));
+  }, [listings]);
+
   // Loading state
   if (isLoading) {
     return (

@@ -42,6 +42,8 @@ export default async function ListingsPage({
     },
   });
 
+  console.log("Server-side prefetched data:", JSON.stringify(queryClient.getQueryData(queryKey), null, 2));
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container px-4 py-6">
