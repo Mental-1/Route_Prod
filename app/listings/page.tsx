@@ -1,20 +1,11 @@
-import{
-  HydrationBoundary,
-  QueryClient,
-  dehydrate,
-} from "@tanstack/react-query";
+import { dehydrate, HydrationBoundary, QueryClient } from "@tanstack/react-query";
 import { ListingsFilter } from "@/components/listings-filter";
 import { ListingsDisplay } from "@/components/listings-display";
 import { SearchService } from "@/lib/services/search-service";
-import { parseSearchParams } from "@/lib/search-utils";
+import { parseSearchParams, createListingsQueryKey } from "@/lib/search-utils";
 import { ListingsResponse } from "@/lib/types/search";
-import { createListingsQueryKey } from "@/lib/search-utils";
 
-export default async function ListingsPage({
-  searchParams,
-}: {
-  searchParams: { [key: string]: string | string[] | undefined };
-}) {
+export default async function ListingsPage({ searchParams }: { searchParams: { [key: string]: string | string[] | undefined } }) {
   const queryClient = new QueryClient();
   const PAGE_SIZE = 20;
 
@@ -23,23 +14,24 @@ export default async function ListingsPage({
 
   const queryKey = createListingsQueryKey(filters, sortBy, null);
 
+  // Fetch the initial data directly on the server
+  const initialData = await SearchService.getFilteredListings({
+    page: 1,
+    pageSize: PAGE_SIZE,
+    filters,
+    sortBy,
+    userLocation: null,
+  });
+
+  // Manually prime the query cache with the server-fetched data
   await queryClient.prefetchInfiniteQuery({
     queryKey,
-    queryFn: async ({ pageParam = 1 }) => {
-      const results = await SearchService.getFilteredListings({
-        page: pageParam,
-        pageSize: PAGE_SIZE,
-        filters,
-        sortBy,
-        userLocation: null, // You might want to get user location here
-      });
-      return results; // This should match InfiniteData<ListingsResponse>
-    },
+    queryFn: () => Promise.resolve(initialData), // We already have the data
     initialPageParam: 1,
-    getNextPageParam: (lastPage: ListingsResponse, allPages: ListingsResponse[]) => {
-      // Check if the last page had data and if we expect more data
-      return lastPage.hasMore ? allPages.length + 1 : undefined;
+    getNextPageParam: (lastPage: ListingsResponse) => {
+      return lastPage.hasMore ? 2 : undefined;
     },
+    pages: 1,
   });
 
   return (
