@@ -18,8 +18,9 @@ import Link from "next/link";
 import { useSearch } from "@/hooks/useSearch";
 import { useSearchState } from "@/hooks/useSearchState";
 import { formatPrice } from "@/lib/utils";
+import { ListingsResponse } from "@/lib/types/search";
 
-export function ListingsDisplay() {
+export function ListingsDisplay({ initialListings }: { initialListings: ListingsResponse }) {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [showBackToTop, setShowBackToTop] = useState(false);
   const [userLocation, setUserLocation] = useState<{
@@ -44,6 +45,7 @@ export function ListingsDisplay() {
     sortBy,
     userLocation,
     pageSize: 20,
+    initialData: initialListings,
   });
 
   // Get user location
