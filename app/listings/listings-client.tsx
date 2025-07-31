@@ -4,7 +4,8 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { useSearch } from "@/hooks/useSearch";
 import { ListingCard } from "@/components/listings/listing-card";
-import { SearchFilters, PAGE_SIZE } from "@/lib/types/search";
+import { SearchFilters } from "@/lib/types/search";
+import { PAGE_SIZE } from "@/lib/search-utils";
 
 export function ListingsClient({ initialFilters, initialSortBy }: { initialFilters: SearchFilters, initialSortBy: string }) {
   const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null);
