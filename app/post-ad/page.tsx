@@ -8,8 +8,6 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
-
-
 import {
   Select,
   SelectContent,
@@ -17,25 +15,25 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, CheckCircle2, XCircle } from "lucide-react";
 import { MediaBufferInput } from "@/components/post-ad/media-buffer-input";
 import { toast } from "@/components/ui/use-toast";
 import { uploadBufferedMedia } from "./actions/upload-buffered-media";
 import { getSupabaseClient } from "@/utils/supabase/client";
 import { getPlans, Plan } from "./actions";
 import { formatPrice } from "@/lib/utils";
-
 import {
   Dialog,
   DialogContent,
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-
 import type { Database } from "@/utils/supabase/database.types";
 import Image from "next/image";
+
 type Category = Database["public"]["Tables"]["categories"]["Row"];
 type SubCategory = Database["public"]["Tables"]["subcategories"]["Row"];
+type PaymentStatus = "idle" | "pending" | "completed" | "failed" | "cancelled";
 
 const formatLocationData = (location: any) => {
   const isCoordinates = Array.isArray(location) && location.length === 2;
@@ -56,20 +54,12 @@ const steps = [
   { id: "method", label: "Method" },
 ];
 
-/**
- * Renders the multi-step ad posting page, managing form state, step navigation, data fetching, payment processing, and submission.
- *
- * Handles category and subcategory loading, form data updates, location detection, payment tier and method selection, and displays the appropriate UI for each step. On submission, processes payment if required, submits the listing, and provides user feedback via toast notifications.
- *
- * @returns The complete ad posting page component.
- */
 export default function PostAdPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [subcategories, setSubcategories] = useState<SubCategory[]>([]);
   const [allSubcategories, setAllSubcategories] = useState<SubCategory[]>([]);
   const [, setCategoriesLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [transactionInProgress, setTransactionInProgress] = useState(false);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [formData, setFormData] = useState({
     title: "",
@@ -88,7 +78,6 @@ export default function PostAdPage() {
     email: "",
   });
 
-  // Add dialog state and manual location state
   const [locationDialogOpen, setLocationDialogOpen] = useState(false);
   const [manualLocation, setManualLocation] = useState("");
 
@@ -99,7 +88,9 @@ export default function PostAdPage() {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await fetch(process.env.NEXT_PUBLIC_APP_URL + "/api/categories");
+        const response = await fetch(
+          process.env.NEXT_PUBLIC_APP_URL + "/api/categories",
+        );
         const data = await response.json();
         setCategories(data);
       } catch (error) {
@@ -114,14 +105,15 @@ export default function PostAdPage() {
   useEffect(() => {
     const fetchSubcategories = async () => {
       try {
-        const response = await fetch(process.env.NEXT_PUBLIC_APP_URL + "/api/subcategories");
+        const response = await fetch(
+          process.env.NEXT_PUBLIC_APP_URL + "/api/subcategories",
+        );
         const data = await response.json();
         setAllSubcategories(data);
       } catch (error) {
         console.error("Failed to fetch subcategories:", error);
       }
     };
-
     fetchSubcategories();
   }, []);
 
@@ -154,6 +146,7 @@ export default function PostAdPage() {
       setSubcategories([]);
     }
   }, [formData.category, categories, allSubcategories]);
+
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(0);
   const selectedTier =
@@ -171,89 +164,65 @@ export default function PostAdPage() {
     }
   };
 
-  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [isPublishingListing, setIsPublishingListing] = useState(false);
-  const [paymentCompleted, setPaymentCompleted] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>("idle");
   const [currentTransactionId, setCurrentTransactionId] = useState<
     string | null
   >(null);
-  const [isPollingPayment, setIsPollingPayment] = useState(false);
 
   const { displayLocation, latitude, longitude } = formatLocationData(
     formData.location,
   );
 
-  const pollTransactionStatus = async (
-    transactionId: string,
-    externalId: string,
-  ) => {
-    const MAX_POLL_ATTEMPTS = 30; // Poll for 5 minutes (30 * 10 seconds)
-    const POLL_INTERVAL_MS = 10000; // 10 seconds
+  const methodStepIndex = steps.findIndex((step) => step.id === "method");
 
-    let attempts = 0;
-    const interval = setInterval(async () => {
-      attempts++;
-      if (attempts > MAX_POLL_ATTEMPTS) {
-        clearInterval(interval);
-        setIsPollingPayment(false);
-        setIsProcessingPayment(false);
-        setTransactionInProgress(false);
-        toast({
-          title: "Payment Timeout",
-          description:
-            "Payment status could not be confirmed. Please check your payment provider or contact support.",
-          variant: "destructive",
-        });
-        setCurrentStep(methodStepIndex); // Go back to payment step
-        return;
-      }
+  useEffect(() => {
+    if (!currentTransactionId) return;
 
-      try {
-        const response = await fetch(
-          `/api/payments/status?transactionId=${transactionId}`,
-        );
-        if (!response.ok) {
-          throw new Error("Failed to fetch payment status.");
-        }
-        const data = await response.json();
+    const supabase = getSupabaseClient();
+    const channel = supabase
+      .channel(`transactions:id=eq.${currentTransactionId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "transactions",
+          filter: `id=eq.${currentTransactionId}`,
+        },
+        (payload) => {
+          const newStatus = payload.new.status as PaymentStatus;
+          setPaymentStatus(newStatus);
 
-        if (data.status === "completed") {
-          clearInterval(interval);
-          setPaymentCompleted(true);
-          setIsProcessingPayment(false);
-          setIsPollingPayment(false);
-          setTransactionInProgress(false);
-          toast({
-            title: "Payment Confirmed",
-            description:
-              "Your payment has been successfully processed! You can now submit your ad.",
-            variant: "default",
-          });
-          // User will click "Submit Ad" manually
-        } else if (data.status === "failed" || data.status === "cancelled") {
-          clearInterval(interval);
-          setIsProcessingPayment(false);
-          setIsPollingPayment(false);
-          setTransactionInProgress(false);
-          toast({
-            title: "Payment Failed",
-            description: "Your payment was not successful. Please try again.",
-            variant: "destructive",
-          });
-          setCurrentStep(methodStepIndex);
-        }
-        // If status is still 'pending', continue polling
-      } catch (error) {
-        console.error("Polling error:", error);
-        // Continue polling even on network errors, but log them
-      }
-    }, POLL_INTERVAL_MS);
-  };
+          if (newStatus === "completed") {
+            toast({
+              title: "Payment Confirmed",
+              description:
+                "Your payment has been successfully processed! You can now submit your ad.",
+              variant: "default",
+            });
+            channel.unsubscribe();
+          } else if (newStatus === "failed" || newStatus === "cancelled") {
+            toast({
+              title: "Payment Failed",
+              description: "Your payment was not successful. Please try again.",
+              variant: "destructive",
+            });
+            setCurrentStep(methodStepIndex);
+            channel.unsubscribe();
+          }
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [currentTransactionId, methodStepIndex]);
 
   const handleSubmit = async () => {
-    if (transactionInProgress) return;
+    if (isSubmitted || isPublishingListing || paymentStatus === 'pending') return;
     setIsSubmitted(true);
-    setTransactionInProgress(true);
 
     if (!selectedTier) {
       toast({
@@ -262,13 +231,11 @@ export default function PostAdPage() {
         variant: "destructive",
       });
       setIsSubmitted(false);
-      setTransactionInProgress(false);
       return;
     }
 
-    // --- Payment Processing --- //
-    if (selectedTier.price > 0 && !paymentCompleted) {
-      setIsProcessingPayment(true);
+    if (selectedTier.price > 0 && paymentStatus !== "completed") {
+      setPaymentStatus("pending");
       try {
         const paymentResult = await processPayment(
           selectedTier,
@@ -283,26 +250,19 @@ export default function PostAdPage() {
               "Your payment could not be processed. Please try again.",
             variant: "destructive",
           });
-          setIsProcessingPayment(false);
-          setTransactionInProgress(false);
+          setPaymentStatus("failed");
+          setIsSubmitted(false);
           return;
         }
 
-        // Start polling for payment status
         setCurrentTransactionId(paymentResult.transactionId);
-        setIsPollingPayment(true);
-        pollTransactionStatus(
-          paymentResult.transactionId,
-          paymentResult.checkoutRequestId || paymentResult.orderID,
-        ); // Pass external ID for logging/debugging
-
         toast({
           title: "Payment Initiated",
           description:
             "Your payment is being processed. We are awaiting confirmation.",
           variant: "default",
         });
-        // User remains on the method step until payment is confirmed
+        setIsSubmitted(false);
         return;
       } catch (error) {
         console.error("Payment processing error:", error);
@@ -311,17 +271,13 @@ export default function PostAdPage() {
           description: "An unexpected error occurred during payment.",
           variant: "destructive",
         });
-        setIsProcessingPayment(false);
+        setPaymentStatus("failed");
         setIsSubmitted(false);
         return;
       }
     }
 
-    // --- Listing Publication (only if payment is free or already completed) --- //
-    // This part will only execute if selectedTier.price is 0 OR paymentCompleted is true
-    if (selectedTier.price > 0 && !paymentCompleted) {
-      // This case should ideally not be reached if the flow is correct
-      // It means a paid tier was selected but payment wasn't completed yet
+    if (selectedTier.price > 0 && paymentStatus !== "completed") {
       toast({
         title: "Action Required",
         description: "Please complete the payment first.",
@@ -370,14 +326,17 @@ export default function PostAdPage() {
         plan_id: selectedTier.id,
       };
 
-      const response = await fetch(process.env.NEXT_PUBLIC_APP_URL + "/api/listings", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
+      const response = await fetch(
+        process.env.NEXT_PUBLIC_APP_URL + "/api/listings",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify(listingData),
         },
-        body: JSON.stringify(listingData),
-      });
+      );
       const result = await response.json();
 
       if (!response.ok) {
@@ -410,6 +369,7 @@ export default function PostAdPage() {
       setIsPublishingListing(false);
     }
   };
+
   const processPayment = async (tier: any, paymentMethod: string) => {
     const supabase = getSupabaseClient();
     const {
@@ -420,7 +380,6 @@ export default function PostAdPage() {
       return { success: false, error: "User not authenticated." };
     }
 
-    // Create a pending transaction record
     const { data: transaction, error: transactionError } = await supabase
       .from("transactions")
       .insert({
@@ -454,7 +413,6 @@ export default function PostAdPage() {
       case "paystack":
         endpoint = "/api/payments/paystack";
         break;
-      
       default:
         throw new Error("Invalid payment method");
     }
@@ -470,7 +428,6 @@ export default function PostAdPage() {
     let externalId = null;
     if (paymentMethod === "mpesa") {
       externalId = responseData.checkoutRequestId;
-    
     }
 
     return {
@@ -481,7 +438,6 @@ export default function PostAdPage() {
     };
   };
 
-  // Detect location function with high accuracy
   const detectLocation = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -500,10 +456,10 @@ export default function PostAdPage() {
     }
   };
 
-  // Update renderStepContent to pass location dialog props to AdDetailsStep
   const renderStepContent = () => {
-    switch (currentStep) {
-      case 0:
+    const currentStepId = steps[currentStep]?.id;
+    switch (currentStepId) {
+      case "details":
         return (
           <AdDetailsStep
             formData={formData}
@@ -517,7 +473,7 @@ export default function PostAdPage() {
             detectLocation={detectLocation}
           />
         );
-      case 1:
+      case "payment":
         return (
           <PaymentTierStep
             formData={formData}
@@ -525,7 +481,7 @@ export default function PostAdPage() {
             plans={plans}
           />
         );
-      case 2:
+      case "media":
         return (
           <MediaUploadStep
             formData={formData}
@@ -533,23 +489,22 @@ export default function PostAdPage() {
             plans={plans}
           />
         );
-      case 3:
+      case "preview":
         return (
           <PreviewStep
             formData={formData}
             categories={categories}
             plans={plans}
-            isPollingPayment={isPollingPayment}
-            paymentCompleted={paymentCompleted}
             displayLocation={displayLocation}
           />
         );
-      case 4:
+      case "method":
         return (
           <PaymentMethodStep
             formData={formData}
             updateFormData={updateFormData}
             plans={plans}
+            paymentStatus={paymentStatus}
           />
         );
       default:
@@ -557,16 +512,12 @@ export default function PostAdPage() {
     }
   };
 
-  const methodStepIndex = steps.findIndex((step) => step.id === "method");
-  const previewStepIndex = steps.findIndex((step) => step.id === "preview");
-
   return (
     <div className="min-h-screen bg-muted/50 py-8">
       <div className="container px-4">
         <div className="max-w-3xl mx-auto">
           <h1 className="text-2xl font-bold mb-6">Post an Ad</h1>
 
-          {/* Progress Steps */}
           <div className="mb-8">
             <div className="flex items-center justify-between">
               {steps.map((step, index) => (
@@ -603,7 +554,7 @@ export default function PostAdPage() {
                 <Button
                   variant="outline"
                   onClick={handleBack}
-                  disabled={currentStep === 0}
+                  disabled={currentStep === 0 || paymentStatus === 'pending'}
                 >
                   <ChevronLeft className="h-4 w-4 mr-2" />
                   Back
@@ -614,13 +565,12 @@ export default function PostAdPage() {
                     onClick={handleSubmit}
                     disabled={
                       isSubmitted ||
-                      isPollingPayment ||
-                      isProcessingPayment ||
+                      paymentStatus === 'pending' ||
                       isPublishingListing ||
-                      (selectedTier.price > 0 && (!paymentCompleted || !formData.paymentMethod))
+                      (selectedTier.price > 0 && (paymentStatus !== 'completed' || !formData.paymentMethod))
                     }
                   >
-                    {selectedTier.price > 0 && !paymentCompleted
+                    {selectedTier.price > 0 && paymentStatus !== 'completed'
                       ? "Pay"
                       : "Submit Ad"}
                     <ChevronRight className="h-4 w-4 ml-2" />
@@ -630,8 +580,7 @@ export default function PostAdPage() {
                     onClick={handleAdvanceStep}
                     disabled={
                       isSubmitted ||
-                      isPollingPayment ||
-                      isProcessingPayment ||
+                      paymentStatus === 'pending' ||
                       isPublishingListing
                     }
                   >
@@ -644,18 +593,6 @@ export default function PostAdPage() {
           </Card>
         </div>
       </div>
-
-      <Dialog open={isProcessingPayment} onOpenChange={setIsProcessingPayment}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogTitle>Processing Payment...</DialogTitle>
-          <div className="flex flex-col items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mb-4" />
-            <p className="text-muted-foreground">
-              Please wait while your payment is being processed.
-            </p>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       <Dialog open={isPublishingListing} onOpenChange={setIsPublishingListing}>
         <DialogContent className="sm:max-w-[425px]">
@@ -672,11 +609,6 @@ export default function PostAdPage() {
   );
 }
 
-/**
- * Renders the ad details step of the multi-step ad posting form, allowing users to enter information such as title, description, category, subcategory, price, condition, location, and negotiable status.
- *
- * Provides UI for selecting category and subcategory, entering price and condition, and setting location either manually or via automatic detection. Updates form data on user input and manages the location dialog state.
- */
 function AdDetailsStep({
   formData,
   updateFormData,
@@ -700,35 +632,28 @@ function AdDetailsStep({
 }) {
   const availableSubcategories = formData.category ? subcategories : [];
 
-  // Helper function to format number with commas
   const formatPrice = (value: string | number) => {
     if (value === null || value === undefined || value === "") return "";
     const num = Number(value);
-    if (isNaN(num)) return String(value); // Return as is if not a valid number
+    if (isNaN(num)) return String(value);
     return num.toLocaleString();
   };
 
-  // Helper function to parse formatted string back to number
   const parsePrice = (value: string) => {
     const cleaned = value.replace(/,/g, "");
     const num = Number(cleaned);
     return isNaN(num) ? "" : num.toString();
   };
 
-  // State for the displayed price in the input field
   const [displayPrice, setDisplayPrice] = useState(formatPrice(formData.price));
 
   useEffect(() => {
-    // Update displayPrice when formData.price changes externally
     setDisplayPrice(formatPrice(formData.price));
   }, [formData.price]);
 
   const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const rawValue = e.target.value;
-    // Update the displayed value directly
     setDisplayPrice(rawValue);
-
-    // Parse and update the actual form data value
     const parsedValue = parsePrice(rawValue);
     updateFormData({ price: parsedValue });
   };
@@ -736,7 +661,6 @@ function AdDetailsStep({
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-semibold">Ad Details</h2>
-
       <div className="space-y-4">
         <div>
           <Label htmlFor="title">Title</Label>
@@ -747,7 +671,6 @@ function AdDetailsStep({
             onChange={(e) => updateFormData({ title: e.target.value })}
           />
         </div>
-
         <div>
           <Label htmlFor="description">Description</Label>
           <Textarea
@@ -758,7 +681,6 @@ function AdDetailsStep({
             onChange={(e) => updateFormData({ description: e.target.value })}
           />
         </div>
-
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <Label htmlFor="category">Category</Label>
@@ -780,7 +702,6 @@ function AdDetailsStep({
               </SelectContent>
             </Select>
           </div>
-
           <div>
             <Label htmlFor="subcategory">Subcategory</Label>
             <Select
@@ -793,7 +714,7 @@ function AdDetailsStep({
               </SelectTrigger>
               <SelectContent>
                 {availableSubcategories.map((subcategory) => (
-                  <SelectItem key={subcategory.id} value={subcategory.id}>
+                  <SelectItem key={subcategory.id} value={String(subcategory.id)}>
                     {subcategory.name}
                   </SelectItem>
                 ))}
@@ -801,22 +722,20 @@ function AdDetailsStep({
             </Select>
           </div>
         </div>
-
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <Label htmlFor="price">Price</Label>
             <Input
               id="price"
-              type="text" // Changed to text
+              type="text"
               placeholder="Enter price"
-              value={displayPrice} // Use displayPrice for input value
-              onChange={handlePriceChange} // Use new handler
+              value={displayPrice}
+              onChange={handlePriceChange}
               onBlur={(e) =>
                 setDisplayPrice(formatPrice(parsePrice(e.target.value)))
-              } // Format on blur
+              }
             />
           </div>
-
           <div>
             <Label htmlFor="condition">Condition</Label>
             <Select
@@ -834,7 +753,6 @@ function AdDetailsStep({
             </Select>
           </div>
         </div>
-
         <div>
           <Label htmlFor="tags">Tags</Label>
           <div className="flex flex-wrap items-center gap-2 p-2 border rounded-md bg-background">
@@ -877,7 +795,6 @@ function AdDetailsStep({
             Press Enter or Comma to add a tag.
           </p>
         </div>
-
         <div>
           <Label htmlFor="location">Location</Label>
           <div className="flex gap-2">
@@ -895,7 +812,6 @@ function AdDetailsStep({
             />
           </div>
         </div>
-
         <div className="flex items-center space-x-2">
           <Checkbox
             id="negotiable"
@@ -908,7 +824,6 @@ function AdDetailsStep({
         </div>
       </div>
 
-      {/* Location Dialog */}
       <Dialog open={locationDialogOpen} onOpenChange={setLocationDialogOpen}>
         <DialogContent>
           <DialogTitle>Set Location</DialogTitle>
@@ -957,11 +872,6 @@ function AdDetailsStep({
   );
 }
 
-/**
- * Renders the media upload step for an ad posting form, enforcing media limits based on the selected payment tier.
- *
- * Displays current plan details, allowed image and video counts, and warnings if uploaded media exceeds plan limits. Allows users to upload images and videos, updating the form data with selected media URLs.
- */
 function MediaUploadStep({
   formData,
   updateFormData,
@@ -974,7 +884,6 @@ function MediaUploadStep({
   const selectedTier =
     plans.find((tier) => tier.id === formData.paymentTier) || plans[0];
 
-  // Define limits based on tier
   const tierLimits = {
     free: { images: 2, videos: 0 },
     basic: { images: 4, videos: 0 },
@@ -986,7 +895,6 @@ function MediaUploadStep({
     tierLimits[selectedTier?.name.toLowerCase() as keyof typeof tierLimits] ||
     tierLimits.free;
 
-  // Show warning if user has uploaded more than their tier allows
   const imageUrls = (formData.mediaUrls || []).filter((url: string) => {
     return (
       url.startsWith("data:image/") ||
@@ -1008,7 +916,6 @@ function MediaUploadStep({
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-semibold">Media Upload</h2>
-
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
         <p className="text-sm text-blue-800">
           <strong>Current Plan: {selectedTier?.name}</strong>
@@ -1019,7 +926,6 @@ function MediaUploadStep({
           <br />• Videos: MP4, WebM, MOV (max 50MB each, 30 seconds max)
         </p>
       </div>
-
       {(imageWarning || videoWarning) && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
           <p className="text-sm text-yellow-800">
@@ -1034,7 +940,6 @@ function MediaUploadStep({
           </p>
         </div>
       )}
-
       <MediaBufferInput
         maxImages={limits.images}
         maxVideos={limits.videos}
@@ -1057,7 +962,6 @@ function PaymentTierStep({
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-semibold">Choose Your Plan</h2>
-
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {plans.map((tier) => (
           <Card
@@ -1107,22 +1011,16 @@ function PaymentTierStep({
   );
 }
 
-/**
- * Renders the payment method selection step for paid ad plans.
- *
- * Displays available payment methods and collects additional information based on the selected method. If the selected plan is free, indicates that no payment is required.
- *
- * @param formData - The current form data, including selected payment tier and payment method
- * @param updateFormData - Function to update the form data with user selections
- */
 function PaymentMethodStep({
   formData,
   updateFormData,
   plans,
+  paymentStatus,
 }: {
   formData: any;
   updateFormData: (data: any) => void;
   plans: Plan[];
+  paymentStatus: PaymentStatus;
 }) {
   const selectedTier =
     plans.find((tier) => tier.id === formData.paymentTier) || plans[0];
@@ -1140,127 +1038,141 @@ function PaymentMethodStep({
   }
 
   return (
-      <div className="space-y-6">
-        <h2 className="text-xl font-semibold">Payment Method</h2>
+    <div className="space-y-6">
+      <h2 className="text-xl font-semibold">Payment Method</h2>
 
-        <div className="bg-muted p-4 rounded-lg">
-          <p className="font-medium">{selectedTier.name} Plan</p>
-          <p className="text-2xl font-bold text-green-600">
-            Ksh {selectedTier.price}
-          </p>
-        </div>
-
-        <div className="space-y-4">
-          <div>
-            <Label>Choose Payment Method</Label>
-            <div className="grid grid-cols-1 gap-3 mt-2">
-              <Card
-                className={`cursor-pointer transition-all ${
-                  formData.paymentMethod === "mpesa"
-                    ? "ring-2 ring-blue-500"
-                    : "hover:shadow-md"
-                }`}
-                onClick={() => updateFormData({ paymentMethod: "mpesa" })}
-              >
-                <CardContent className="p-4">
-                  <div className="flex items-center space-x-3">
-                    <Image
-                      src="/mpesa_logo.png"
-                      alt="M-Pesa Logo"
-                      width={48}
-                      height={48}
-                      className="w-12 h-12 object-contain rounded-lg"
-                    />
-                    <div>
-                      <p className="font-medium">M-Pesa</p>
-                      <p className="text-sm text-muted-foreground">
-                        Pay with your mobile money
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card
-                className={`cursor-pointer transition-all ${
-                  formData.paymentMethod === "paystack"
-                    ? "ring-2 ring-blue-500"
-                    : "hover:shadow-md"
-                }`}
-                onClick={() => updateFormData({ paymentMethod: "paystack" })}
-              >
-                <CardContent className="p-4">
-                  <div className="flex items-center space-x-3">
-                    <Image
-                      src="/PayStack_Logo.png"
-                      alt="Paystack Logo"
-                      width={48}
-                      height={48}
-                      className="w-12 h-12 object-contain rounded-lg"
-                    />
-                    <div>
-                      <p className="font-medium">Paystack</p>
-                      <p className="text-sm text-muted-foreground">
-                        Credit/Debit card, Bank transfer
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+      <Dialog open={paymentStatus === 'pending'}>
+        <DialogContent className="w-3/4 sm:max-w-[425px]">
+          <DialogTitle>Awaiting Payment Confirmation</DialogTitle>
+          <div className="flex flex-col items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mb-4"></div>
+            <p className="text-muted-foreground">
+              Please wait while we confirm your payment.
+            </p>
           </div>
+        </DialogContent>
+      </Dialog>
 
-          {formData.paymentMethod === "mpesa" && (
-            <div>
-              <Label htmlFor="phoneNumber">Phone Number</Label>
-              <Input
-                id="phoneNumber"
-                placeholder="Enter your M-Pesa number"
-                value={formData.phoneNumber}
-                onChange={(e) =>
-                  updateFormData({
-                    phoneNumber: e.target.value.replace(/[^\d]/g, ""),
-                  })
-                }
-              />
-            </div>
-          )}
-
-          {formData.paymentMethod === "paystack" && (
-            <div>
-              <Label htmlFor="email">Email Address</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="Enter your email"
-                value={formData.email}
-                onChange={(e) => updateFormData({ email: e.target.value })}
-              />
-            </div>
-          )}
-        </div>
+      <div className="bg-muted p-4 rounded-lg">
+        <p className="font-medium">{selectedTier.name} Plan</p>
+        <p className="text-2xl font-bold text-green-600">
+          Ksh {selectedTier.price}
+        </p>
       </div>
+
+      {paymentStatus === 'completed' && (
+         <div className="flex items-center justify-center p-4 rounded-lg bg-green-100 border border-green-300 text-green-800">
+           <CheckCircle2 className="h-5 w-5 mr-3" />
+           <p className="font-medium">Payment Confirmed. You can now submit your ad.</p>
+         </div>
+      )}
+
+      {paymentStatus === 'failed' && (
+         <div className="flex items-center justify-center p-4 rounded-lg bg-red-100 border border-red-300 text-red-800">
+           <XCircle className="h-5 w-5 mr-3" />
+           <p className="font-medium">Payment Failed. Please try again.</p>
+         </div>
+      )}
+
+      <div className="space-y-4">
+        <div>
+          <Label>Choose Payment Method</Label>
+          <div className="grid grid-cols-1 gap-3 mt-2">
+            <Card
+              className={`cursor-pointer transition-all ${
+                formData.paymentMethod === "mpesa"
+                  ? "ring-2 ring-blue-500"
+                  : "hover:shadow-md"
+              }`}
+              onClick={() => updateFormData({ paymentMethod: "mpesa" })}
+            >
+              <CardContent className="p-4">
+                <div className="flex items-center space-x-3">
+                  <Image
+                    src="/mpesa_logo.png"
+                    alt="M-Pesa Logo"
+                    width={48}
+                    height={48}
+                    className="w-12 h-12 object-contain rounded-lg"
+                  />
+                  <div>
+                    <p className="font-medium">M-Pesa</p>
+                    <p className="text-sm text-muted-foreground">
+                      Pay with your mobile money
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card
+              className={`cursor-pointer transition-all ${
+                formData.paymentMethod === "paystack"
+                  ? "ring-2 ring-blue-500"
+                  : "hover:shadow-md"
+              }`}
+              onClick={() => updateFormData({ paymentMethod: "paystack" })}
+            >
+              <CardContent className="p-4">
+                <div className="flex items-center space-x-3">
+                  <Image
+                    src="/PayStack_Logo.png"
+                    alt="Paystack Logo"
+                    width={48}
+                    height={48}
+                    className="w-12 h-12 object-contain rounded-lg"
+                  />
+                  <div>
+                    <p className="font-medium">Paystack</p>
+                    <p className="text-sm text-muted-foreground">
+                      Credit/Debit card, Bank transfer
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+        {formData.paymentMethod === "mpesa" && (
+          <div>
+            <Label htmlFor="phoneNumber">Phone Number</Label>
+            <Input
+              id="phoneNumber"
+              placeholder="Enter your M-Pesa number"
+              value={formData.phoneNumber}
+              onChange={(e) =>
+                updateFormData({
+                  phoneNumber: e.target.value.replace(/[^\d]/g, ""),
+                })
+              }
+            />
+          </div>
+        )}
+        {formData.paymentMethod === "paystack" && (
+          <div>
+            <Label htmlFor="email">Email Address</Label>
+            <Input
+              id="email"
+              type="email"
+              placeholder="Enter your email"
+              value={formData.email}
+              onChange={(e) => updateFormData({ email: e.target.value })}
+            />
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 
-/**
- * Renders a summary preview of the advertisement using the current form data and selected category.
- *
- * Displays the ad's title, price, negotiable status, up to four media thumbnails, description, category, condition, location, and selected payment plan. Also shows a notice regarding the Terms of Service and Privacy Policy.
- */
 function PreviewStep({
   formData,
   categories,
   plans,
-  isPollingPayment,
-  paymentCompleted,
   displayLocation,
 }: {
   formData: any;
   categories: any[];
   plans: Plan[];
-  isPollingPayment: boolean;
-  paymentCompleted: boolean;
   displayLocation: string;
 }) {
   const selectedTier =
@@ -1272,14 +1184,6 @@ function PreviewStep({
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-semibold">Preview Your Ad</h2>
-      {isPollingPayment && !paymentCompleted && (
-        <div className="flex items-center justify-center p-4 rounded-lg bg-yellow-100 border border-yellow-300">
-          <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-yellow-500 mr-3"></div>
-          <p className="text-yellow-800 font-medium">
-            Payment pending confirmation...
-          </p>
-        </div>
-      )}
       <Card>
         <CardContent className="p-6">
           <div className="space-y-4">
@@ -1296,7 +1200,6 @@ function PreviewStep({
                 </span>
               )}
             </div>
-
             {formData.mediaUrls.length > 0 && (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                 {formData.mediaUrls
@@ -1313,13 +1216,11 @@ function PreviewStep({
                   ))}
               </div>
             )}
-
             <div>
               <p className="text-muted-foreground">
                 {formData.description || "No description provided"}
               </p>
             </div>
-
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <span className="font-medium">Category:</span>{" "}
@@ -1339,7 +1240,6 @@ function PreviewStep({
           </div>
         </CardContent>
       </Card>
-
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
         <p className="text-sm text-blue-800">
           By submitting this ad, you agree to our Terms of Service and Privacy

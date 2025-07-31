@@ -7,6 +7,7 @@ import { ListingsFilter } from "@/components/listings-filter";
 import { ListingsDisplay } from "@/components/listings-display";
 import { SearchService } from "@/lib/services/search-service";
 import { parseSearchParams } from "@/lib/search-utils";
+import { ListingsResponse } from "@/lib/types/search";
 import { createListingsQueryKey } from "@/lib/search-utils";
 
 export default async function ListingsPage({
@@ -35,7 +36,7 @@ export default async function ListingsPage({
       return results; // This should match InfiniteData<ListingsResponse>
     },
     initialPageParam: 1,
-    getNextPageParam: (lastPage, allPages) => {
+    getNextPageParam: (lastPage: ListingsResponse, allPages: ListingsResponse[]) => {
       // Check if the last page had data and if we expect more data
       return lastPage.hasMore ? allPages.length + 1 : undefined;
     },
