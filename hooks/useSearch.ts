@@ -1,6 +1,6 @@
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { SearchService } from "@/lib/services/search-service";
-import { SearchFilters, SearchParams } from "@/lib/types/search";
+import { SearchFilters, SearchParams, ListingsResponse } from "@/lib/types/search";
 import { createListingsQueryKey } from "@/lib/search-utils";
 
 interface UseSearchOptions {
@@ -9,6 +9,7 @@ interface UseSearchOptions {
   userLocation?: { lat: number; lon: number } | null;
   pageSize?: number;
   enabled?: boolean;
+  initialData?: ListingsResponse;
 }
 
 export const useSearch = ({
@@ -17,6 +18,7 @@ export const useSearch = ({
   userLocation = null,
   pageSize = 20,
   enabled = true,
+  initialData,
 }: UseSearchOptions) => {
   return useInfiniteQuery({
     queryKey: createListingsQueryKey(filters, sortBy, userLocation),
@@ -37,6 +39,7 @@ export const useSearch = ({
       return lastPage.hasMore ? allPages.length + 1 : undefined;
     },
     initialPageParam: 1,
+    initialData: initialData ? { pages: [initialData], pageParams: [1] } : undefined,
     enabled,
     staleTime: 1000 * 60 * 5, // 5 minutes
     gcTime: 1000 * 60 * 30, // 30 minutes (formerly cacheTime)
