@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { Grid, List, MapPin, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -98,7 +98,7 @@ export function ListingsDisplay() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const listings = data?.pages.flatMap((page) => page.data) || [];
+  const listings = useMemo(() => data?.pages.flatMap((page) => page.data) || [], [data]);
 
   useEffect(() => {
     console.log("Client-side listings data:", JSON.stringify(listings, null, 2));
