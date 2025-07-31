@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { useSearch } from "@/hooks/useSearch";
-import { ListingCard } from "./listing-card";
+import { ListingCard } from "@/components/listings/listing-card";
 import { SearchFilters, PAGE_SIZE } from "@/lib/types/search";
 
 export function ListingsClient({ initialFilters, initialSortBy }: { initialFilters: SearchFilters, initialSortBy: string }) {

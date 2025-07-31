@@ -303,19 +303,36 @@ export function ListingsFilter() {
         <AccordionItem value="price">
           <AccordionTrigger>Price Range</AccordionTrigger>
           <AccordionContent className="pt-4">
-            <div className="space-y-4">
-              <Slider
-                min={0}
-                max={1000000}
-                step={1000}
-                value={[filters.priceRange.min, filters.priceRange.max]}
-                onValueChange={handlePriceChange}
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                placeholder="Min"
+                value={filters.priceRange.min}
+                onChange={(e) =>
+                  updateFilters({
+                    priceRange: {
+                      ...filters.priceRange,
+                      min: Number(e.target.value) || 0,
+                    },
+                  })
+                }
                 className="w-full"
               />
-              <div className="flex items-center justify-between text-sm">
-                <span>Ksh {formatPrice(filters.priceRange.min)}</span>
-                <span>Ksh {formatPrice(filters.priceRange.max)}</span>
-              </div>
+              <span>to</span>
+              <Input
+                type="number"
+                placeholder="Max"
+                value={filters.priceRange.max}
+                onChange={(e) =>
+                  updateFilters({
+                    priceRange: {
+                      ...filters.priceRange,
+                      max: Number(e.target.value) || 10000000000,
+                    },
+                  })
+                }
+                className="w-full"
+              />
             </div>
           </AccordionContent>
         </AccordionItem>
