@@ -6,7 +6,7 @@ export const DEFAULT_FILTERS: SearchFilters = {
   conditions: [],
   priceRange: {
     min: 0,
-    max: 1000000,
+    max: 10000000000,
   },
   maxDistance: 50,
   searchQuery: "",
@@ -36,7 +36,7 @@ export const parseSearchParams = (
         .filter(Boolean) || [],
     priceRange: {
       min: Number(searchParams.get("priceMin")) || 0,
-      max: Number(searchParams.get("priceMax")) || 1000000,
+      max: Number(searchParams.get("priceMax")) || 10000000000,
     },
     maxDistance: Number(searchParams.get("maxDistance")) || 50,
     searchQuery: searchParams.get("search") || "",
@@ -64,7 +64,7 @@ export const filtersToSearchParams = (
     params.set("priceMin", filters.priceRange.min.toString());
   }
 
-  if (filters.priceRange.max < 1000000) {
+  if (filters.priceRange.max < 10000000000) {
     params.set("priceMax", filters.priceRange.max.toString());
   }
 

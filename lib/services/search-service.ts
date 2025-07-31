@@ -52,14 +52,13 @@ export class SearchService {
       // Sanitize the data to prevent hydration issues
       const sanitizedData: ListingsItem[] = (listings as any[]).map((item) => ({
         ...item,
-        id: item.id || 0,
+        id: item.id || '', // Ensure id is always a string
         title: item.title || "Untitled Listing",
         description: item.description || "",
         price: item.price || 0,
         condition: item.condition || "N/A",
         location: item.location || "Unknown location",
         images: Array.isArray(item.images) ? item.images : [],
-        created_at: item.created_at || new Date().toISOString(),
         // Add any other fields that might be null/undefined
       }));
 
