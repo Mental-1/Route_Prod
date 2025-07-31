@@ -1,5 +1,7 @@
 import { SearchFilters } from "@/lib/types/search";
 
+export const PAGE_SIZE = 20;
+
 export const DEFAULT_FILTERS: SearchFilters = {
   categories: [],
   subcategories: [],
